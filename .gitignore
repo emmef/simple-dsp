@@ -1,3 +1,4 @@
+# Defaults, courtesy of GitHub
 CMakeCache.txt
 CMakeFiles
 CMakeScripts
@@ -7,3 +8,11 @@ cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
+
+# IDE generated files
+.cproject                  # Eclipse CDT project file
+.project                   # Eclipse project file
+.idea                      # JetBrainz project files
+.kdev*                     # KDevelop project files
+.settings                  # Eclipse settings
+cmake-build-*cmake-build-* # CLion target directories
