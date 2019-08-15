@@ -15,4 +15,4 @@ CTestTestfile.cmake
 .idea                      # JetBrainz project files
 .kdev*                     # KDevelop project files
 .settings                  # Eclipse settings
-cmake-build-*cmake-build-* # CLion target directories
+cmake-build-*              # CLion target directories
