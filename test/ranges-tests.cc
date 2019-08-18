@@ -10,6 +10,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
 
+#include "test-helper.h"
+
 using namespace std;
 
 namespace {
@@ -196,7 +198,7 @@ namespace {
             return Range::validSum(v1, v2, min, max);
         }
 
-        virtual size_t validSumGetFirstValue(
+        sdsp_nodiscard size_t validSumGetFirstValue(
                 size_t v1, size_t v2) const override {
             return Range::validSumGetFirstValue(v1, v2, min, max);
         }
@@ -205,229 +207,169 @@ namespace {
     struct FixedRangesPair {
         const ReferenceFixedRange reference;
         const TestFixedRange subject;
+        static constexpr size_t MAX_LIMIT = 24;
 
         FixedRangesPair(size_t min, size_t max) : reference(min, max), subject(min, max) {}
-
+    }
+    const predefinedRanges[3] = {
+            {0, FixedRangesPair::MAX_LIMIT},
+            {1, FixedRangesPair::MAX_LIMIT},
+            {7, FixedRangesPair::MAX_LIMIT},
     };
 
-    struct FixedRangeTest {
-        const ReferenceFixedRange &reference;
-        const TestFixedRange &subject;
+    template<typename T, typename A, class P>
+    using ValueTestCase = simpledsp::testhelper::ValueTestCase<T, A, P>;
 
-        explicit FixedRangeTest(const FixedRangesPair &ranges) : reference(ranges.reference), subject(ranges.subject) {}
+    template<typename Result>
+    struct FixedRangeTest : public ValueTestCase<Result, size_t, AbstractFixedRange> {
+        FixedRangeTest(const FixedRangesPair &impls, size_t value) : ValueTestCase<Result, size_t, AbstractFixedRange>(
+                impls.reference, impls.subject, value) {}
+        FixedRangeTest(const FixedRangesPair &impls, size_t v1, size_t v2) : ValueTestCase<Result, size_t, AbstractFixedRange>(
+                impls.reference, impls.subject, v1, v2) {}
 
-        virtual ~FixedRangeTest() = default;
-
-        sdsp_nodiscard virtual size_t expectedValue() const = 0;
-
-        sdsp_nodiscard virtual size_t actualValue() const = 0;
-
-        sdsp_nodiscard virtual const char *methodName() const = 0;
-
-        virtual void add_detail(std::ostream &output) const = 0;
-
-        sdsp_nodiscard ssize_t effectiveExpectation() const {
-            try {
-                return expectedValue();
-            }
-            catch (const std::invalid_argument &e) {
-                return -1;
-            }
-        }
-
-        sdsp_nodiscard ssize_t effectiveValue() const {
-            try {
-                return actualValue();
-            }
-            catch (const std::invalid_argument &e) {
-                return -1;
-            }
-        }
-
-        void test() const {
-            ssize_t expected = effectiveExpectation();
-            ssize_t actual = effectiveValue();
-
-            BOOST_CHECK_MESSAGE(expected == actual, *this);
-        }
-
-        void printValue(std::ostream &output, ssize_t value) const {
-            if (value < 0) {
-                output << "std::invalid_argument";
-            } else {
-                output << value;
-            }
-        }
-
-        std::ostream &print(std::ostream &output) const {
-            output << "RangeCheck<size_t>::" << methodName() << "(";
-            add_detail(output);
-            output << ", min=" << subject.min << ", max=" << subject.max << ")";
-
-            ssize_t expected = effectiveExpectation();
-            ssize_t actual = effectiveValue();
-
-            if (expected == actual) {
-                output << ": correct result(";
-                printValue(output, expected);
-                return output << ")";
-            }
-            output << ": expected(";
-            printValue(output, expected);
-            output << ") got (";
-            printValue(output, actual);
-            return output << ")";
+        sdsp_nodiscard const char * typeOfTestName() const override {
+            return "FixedRangeTest";
         };
     };
 
-    struct SingleValueFixedRangeTest : public FixedRangeTest {
-        size_t v;
-
-        SingleValueFixedRangeTest(const FixedRangesPair &ranges, size_t value) : FixedRangeTest(ranges), v(value) {}
-
-         void add_detail(std::ostream &output) const override {
-            output << "value=" << v;
-        }
-    };
-
-    struct IsWithinTest : public SingleValueFixedRangeTest {
-        IsWithinTest(const FixedRangesPair &ranges, size_t value) : SingleValueFixedRangeTest(ranges, value) {}
+    struct IsWithinTest : public FixedRangeTest<bool> {
+        IsWithinTest(const FixedRangesPair &ranges, size_t value) : FixedRangeTest<bool>(ranges, value) {}
 
         sdsp_nodiscard const char *methodName() const override { return "isWithin"; }
 
-        sdsp_nodiscard size_t expectedValue() const override { return reference.isWithin(v); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.isWithin(v); }
-    };
-
-    struct ValidValueTest : public SingleValueFixedRangeTest {
-        ValidValueTest(const FixedRangesPair &ranges, size_t value) : SingleValueFixedRangeTest(ranges, value) {}
-
-        sdsp_nodiscard const char *methodName() const override { return "validValue"; }
-
-        sdsp_nodiscard size_t expectedValue() const override { return reference.validValue(v); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.validValue(v); }
-    };
-
-    struct IsExclusiveWithinTest : public SingleValueFixedRangeTest {
-        IsExclusiveWithinTest(const FixedRangesPair &ranges, size_t value) : SingleValueFixedRangeTest(ranges, value) {}
-
-        sdsp_nodiscard const char *methodName() const override { return "isExclusiveWithin"; }
-
-        sdsp_nodiscard size_t expectedValue() const override { return reference.isExclusiveWithin(v); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.isExclusiveWithin(v); }
-    };
-
-    struct ClampTest : public SingleValueFixedRangeTest {
-        ClampTest(const FixedRangesPair &ranges, size_t value) : SingleValueFixedRangeTest(ranges, value) {}
-
-        sdsp_nodiscard const char *methodName() const override { return "clamp"; }
-
-        sdsp_nodiscard size_t expectedValue() const override { return reference.clamp(v); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.clamp(v); }
-    };
-
-    struct TwoValueFixedRangeTest : public FixedRangeTest {
-        size_t v1;
-        size_t v2;
-
-        TwoValueFixedRangeTest(const FixedRangesPair &ranges, size_t value1, size_t value2) : FixedRangeTest(ranges),
-                                                                                              v1(value1), v2(value2) {}
-
-         void add_detail(std::ostream &output) const override {
-            output << "v1=" << v1 << ", v2=" << v2;
+        sdsp_nodiscard bool generateValue(
+                const AbstractFixedRange &impl) const override {
+            return impl.isWithin(getArgument(0));
         }
     };
 
-    struct ValidProductTest : public TwoValueFixedRangeTest {
-        ValidProductTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : TwoValueFixedRangeTest(ranges, v1,
+    struct ValidValueTest : public FixedRangeTest<size_t> {
+        ValidValueTest(const FixedRangesPair &ranges, size_t value) :FixedRangeTest<size_t>(ranges, value) {}
+
+        sdsp_nodiscard const char *methodName() const override { return "validValue"; }
+
+        sdsp_nodiscard size_t generateValue(
+                const AbstractFixedRange &impl) const override {
+            return impl.validValue(getArgument(0));
+        }
+    };
+
+    struct IsExclusiveWithinTest : public FixedRangeTest<bool> {
+        IsExclusiveWithinTest(const FixedRangesPair &ranges, size_t value) : FixedRangeTest<bool>(ranges, value) {}
+
+        sdsp_nodiscard const char *methodName() const override { return "isExclusiveWithin"; }
+
+        sdsp_nodiscard bool generateValue(
+                const AbstractFixedRange &impl) const override {
+            return impl.isExclusiveWithin(getArgument(0));
+        }
+    };
+
+    struct ClampTest : public FixedRangeTest<size_t> {
+        ClampTest(const FixedRangesPair &ranges, size_t value) : FixedRangeTest<size_t>(ranges, value) {}
+
+        sdsp_nodiscard const char *methodName() const override { return "clamp"; }
+
+        sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
+            return impl.clamp(getArgument(0));
+        }
+    };
+
+    struct IsValidProductTest : public FixedRangeTest<bool> {
+        IsValidProductTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : FixedRangeTest<bool>(ranges, v1, v2) {}
+
+        sdsp_nodiscard const char *methodName() const override { return "validProduct"; }
+
+        sdsp_nodiscard bool generateValue(const AbstractFixedRange &impl) const override {
+            return impl.isProductWithin(getArgument(0), getArgument(1));
+        }
+    };
+
+    struct ValidProductTest : public FixedRangeTest<size_t> {
+        ValidProductTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : FixedRangeTest<size_t>(ranges, v1,
                                                                                                        v2) {}
 
         sdsp_nodiscard const char *methodName() const override { return "validProduct"; }
 
-        sdsp_nodiscard size_t expectedValue() const override { return reference.validProduct(v1, v2); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.validProduct(v1, v2); }
+        sdsp_nodiscard size_t generateValue(
+                const AbstractFixedRange &impl) const override {
+            return impl.validProduct(getArgument(0), getArgument(1));
+        }
     };
 
-    struct ValidProductGetFirstValueTest : public TwoValueFixedRangeTest {
-        ValidProductGetFirstValueTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : TwoValueFixedRangeTest(
+    struct ValidProductGetFirstValueTest : public FixedRangeTest<size_t> {
+        ValidProductGetFirstValueTest(const FixedRangesPair &ranges, size_t v1, size_t v2) :
+        FixedRangeTest<size_t>(
                 ranges, v1, v2) {}
 
         sdsp_nodiscard const char *methodName() const override { return "validProductGetFirstValue"; }
 
-        sdsp_nodiscard size_t expectedValue() const override { return reference.validProductGetFirstValue(v1, v2); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.validProductGetFirstValue(v1, v2); }
+        sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
+            return impl.validProductGetFirstValue(getArgument(0), getArgument(1));
+        }
     };
 
-    struct ValidProductAndValuesTest : public TwoValueFixedRangeTest {
-        ValidProductAndValuesTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : TwoValueFixedRangeTest(ranges,
-                                                                                                                v1,
-                                                                                                                v2) {}
+    struct ValidProductAndValuesTest : public FixedRangeTest<size_t> {
+        ValidProductAndValuesTest(const FixedRangesPair &ranges, size_t v1, size_t v2) :
+        FixedRangeTest<size_t>(ranges, v1, v2) {}
 
         sdsp_nodiscard const char *methodName() const override { return "validProductAndValues"; }
 
-        sdsp_nodiscard size_t expectedValue() const override { return reference.validProductAndValues(v1, v2); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.validProductAndValues(v1, v2); }
+        sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
+            return impl.validProductAndValues(getArgument(0), getArgument(1));
+        }
     };
 
+    struct ValidProductAndValuesGetFirstValueTest : public FixedRangeTest<size_t> {
 
-    struct ValidProductAndValuesGetFirstValueTest : public TwoValueFixedRangeTest {
-        ValidProductAndValuesGetFirstValueTest(const FixedRangesPair &ranges, size_t v1, size_t v2)
-                : TwoValueFixedRangeTest(ranges, v1, v2) {}
+        ValidProductAndValuesGetFirstValueTest(const FixedRangesPair &ranges, size_t v1, size_t v2) :
+                FixedRangeTest<size_t>(ranges, v1, v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validProductAndValuesGetFirstValue("; }
+        sdsp_nodiscard const char *methodName() const override { return "validProductAndValuesGetFirstValue"; }
 
-        sdsp_nodiscard size_t expectedValue() const override { return reference.validProductAndValuesGetFirstValue(v1, v2); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.validProductAndValuesGetFirstValue(v1, v2); }
+        sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
+            return impl.validProductAndValuesGetFirstValue(getArgument(0), getArgument(1));
+        }
     };
 
-
-    struct ValidSumTest : public TwoValueFixedRangeTest {
-        ValidSumTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : TwoValueFixedRangeTest(ranges, v1, v2) {}
+    struct IsValidSumTest : public FixedRangeTest<bool> {
+        IsValidSumTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : FixedRangeTest<bool>(ranges, v1,
+                                                                                                   v2) {}
 
         sdsp_nodiscard const char *methodName() const override { return "validSum"; }
 
-        sdsp_nodiscard size_t expectedValue() const override { return reference.validSum(v1, v2); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.validSum(v1, v2); }
+        sdsp_nodiscard bool generateValue(
+                const AbstractFixedRange &impl) const override {
+            return impl.isSumWithin(getArgument(0), getArgument(1));
+        }
     };
 
-    struct ValidSumGetFirstValueTest : public TwoValueFixedRangeTest {
-        ValidSumGetFirstValueTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : TwoValueFixedRangeTest(ranges,
-                                                                                                                v1,
-                                                                                                                v2) {}
+    struct ValidSumTest : public FixedRangeTest<size_t> {
+        ValidSumTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : FixedRangeTest<size_t>(ranges, v1,
+                                                                                                   v2) {}
+
+        sdsp_nodiscard const char *methodName() const override { return "validSum"; }
+
+        sdsp_nodiscard size_t generateValue(
+                const AbstractFixedRange &impl) const override {
+            return impl.validSum(getArgument(0), getArgument(1));
+        }
+    };
+
+    struct ValidSumGetFirstValueTest : public FixedRangeTest<size_t> {
+        ValidSumGetFirstValueTest(const FixedRangesPair &ranges, size_t v1, size_t v2) :
+                FixedRangeTest<size_t>(
+                        ranges, v1, v2) {}
 
         sdsp_nodiscard const char *methodName() const override { return "validSumGetFirstValue"; }
 
-        sdsp_nodiscard size_t expectedValue() const override { return reference.validSumGetFirstValue(v1, v2); }
-
-        sdsp_nodiscard size_t actualValue() const override { return subject.validSumGetFirstValue(v1, v2); }
+        sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
+            return impl.validSumGetFirstValue(getArgument(0), getArgument(1));
+        }
     };
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-    ostream &operator<<(ostream &stream, const FixedRangeTest &s) {
-        return s.print(stream);
-    }
-#pragma clang diagnostic pop
-
-    std::vector<FixedRangeTest *> *generateTestCases() {
-        static constexpr size_t MAX_LIMIT = 24;
-        FixedRangesPair ZERO_BASED_PAIR(0, MAX_LIMIT);
-        FixedRangesPair ONE_BASED_PAIR(1, MAX_LIMIT);
-        FixedRangesPair GENERIC_PAIR(6, MAX_LIMIT);
-
-        std::vector<FixedRangesPair*> ranges;
-        ranges.push_back(&ZERO_BASED_PAIR);
-        ranges.push_back(&ONE_BASED_PAIR);
-        ranges.push_back(&GENERIC_PAIR);
+    std::vector<simpledsp::testhelper::AbstractValueTestCase *> *generateTestCases() {
+        constexpr size_t MAX_LIMIT = FixedRangesPair::MAX_LIMIT;
 
         std::vector<size_t> singleValues;
         singleValues.push_back(0);
@@ -462,10 +404,9 @@ namespace {
             }
         }
 
-        auto testCases = new std::vector<FixedRangeTest *>();
+        auto testCases = new std::vector<simpledsp::testhelper::AbstractValueTestCase *>();
 
-        for (auto range : ranges) {
-            FixedRangesPair &pair = *range;
+        for (const auto & pair : predefinedRanges) {
             for (size_t i : singleValues) {
                 testCases->push_back(new IsWithinTest(pair, i));
                 testCases->push_back(new IsExclusiveWithinTest(pair, i));
@@ -492,7 +433,7 @@ namespace {
 
     class TestGenerator {
 
-        std::vector<FixedRangeTest *> *testCases;
+        std::vector<simpledsp::testhelper::AbstractValueTestCase *> *testCases;
 
     public:
         TestGenerator() {
@@ -500,6 +441,7 @@ namespace {
         }
 
         ~TestGenerator() {
+            cerr << "Destroying testcases" << endl;
             if (testCases) {
                 for (auto testCase : *testCases) {
                     delete testCase;
@@ -509,7 +451,7 @@ namespace {
             }
         }
 
-        sdsp_nodiscard std::vector<FixedRangeTest *>getTestCases() const {
+        sdsp_nodiscard std::vector<simpledsp::testhelper::AbstractValueTestCase *>getTestCases() const {
             return *testCases;
         }
 

@@ -24,11 +24,12 @@
 
 namespace simpledsp::algorithm {
 
-        template<typename T>
-        using SizeLimits = simpledsp::algorithm::detail::LimitBase<T, algorithm::detail::LimitBaseType::SIZE>;
+    template<typename T>
+    using SizeLimits = simpledsp::algorithm::detail::LimitBase<T, algorithm::detail::LimitBaseType::SIZE>;
 
-        template<typename T>
-        using OffsetLimits = simpledsp::algorithm::detail::LimitBase<T, algorithm::detail::LimitBaseType::OFFSET>;
+    template<typename T>
+    using OffsetLimits = simpledsp::algorithm::detail::LimitBase<T, algorithm::detail::LimitBaseType::OFFSET>;
+
 
 } // namespace simpledsp::algorithm
 
