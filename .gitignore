@@ -10,9 +10,14 @@ compile_commands.json
 CTestTestfile.cmake
 
 # IDE generated files
-.cproject                  # Eclipse CDT project file
-.project                   # Eclipse project file
-.idea                      # JetBrainz project files
-.kdev*                     # KDevelop project files
-.settings                  # Eclipse settings
-cmake-build-*              # CLion target directories
+# Eclipse settings
+.cproject
+.project
+.settings
+# KDevelop project files
+.kdev*
+.kdev/
+# JetBrainz tool project bookkeeping
+.idea/
+# CLion build target generated directories
+cmake-build-*/
