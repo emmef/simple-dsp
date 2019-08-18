@@ -14,7 +14,7 @@ namespace {
 }
 
 
-BOOST_AUTO_TEST_SUITE(SizeAndOffsetLimits);
+BOOST_AUTO_TEST_SUITE(SizeAndOffsetLimits)
 
     // TODO: need many more tests
 
@@ -28,4 +28,4 @@ BOOST_AUTO_TEST_SUITE(SizeAndOffsetLimits);
         BOOST_CHECK_MESSAGE(limits.validProduct(1, 1) == 1, "One times one is one");
     }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END()

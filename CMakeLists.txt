@@ -21,7 +21,7 @@ find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 include_directories(include)
 
-set(SIMPLE_DSP_HEADERS include/simple-dsp/algorithm/size.h include/simple-dsp/algorithm/ranges.h)
+set(SIMPLE_DSP_HEADERS include/simple-dsp/algorithm/size.h include/simple-dsp/algorithm/ranges.h include/simple-dsp/attributes.h)
 set(SIMPLE_DSP_SOURCES)
 set(SIMPLE_DSP_TESTS test/test.cc test/ranges-tests.cc test/size-tests.cc)
 

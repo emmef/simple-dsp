@@ -23,6 +23,8 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include <simple-dsp/attributes.h>
+
 namespace simpledsp::algorithm {
 
     template<typename T>
@@ -30,7 +32,7 @@ namespace simpledsp::algorithm {
         return v1 < v2 ? v1 : v2;
     }
 
-    template<typename T, typename V>
+    template<typename T>
     static constexpr T max(T v1, T v2) {
         return v1 > v2 ? v1 : v2;
     }
