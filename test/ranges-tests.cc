@@ -441,7 +441,6 @@ namespace {
         }
 
         ~TestGenerator() {
-            cerr << "Destroying testcases" << endl;
             if (testCases) {
                 for (auto testCase : *testCases) {
                     delete testCase;

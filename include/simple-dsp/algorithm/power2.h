@@ -151,6 +151,15 @@ namespace simpledsp::algorithm::detail {
         }
 
         /**
+         * Returns an offset mask to use for offsets inside a space of size
+         * sameOrBigger(value)..
+         */
+        static constexpr SIZE_T surroundingMask(const SIZE_T value)
+        {
+            return fill(value - 1);
+        }
+
+        /**
          * Returns value if it is a power of two or else the first smaller power of two.
          */
         static constexpr SIZE_T sameOrSmaller(const SIZE_T value)

@@ -21,9 +21,9 @@ find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 include_directories(include)
 
-set(SIMPLE_DSP_HEADERS include/simple-dsp/algorithm/size.h include/simple-dsp/algorithm/ranges.h include/simple-dsp/attributes.h)
+set(SIMPLE_DSP_HEADERS include/simple-dsp/algorithm/size.h include/simple-dsp/algorithm/ranges.h include/simple-dsp/attributes.h include/simple-dsp/algorithm/circular.h)
 set(SIMPLE_DSP_SOURCES)
-set(SIMPLE_DSP_TESTS test/test.cc test/power2-tests.cc test/ranges-tests.cc test/size-tests.cc test/test-helper.h)
+set(SIMPLE_DSP_TESTS test/test.cc test/power2-tests.cc test/ranges-tests.cc test/size-tests.cc test/test-helper.h include/simple-dsp/algorithm/circular.h test/circular-tests.cc)
 
 add_library(simple-dsp INTERFACE)
 install(TARGETS simple-dsp)
