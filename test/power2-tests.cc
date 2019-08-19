@@ -44,12 +44,12 @@ namespace {
         }
 
         sdsp_nodiscard size_t nextOrSame(size_t size) const override {
-            return Impl::nextOrSame(size);
+            return Impl::sameOrBigger(size);
         }
 
         sdsp_nodiscard size_t previousOrSame(size_t size) const override
         {
-            return Impl::previousOrSame(size);
+            return Impl::sameOrSmaller(size);
         }
 
         sdsp_nodiscard bool is(size_t size) const override
@@ -197,7 +197,7 @@ namespace {
                 Power2TestCase<size_t, size_t>(subject, value) {}
 
         sdsp_nodiscard const char * methodName() const override {
-            return "nextOrSame";
+            return "sameOrBigger";
         }
 
         sdsp_nodiscard size_t generateValue(const PowerOfTwoImplementation &impl) const override {
@@ -211,7 +211,7 @@ namespace {
                 Power2TestCase<size_t, size_t>(subject, value) {}
 
         sdsp_nodiscard const char * methodName() const override {
-            return "previousOrSame";
+            return "sameOrSmaller";
         }
 
         sdsp_nodiscard size_t generateValue(const PowerOfTwoImplementation &impl) const override {

@@ -126,7 +126,8 @@ namespace simpledsp::algorithm::detail {
 
         static constexpr SIZE_T getAligned(SIZE_T value, SIZE_T alignment)
         {
-            return (value + (alignment - 1)) & (~(alignment - 1));
+            SIZE_T filled = fill(alignment >> 1);
+            return (value + filled) & ~filled;
         }
 
     public:
@@ -144,26 +145,26 @@ namespace simpledsp::algorithm::detail {
         /**
          * Returns value if it is a power of two or else the next power of two that is greater.
          */
-        static constexpr SIZE_T nextOrSame(const SIZE_T value)
+        static constexpr SIZE_T sameOrBigger(const SIZE_T value)
         {
             return fill(value - 1) + 1;
         }
 
         /**
-         * Returns value if it is a power of two or else the next power of two that is smaller.
+         * Returns value if it is a power of two or else the first smaller power of two.
          */
-        static constexpr SIZE_T previousOrSame(const SIZE_T value)
+        static constexpr SIZE_T sameOrSmaller(const SIZE_T value)
         {
-            return value < 1 ? value : nextOrSame(value / 2 + 1);
+            return value < 1 ? value : sameOrBigger(value / 2 + 1);
         }
 
         /**
-         * Returns the value if it is aligned to power_of_two, the first higher
-         * value that is aligned to power_of_two or zero if the provided power of two
-         * is not actually a power of two.
+         * Returns the value if it is already a multiple of power_of_two or the
+         * next multiple of power_of_two otherwise. If power_of_two is not a power
+         * of two, the alignment is done with the next higher power of two.
          *
          * @param value Value to be aligned
-         * @param power_of_two The power of two to align to
+         * @param power_of_two The power of two to align to, or the next bigger power of two.
          * @return the aligned value
          */
         static constexpr SIZE_T alignedWith(const SIZE_T value, const SIZE_T power_of_two)
