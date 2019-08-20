@@ -307,6 +307,92 @@ namespace simpledsp::algorithm {
     template<typename T>
     using RangeChecks = simpledsp::algorithm::detail::RangeBase<
             T, std::is_integral<T>::value && !std::is_signed<T>::value ? 1 : 0>;
+
+    enum class IndexPolicyType {
+        THROW,
+        WRAP,
+        UNCHECKED
+    };
+
+    template <typename SizeType, IndexPolicyType type>
+    struct IndexPolicyBase {
+
+    };
+
+    template<typename SizeType>
+    struct IndexPolicyBase<SizeType, IndexPolicyType::THROW> {
+        sdsp_nodiscard static SizeType index(SizeType i, SizeType size) {
+            if (i < size) {
+                return i;
+            }
+            throw std::invalid_argument("IndexPolicy::index out of range");
+        }
+        sdsp_nodiscard static SizeType offset(SizeType o, SizeType maxOffset) {
+            if (o <= maxOffset) {
+                return o;
+            }
+            throw std::invalid_argument("IndexPolicy::offset out of range");
+        }
+    };
+
+    template<typename SizeType>
+    struct IndexPolicyBase<SizeType, IndexPolicyType::WRAP> {
+        sdsp_nodiscard static SizeType index(SizeType i, SizeType size) {
+            return i % size;
+        }
+        sdsp_nodiscard static SizeType offset(SizeType o, SizeType maxOffset) {
+            return o % (maxOffset + 1);
+        }
+    };
+
+    template<typename SizeType>
+    struct IndexPolicyBase<SizeType, IndexPolicyType::UNCHECKED> {
+        sdsp_nodiscard static SizeType index(SizeType i, SizeType) {
+            return i;
+        }
+        sdsp_nodiscard static SizeType offset(SizeType o, SizeType) {
+            return o;
+        }
+    };
+
+    struct Index {
+#ifndef SDSP_INDEX_POLICY_METHODS_UNCHECKED
+        template<typename S>
+        using Method = IndexPolicyBase<S, IndexPolicyType::THROW>;
+#else
+        template<typename S>
+        IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
+#endif
+#ifndef SDSP_INDEX_POLICY_ARRAYS_CHECKED
+        template<typename S>
+        using Array = IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
+#else
+        template<typename S>
+        using Array = IndexPolicyBase<S, IndexPolicyType::THROW>;
+#endif
+        template<typename S>
+        using Throw = IndexPolicyBase<S, IndexPolicyType::THROW>;
+
+        template<typename S>
+        using Wrap = IndexPolicyBase<S, IndexPolicyType::WRAP>;
+
+        template<typename S>
+        using Unchecked = IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
+
+        template<typename S>
+        sdsp_nodiscard static S arrayIndex(S i, S size) { return Array<S>::index(i, size); }
+
+        template<typename S>
+        sdsp_nodiscard static S arrayOffset(S i, S maxOffset) { return Array<S>::offset(i, maxOffset); }
+
+        template<typename S>
+        sdsp_nodiscard static S index(S i, S size) { return Method<S>::index(i, size); }
+
+        template<typename S>
+        sdsp_nodiscard static S offset(S i, S maxOffset) { return Method<S>::offset(i, maxOffset); }
+
+    };
+
 }
 
 #endif //SIMPLE_DSP_RANGES_H
