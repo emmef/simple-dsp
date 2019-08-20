@@ -21,12 +21,18 @@ find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 include_directories(include)
 
-set(SIMPLE_DSP_HEADERS include/simple-dsp/algorithm/size.h include/simple-dsp/algorithm/ranges.h include/simple-dsp/attributes.h include/simple-dsp/algorithm/circular.h)
+string(LENGTH "${CMAKE_SOURCE_DIR}/" SDSP_SOURCE_PATH_SIZE)
+add_definitions("-DSDSP_SOURCE_PATH_SIZE=${SDSP_SOURCE_PATH_SIZE}")
+
+set(SIMPLE_DSP_HEADERS include/simple-dsp/algorithm/size.h include/simple-dsp/algorithm/ranges.h include/simple-dsp/attributes.h include/simple-dsp/algorithm/circular.h include/simple-dsp/delay.h )
+
 set(SIMPLE_DSP_SOURCES)
-set(SIMPLE_DSP_TESTS test/test.cc test/power2-tests.cc test/ranges-tests.cc test/size-tests.cc test/test-helper.h include/simple-dsp/algorithm/circular.h test/circular-tests.cc)
+
+
+set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/size-tests.cc  test/circular-tests.cc test/delay-tests.cc)
 
 add_library(simple-dsp INTERFACE)
 install(TARGETS simple-dsp)
 
-add_executable(test ${SIMPLE_DSP_HEADERS} ${SIMPLE_DSP_TESTS})
+add_executable(test ${SIMPLE_DSP_HEADERS} ${SIMPLE_DSP_TESTS} ${SIMPLE_DSP_SOURCES})
 target_link_libraries(test ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})

@@ -112,6 +112,10 @@ namespace simpledsp::algorithm {
 
         sdsp_nodiscard SIZE_T getMask() const { return mask;}
 
+        sdsp_nodiscard SIZE_T wrap(SIZE_T toWrap) const {
+            return toWrap & mask;
+        }
+
         sdsp_nodiscard SIZE_T next(SIZE_T pointer) const { return Arithmic::next(pointer, mask); }
 
         sdsp_nodiscard SIZE_T previous(SIZE_T pointer) const { return Arithmic::previous(pointer, mask); }
