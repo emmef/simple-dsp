@@ -128,17 +128,13 @@ namespace simpledsp::algorithm {
 
         sdsp_nodiscard SIZE_T subtract(SIZE_T pointer, SIZE_T delta) const { return Arithmic::subtract(pointer, delta, mask); }
 
-        sdsp_nodiscard bool setSizeCheck(size_t requestedSize) {
+        sdsp_nodiscard bool setSize(size_t requestedSize) {
             SIZE_T newMask = Arithmic::properCircularMask(requestedSize);
             if (newMask + 1 >= requestedSize) {
                 mask = newMask;
                 return true;
             }
             return false;
-        }
-
-        void setSize(size_t requestedSize) {
-            mask = Arithmic::properCircularMask(requestedSize);
         }
     };
 

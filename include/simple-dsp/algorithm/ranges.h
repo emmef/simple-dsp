@@ -361,7 +361,7 @@ namespace simpledsp::algorithm {
         using Method = IndexPolicyBase<S, IndexPolicyType::THROW>;
 #else
         template<typename S>
-        IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
+        using Method = IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
 #endif
 #ifndef SDSP_INDEX_POLICY_ARRAYS_CHECKED
         template<typename S>

@@ -7,7 +7,7 @@
 #include <boost/test/unit_test.hpp>
 
 namespace {
-    simpledsp::DelayContainerBase<size_t, simpledsp::DelayAccessType::WRITE_THEN_READ> delays(
+    simpledsp::VectorDelayOffsetsContainerBase<size_t, simpledsp::DelayAccessType::WRITE_THEN_READ> delays(
             23, 34);
 
 }

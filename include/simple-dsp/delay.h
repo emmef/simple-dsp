@@ -265,28 +265,28 @@ namespace simpledsp {
     };
 
     template <typename SizeType, SizeType Size, DelayAccessType accessType>
-    class FixedSizeDelayContainerBase
+    class ArrayDelayOffsetsContainerBase
             : public DelayOffsetsBase<SizeType, accessType, std::array<SizeType, Size>> {
 
         using Parent = DelayOffsetsBase<SizeType, accessType, std::array<SizeType, Size>>;
 
-    public:
+    protected:
 
-        explicit FixedSizeDelayContainerBase(SizeType initialMetricSize)
+        explicit ArrayDelayOffsetsContainerBase(SizeType initialMetricSize)
                 :  Parent(initialMetricSize) {
             Parent::reset();
         }
     };
 
     template <typename SizeType, DelayAccessType accessType>
-    class DelayContainerBase
+    class VectorDelayOffsetsContainerBase
             : public DelayOffsetsBase<SizeType, accessType, std::vector<SizeType>> {
 
         using Parent = DelayOffsetsBase<SizeType, accessType, std::vector<SizeType>>;
 
-    public:
+    protected:
 
-        DelayContainerBase(SizeType initialMetricSize, SizeType numberOfOffsets)
+        VectorDelayOffsetsContainerBase(SizeType initialMetricSize, SizeType numberOfOffsets)
                 :  Parent(initialMetricSize, numberOfOffsets) {
             Parent::reset();
         }
