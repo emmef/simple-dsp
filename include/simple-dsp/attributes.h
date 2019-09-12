@@ -20,15 +20,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace simpledsp {
 
 #if __cplusplus >= 201703L
 #define sdsp_nodiscard [[nodiscard]]
+#if defined(__clang__) || defined(__GNUC__)
+#define sdsp_force_inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define sdsp_force_inline __forceinline
+#endif
 #else
 #undef sdsp_nodiscard
+#undef sdsp_force_inline
 #endif
-
-
-} // namespace simpledsp
 
 #endif //SIMPLE_DSP_ATTRIBUTES_H

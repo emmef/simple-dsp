@@ -24,10 +24,9 @@ include_directories(include)
 string(LENGTH "${CMAKE_SOURCE_DIR}/" SDSP_SOURCE_PATH_SIZE)
 add_definitions("-DSDSP_SOURCE_PATH_SIZE=${SDSP_SOURCE_PATH_SIZE}")
 
-set(SIMPLE_DSP_HEADERS include/simple-dsp/algorithm/size.h include/simple-dsp/algorithm/ranges.h include/simple-dsp/attributes.h include/simple-dsp/algorithm/circular.h include/simple-dsp/delay.h )
+set(SIMPLE_DSP_HEADERS include/simple-dsp/addressing.h include/simple-dsp/attributes.h include/simple-dsp/circular.h include/simple-dsp/delay.h include/simple-dsp/alignment.h include/simple-dsp/denormal.h include/simple-dsp/arrayops.h include/simple-dsp/algorithm.h include/simple-dsp/aligneddata.h)
 
 set(SIMPLE_DSP_SOURCES)
-
 
 set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/size-tests.cc  test/circular-tests.cc test/delay-tests.cc)
 

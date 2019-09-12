@@ -2,8 +2,8 @@
 // Created by michel on 18-08-19.
 //
 
-#include <simple-dsp/algorithm/power2.h>
-#include <simple-dsp/algorithm/size.h>
+#include <simple-dsp/power2.h>
+#include <simple-dsp/addressing.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
@@ -12,7 +12,7 @@
 
 namespace {
 
-    constexpr size_t maximumSize = simpledsp::algorithm::SizeLimits<char>::maximum;
+    constexpr size_t maximumSize = simpledsp::Size<char>::maximum;
 
     /**
      * Defines a wrapper for power of two-related implementations.
@@ -37,7 +37,7 @@ namespace {
     template<bool USE_CONSTEXPR>
     struct SubjectImpl : public PowerOfTwoImplementation
     {
-        using Impl = simpledsp::algorithm::detail::PowerOfTwoHelper<USE_CONSTEXPR>;
+        using Impl = simpledsp::Power2Const;
 
         sdsp_nodiscard const char *name() const override {
             return USE_CONSTEXPR ? "Power2::constant" : "Power2";
@@ -266,8 +266,8 @@ namespace {
                 addIfAbsent(powerTestValues, j);
                 addIfAbsent(powerTestValues, j + 1);
             }
-            addIfAbsent(powerTestValues, simpledsp::algorithm::SizeLimits<char>::maximum - 1);
-            addIfAbsent(powerTestValues, simpledsp::algorithm::SizeLimits<char>::maximum);
+            addIfAbsent(powerTestValues, simpledsp::Size<char>::maximum - 1);
+            addIfAbsent(powerTestValues, simpledsp::Size<char>::maximum);
 
             for (size_t value : powerTestValues) {
                 testCases.emplace_back(new IsPowerTestCase(value, runtime));

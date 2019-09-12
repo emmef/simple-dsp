@@ -23,10 +23,10 @@
 
 #include <type_traits>
 #include <limits>
-#include <simple-dsp/algorithm/power2.h>
+#include <simple-dsp/power2.h>
 #include <simple-dsp/attributes.h>
 
-namespace simpledsp::algorithm {
+namespace simpledsp {
 
     template <typename SIZE_T>
     struct CircularArithmicBase {

@@ -1,8 +1,9 @@
-#ifndef SIMPLE_DSP_SIZE_H
-#define SIMPLE_DSP_SIZE_H
+#ifndef SIMPLE_DSP_ALGORITHM_H
+#define SIMPLE_DSP_ALGORITHM_H
 /*
- * simple-dsp/util/size.h
+ * simple-dsp/algorithm.h
  *
+ * Added by michel on 2019-09-12
  * Copyright (C) 2015-2019 Michel Fleur.
  * Source https://github.com/emmef/simple-dsp
  * Email simple-dsp@emmef.org
@@ -20,19 +21,24 @@
  * limitations under the License.
  */
 
-#include <simple-dsp/algorithm/ranges.h>
+#include <algorithm>
+#include <simple-dsp/attributes.h>
 
-namespace simpledsp::algorithm {
+namespace simpledsp {
+    /*
+     * The functions min, max and clamp are already defined in <algorithm>
+     */
 
     template<typename T>
-    using SizeLimits = simpledsp::algorithm::detail::LimitBase<T, algorithm::detail::LimitBaseType::SIZE>;
+    sdsp_nodiscard static constexpr bool is_within(const T value, const T minimum, const T maximum) {
+        return value == ::std::clamp(value, minimum, maximum);
+    }
 
     template<typename T>
-    using OffsetLimits = simpledsp::algorithm::detail::LimitBase<T, algorithm::detail::LimitBaseType::OFFSET>;
+    static constexpr bool is_within_excl(const T value, const T minimum, const T maximum) {
+        return value > minimum && value < maximum;
+    }
 
+} // namespace simpledsp
 
-} // namespace simpledsp::algorithm
-
-
-
-#endif //SIMPLE_DSP_SIZE_H
+#endif //SIMPLE_DSP_ALGORITHM_H

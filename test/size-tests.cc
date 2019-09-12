@@ -4,13 +4,14 @@
 
 #include <cstring>
 
-#include <simple-dsp/algorithm/size.h>
+#include <simple-dsp/addressing.h>
 
 #include <boost/test/unit_test.hpp>
 
 namespace {
     using TestType = double;
-    simpledsp::algorithm::SizeLimits<TestType > limits;
+    simpledsp::Size<TestType > sizeLimits;
+    simpledsp::Offset<TestType > offsetLimits;
 }
 
 
@@ -20,12 +21,12 @@ BOOST_AUTO_TEST_SUITE(SizeAndOffsetLimits)
 
     BOOST_AUTO_TEST_CASE(testSizeLimitsZero)
     {
-        BOOST_CHECK_MESSAGE(limits.validProduct(1, 1) == 1, "One times one is one");
+        BOOST_CHECK_MESSAGE(sizeLimits.validProductGet(1, 1, simpledsp::ValidGet::RESULT) == 1, "One times one is one");
     }
 
     BOOST_AUTO_TEST_CASE(testSizeLimitsZeroOkay)
     {
-        BOOST_CHECK_MESSAGE(limits.validProduct(1, 1) == 1, "One times one is one");
+        BOOST_CHECK_MESSAGE(offsetLimits.validProductGet(1, 1, simpledsp::ValidGet::RESULT) == 1, "One times one is one");
     }
 
 BOOST_AUTO_TEST_SUITE_END()

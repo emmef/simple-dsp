@@ -2,13 +2,13 @@
 // Created by michel on 19-08-19.
 //
 
-#include <simple-dsp/algorithm/circular.h>
+#include <simple-dsp/circular.h>
 
 #include <boost/test/unit_test.hpp>
 
 namespace {
-    using Arithmic = simpledsp::algorithm::CircularArithmic;
-    using Metric = simpledsp::algorithm::CircularMetricBase<size_t>;
+    using Arithmic = simpledsp::CircularArithmic;
+    using Metric = simpledsp::CircularMetricBase<size_t>;
 
     constexpr size_t requestedSize = 13;
     constexpr size_t properSize = 16;

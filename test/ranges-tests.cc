@@ -5,7 +5,7 @@
 #include <cstring>
 #include <iostream>
 
-#include <simple-dsp/algorithm/size.h>
+#include <simple-dsp/addressing.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
@@ -24,7 +24,7 @@ namespace {
 
         sdsp_nodiscard virtual bool isWithin(size_t value) const = 0;
 
-        sdsp_nodiscard virtual bool isExclusiveWithin(size_t value) const = 0;
+        sdsp_nodiscard virtual bool isWithinExclusive(size_t value) const = 0;
 
         sdsp_nodiscard virtual size_t clamp(size_t value) const = 0;
 
@@ -55,15 +55,15 @@ namespace {
         ReferenceFixedRange(size_t min, size_t max) : AbstractFixedRange(min, max) {}
 
         sdsp_nodiscard bool isWithin(size_t value) const override {
-            return simpledsp::algorithm::is_within<size_t>(value, min, max);
+            return value >= min && value <= max;
         }
 
-        sdsp_nodiscard bool isExclusiveWithin(size_t value) const override {
-            return simpledsp::algorithm::is_within_excl(value, min, max);
+        sdsp_nodiscard bool isWithinExclusive(size_t value) const override {
+            return value > min && value < max;
         }
 
         sdsp_nodiscard size_t clamp(size_t value) const override {
-            return simpledsp::algorithm::clamp(value, min, max);
+            return value <= min ? min : value >= max ? max : value;
         }
 
         sdsp_nodiscard bool isSumWithin(size_t v1, size_t v2) const override {
@@ -87,7 +87,7 @@ namespace {
             if (isWithin(value)) {
                 return value;
             }
-            throw std::invalid_argument(simpledsp::algorithm::detail::RANGE_BASE_VALUE_NOT_IN_RANGE);
+            throw std::invalid_argument("Value not in range");
         }
 
         sdsp_nodiscard size_t validProduct(size_t v1, size_t v2) const override {
@@ -96,7 +96,7 @@ namespace {
                 return v1 * v2;
             }
 
-            throw std::invalid_argument(simpledsp::algorithm::detail::RANGE_BASE_PRODUCT_NOT_IN_RANGE);
+            throw std::invalid_argument("product not in range");
         }
 
         sdsp_nodiscard size_t validProductAndValues(size_t v1, size_t v2) const override {
@@ -104,7 +104,7 @@ namespace {
             if (areProductAndValuesWithin(v1, v2)) {
                 return v1 * v2;
             }
-            throw std::invalid_argument(simpledsp::algorithm::detail::RANGE_BASE_PRODUCT_AND_VALUES_NOT_IN_RANGE);
+            throw std::invalid_argument("product and values not in range");
         }
 
         sdsp_nodiscard size_t validProductGetFirstValue(size_t v1, size_t v2) const override {
@@ -112,7 +112,7 @@ namespace {
             if (isProductWithin(v1, v2)) {
                 return v1;
             }
-            throw std::invalid_argument(simpledsp::algorithm::detail::RANGE_BASE_PRODUCT_NOT_IN_RANGE);
+            throw std::invalid_argument("product not in range");
         }
 
         sdsp_nodiscard size_t validProductAndValuesGetFirstValue(size_t v1, size_t v2) const override {
@@ -120,7 +120,7 @@ namespace {
             if (areProductAndValuesWithin(v1, v2)) {
                 return v1;
             }
-            throw std::invalid_argument(simpledsp::algorithm::detail::RANGE_BASE_PRODUCT_AND_VALUES_NOT_IN_RANGE);
+            throw std::invalid_argument("product and values not in range");
         }
 
         sdsp_nodiscard size_t validSum(size_t v1, size_t v2) const override {
@@ -128,7 +128,7 @@ namespace {
             if (isSumWithin(v1, v2)) {
                 return v1 + v2;
             }
-            throw std::invalid_argument(simpledsp::algorithm::detail::RANGE_BASE_SUM_NOT_IN_RANGE);
+            throw std::invalid_argument("sum not in range");
         }
 
         sdsp_nodiscard size_t validSumGetFirstValue(size_t v1, size_t v2) const override {
@@ -136,80 +136,79 @@ namespace {
             if (isSumWithin(v1, v2)) {
                 return v1;
             }
-            throw std::invalid_argument(simpledsp::algorithm::detail::RANGE_BASE_SUM_NOT_IN_RANGE);
+            throw std::invalid_argument("sum not in range");
         }
 
     };
 
+    template<size_t MAX>
     struct TestFixedRange : public AbstractFixedRange {
-        TestFixedRange(size_t min, size_t max) : AbstractFixedRange(min, max) {}
-
-        using Range = simpledsp::algorithm::RangeChecks<size_t>;
+        TestFixedRange(size_t min) : AbstractFixedRange(min, MAX) {}
 
         sdsp_nodiscard bool isWithin(size_t value) const override {
-            return Range::isWithin(value, min, max);
+            return simpledsp::is_within(value, min, max);
         }
 
-        sdsp_nodiscard bool isExclusiveWithin(size_t value) const override {
-            return Range::isExclusiveWithin(value, min, max);
+        sdsp_nodiscard bool isWithinExclusive(size_t value) const override {
+            return simpledsp::is_within_excl(value, min, max);
         }
 
         sdsp_nodiscard size_t clamp(size_t value) const override {
-            return Range::clamp(value, min, max);
+            return ::std::clamp(value, min, max);
         }
 
         sdsp_nodiscard bool isSumWithin(size_t v1, size_t v2) const override {
-            return Range::isSumWithin(v1, v2, min, max);
+            return simpledsp::Offset<size_t, MAX>::isValidSum(v1, v2);
         }
 
         sdsp_nodiscard bool areSumAndValuesWithin(size_t v1, size_t v2) const override {
-            return Range::areSumAndValuesWithin(v1, v2, min, max);
+            return simpledsp::Size<size_t, MAX>::isValidSum(v1, v2);
         }
 
         sdsp_nodiscard bool isProductWithin(size_t v1, size_t v2) const override {
-            return Range::isProductWithin(v1, v2, min, max);
+            return simpledsp::Offset<size_t, MAX>::isValidSum(v1, v2);
         }
 
         sdsp_nodiscard bool areProductAndValuesWithin(size_t v1, size_t v2) const override {
-            return Range::areProductAndValuesWithin(v1, v2, min, max);
+            return simpledsp::Size<size_t, MAX>::isValidSum(v1, v2);
         }
 
         sdsp_nodiscard size_t validValue(size_t value) const override {
-            return Range::validValue(value, min, max);
+            return simpledsp::Offset<size_t, MAX>::validGet(value);
         }
 
         sdsp_nodiscard size_t validProduct(size_t v1, size_t v2) const override {
-            return Range::validProduct(v1, v2, min, max);
+            return simpledsp::Offset<size_t, MAX>::validProductGet(v1, v2, simpledsp::ValidGet::RESULT);
         }
 
         sdsp_nodiscard size_t validProductAndValues(size_t v1, size_t v2) const override {
-            return Range::validProductAndValues(v1, v2, min, max);
+            return simpledsp::Size<size_t, MAX>::validProductGet(v1, v2, simpledsp::ValidGet::RESULT);
         }
 
         sdsp_nodiscard size_t validProductGetFirstValue(size_t v1, size_t v2) const override {
-            return Range::validProductGetFirstValue(v1, v2, min, max);
+            return simpledsp::Offset<size_t, MAX>::validProductGet(v1, v2, simpledsp::ValidGet::FIRST);
         }
 
         sdsp_nodiscard size_t validProductAndValuesGetFirstValue(size_t v1, size_t v2) const override {
-            return Range::validProductAndValuesGetFirstValue(v1, v2, min, max);
+            return simpledsp::Size<size_t, MAX>::validProductGet(v1, v2, simpledsp::ValidGet::FIRST);
         }
 
         sdsp_nodiscard size_t validSum(size_t v1, size_t v2) const override {
-            return Range::validSum(v1, v2, min, max);
+            return simpledsp::Size<size_t, MAX>::validSumGet(v1, v2, simpledsp::ValidGet::RESULT);
         }
 
         sdsp_nodiscard size_t validSumGetFirstValue(
                 size_t v1, size_t v2) const override {
-            return Range::validSumGetFirstValue(v1, v2, min, max);
+            return simpledsp::Size<size_t, MAX>::validSumGet(v1, v2, simpledsp::ValidGet::FIRST);
         }
     };
 
     struct FixedRangesPair {
         const ReferenceFixedRange reference;
-        const TestFixedRange subject;
         static constexpr size_t MAX_LIMIT = 24;
+        const TestFixedRange<MAX_LIMIT> subject;
 
-        FixedRangesPair(size_t min, size_t max) : reference(min, max), subject(min, max) {}
+        FixedRangesPair(size_t min, size_t max) : reference(min, max), subject(min) {}
     }
     const predefinedRanges[3] = {
             {0, FixedRangesPair::MAX_LIMIT},
@@ -246,7 +245,7 @@ namespace {
     struct ValidValueTest : public FixedRangeTest<size_t> {
         ValidValueTest(const FixedRangesPair &ranges, size_t value) :FixedRangeTest<size_t>(ranges, value) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validValue"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within"; }
 
         sdsp_nodiscard size_t generateValue(
                 const AbstractFixedRange &impl) const override {
@@ -257,11 +256,11 @@ namespace {
     struct IsExclusiveWithinTest : public FixedRangeTest<bool> {
         IsExclusiveWithinTest(const FixedRangesPair &ranges, size_t value) : FixedRangeTest<bool>(ranges, value) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "isExclusiveWithin"; }
+        sdsp_nodiscard const char *methodName() const override { return "isWithinExclusive"; }
 
         sdsp_nodiscard bool generateValue(
                 const AbstractFixedRange &impl) const override {
-            return impl.isExclusiveWithin(getArgument(0));
+            return impl.isWithinExclusive(getArgument(0));
         }
     };
 
@@ -278,7 +277,7 @@ namespace {
     struct IsValidProductTest : public FixedRangeTest<bool> {
         IsValidProductTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : FixedRangeTest<bool>(ranges, v1, v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validProduct"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within_product"; }
 
         sdsp_nodiscard bool generateValue(const AbstractFixedRange &impl) const override {
             return impl.isProductWithin(getArgument(0), getArgument(1));
@@ -289,7 +288,7 @@ namespace {
         ValidProductTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : FixedRangeTest<size_t>(ranges, v1,
                                                                                                        v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validProduct"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within_product"; }
 
         sdsp_nodiscard size_t generateValue(
                 const AbstractFixedRange &impl) const override {
@@ -302,7 +301,7 @@ namespace {
         FixedRangeTest<size_t>(
                 ranges, v1, v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validProductGetFirstValue"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within_product_get_first"; }
 
         sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
             return impl.validProductGetFirstValue(getArgument(0), getArgument(1));
@@ -313,7 +312,7 @@ namespace {
         ValidProductAndValuesTest(const FixedRangesPair &ranges, size_t v1, size_t v2) :
         FixedRangeTest<size_t>(ranges, v1, v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validProductAndValues"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within_product_and_values"; }
 
         sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
             return impl.validProductAndValues(getArgument(0), getArgument(1));
@@ -325,7 +324,7 @@ namespace {
         ValidProductAndValuesGetFirstValueTest(const FixedRangesPair &ranges, size_t v1, size_t v2) :
                 FixedRangeTest<size_t>(ranges, v1, v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validProductAndValuesGetFirstValue"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within_product_and_values_get_first"; }
 
         sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
             return impl.validProductAndValuesGetFirstValue(getArgument(0), getArgument(1));
@@ -336,7 +335,7 @@ namespace {
         IsValidSumTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : FixedRangeTest<bool>(ranges, v1,
                                                                                                    v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validSum"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within_sum"; }
 
         sdsp_nodiscard bool generateValue(
                 const AbstractFixedRange &impl) const override {
@@ -348,7 +347,7 @@ namespace {
         ValidSumTest(const FixedRangesPair &ranges, size_t v1, size_t v2) : FixedRangeTest<size_t>(ranges, v1,
                                                                                                    v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validSum"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within_sum"; }
 
         sdsp_nodiscard size_t generateValue(
                 const AbstractFixedRange &impl) const override {
@@ -361,7 +360,7 @@ namespace {
                 FixedRangeTest<size_t>(
                         ranges, v1, v2) {}
 
-        sdsp_nodiscard const char *methodName() const override { return "validSumGetFirstValue"; }
+        sdsp_nodiscard const char *methodName() const override { return "verified_within_sum_get_first"; }
 
         sdsp_nodiscard size_t generateValue(const AbstractFixedRange &impl) const override {
             return impl.validSumGetFirstValue(getArgument(0), getArgument(1));
