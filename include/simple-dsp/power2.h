@@ -149,7 +149,7 @@ namespace simpledsp {
              */
             static constexpr SIZE_T sameOrBigger(const SIZE_T value)
             {
-                return fill(value - 1) + 1;
+                return value <=2 ? 2 : fill(value - 1) + 1;
             }
 
             /**
@@ -159,14 +159,6 @@ namespace simpledsp {
             static constexpr SIZE_T surroundingMask(const SIZE_T value)
             {
                 return fill(value - 1);
-            }
-
-            /**
-             * Returns value if it is a power of two or else the first smaller power of two.
-             */
-            static constexpr SIZE_T sameOrSmaller(const SIZE_T value)
-            {
-                return value < 1 ? value : sameOrBigger(value / 2 + 1);
             }
 
             /**

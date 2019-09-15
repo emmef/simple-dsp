@@ -37,8 +37,7 @@ namespace simpledsp {
     };
 
     template <DelayAccessType accessType>
-    struct DelayBasics {
-    };
+    struct DelayBasics;
 
     template <>
     struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
@@ -67,7 +66,7 @@ namespace simpledsp {
         }
 
         template<typename SizeType>
-        sdsp_nodiscard static constexpr bool getValidDelay(
+        sdsp_nodiscard static constexpr SizeType getValidDelay(
                 const CircularMetricBase <SizeType> &metric, SizeType delaySamples) {
             if (isValidDelay<SizeType>(metric, delaySamples)) {
                 return delaySamples;
@@ -87,9 +86,24 @@ namespace simpledsp {
         }
 
         template<typename SizeType>
+        sdsp_nodiscard static SizeType getReadPtrForDelay(
+                const CircularMetricBase<SizeType> &metric, SizeType writePtr, SizeType delay) {
+            SizeType validDelay = getValidDelay(metric, delay);
+            return metric.subtract(writePtr, validDelay);
+        }
+
+        template<typename SizeType>
+        sdsp_nodiscard static SizeType getWritePtrForDelay(
+                const CircularMetricBase<SizeType> &metric, SizeType readPtr, SizeType delay) {
+            SizeType validDelay = getValidDelay(metric, delay);
+            return metric.add(readPtr, validDelay);
+        }
+
+        template<typename SizeType>
         sdsp_nodiscard static CircularMetricBase<SizeType> createMetricFor(SizeType delaySamples) {
             return CircularMetricBase<SizeType>(delaySamples);
         }
+
 
         template<typename Sample>
         sdsp_nodiscard static Sample access(Sample *write, const Sample *read, Sample value) {
@@ -138,7 +152,7 @@ namespace simpledsp {
         }
 
         template<typename SizeType>
-        sdsp_nodiscard static constexpr bool getValidDelay(
+        sdsp_nodiscard static constexpr SizeType getValidDelay(
                 const CircularMetricBase <SizeType> &metric, SizeType delaySamples) {
             if (isValidDelay<SizeType>(metric, delaySamples)) {
                 return delaySamples;
@@ -147,11 +161,18 @@ namespace simpledsp {
         }
 
         template<typename SizeType>
-        sdsp_nodiscard static SizeType getDelta(
-                const CircularMetricBase<SizeType> &metric, SizeType delaySamples) {
-            return getUncheckedDelta<SizeType>(metric, getValidDelay<SizeType>(metric, delaySamples));
+        sdsp_nodiscard static SizeType getReadPtrForDelay(
+                const CircularMetricBase<SizeType> &metric, SizeType writePtr, SizeType delay) {
+            SizeType validDelay = getValidDelay(metric, delay);
+            return metric.subtract(writePtr, validDelay);
         }
 
+        template<typename SizeType>
+        sdsp_nodiscard static SizeType getWritePtrForDelay(
+                const CircularMetricBase<SizeType> &metric, SizeType readPtr, SizeType delay) {
+            SizeType validDelay = getValidDelay(metric, delay);
+            return metric.add(readPtr, validDelay);
+        }
 
         template<typename SizeType>
         sdsp_nodiscard static CircularMetricBase<SizeType> createMetricFor(SizeType delaySamples) {
@@ -218,20 +239,12 @@ namespace simpledsp {
             return container_.data() + Index::Array::index(i, container_.size());
         }
 
-        void setWriteForDelay(SizeType readIndex, SizeType writeIndex, SizeType delay) {
-            setAndGetWriteDelay(readIndex, writeIndex, delay, true);
+        sdsp_nodiscard SizeType setWriteForDelay(SizeType readIndex, SizeType writeIndex, SizeType delay) {
+            return setAndGetWriteDelay(readIndex, writeIndex, delay);
         }
 
-        sdsp_nodiscard SizeType setAndGetWriteForDelay(SizeType readIndex, SizeType writeIndex, SizeType delay) {
-            return setAndGetWriteDelay(readIndex, writeIndex, delay, false);
-        }
-
-        void setReadForDelay(SizeType readIndex, SizeType writeIndex, SizeType delay) {
-            setAndGetReadDelay(readIndex, writeIndex, delay, true);
-        }
-
-        sdsp_nodiscard SizeType setAndGetReadForDelay(SizeType readIndex, SizeType writeIndex, SizeType delay) {
-            return setAndGetReadDelay(readIndex, writeIndex, delay, false);
+        sdsp_nodiscard SizeType setReadForDelay(SizeType readIndex, SizeType writeIndex, SizeType delay) {
+            return setAndGetReadDelay(readIndex, writeIndex, delay);
         }
 
     protected:
@@ -251,11 +264,9 @@ namespace simpledsp {
         Metric metric_;
         Container container_;
 
-        SizeType setAndGetWriteDelay(SizeType readIndex, SizeType writeIndex, SizeType delay, bool check) {
-            SizeType result = check
-                              ? Basics::getValidDelay(metric_, delay)
-                              : Basics::getUncheckedDelta(metric_, delay);
-            container_.at(writeIndex) = metric_.add(container_.at(readIndex), result);
+        SizeType setAndGetWriteDelay(SizeType readIndex, SizeType writeIndex, SizeType delay) {
+            SizeType result = metric_.add(container_.at(readIndex), Basics::getValidDelay(metric_, delay));
+            container_.at(writeIndex) = metric_.add(container_.at(readIndex), Basics::getValidDelay(metric_, delay));
             return result;
         }
 

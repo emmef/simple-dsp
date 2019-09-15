@@ -28,7 +28,7 @@ set(SIMPLE_DSP_HEADERS include/simple-dsp/addressing.h include/simple-dsp/attrib
 
 set(SIMPLE_DSP_SOURCES)
 
-set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/size-tests.cc  test/circular-tests.cc test/delay-tests.cc)
+set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/circular-tests.cc test/delay-tests.cc)
 
 add_library(simple-dsp INTERFACE)
 install(TARGETS simple-dsp)

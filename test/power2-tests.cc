@@ -12,7 +12,7 @@
 
 namespace {
 
-    constexpr size_t maximumSize = simpledsp::Size<char>::maximum;
+    constexpr size_t maximumSize = simpledsp::maximumSizeValue;
 
     /**
      * Defines a wrapper for power of two-related implementations.
@@ -22,8 +22,6 @@ namespace {
         sdsp_nodiscard virtual const char * name() const = 0;
 
         sdsp_nodiscard virtual size_t nextOrSame(size_t size) const = 0;
-
-        sdsp_nodiscard virtual size_t previousOrSame(size_t size) const = 0;
 
         sdsp_nodiscard virtual bool is(size_t size) const = 0;
 
@@ -47,11 +45,6 @@ namespace {
             return Impl::sameOrBigger(size);
         }
 
-        sdsp_nodiscard size_t previousOrSame(size_t size) const override
-        {
-            return Impl::sameOrSmaller(size);
-        }
-
         sdsp_nodiscard bool is(size_t size) const override
         {
             return Impl::is(size);
@@ -73,36 +66,17 @@ namespace {
         }
 
         sdsp_nodiscard size_t nextOrSame(size_t size) const override {
-            if (size == 0 || size >= maximumSize) {
-                return 0;
+            if (size <= 2) {
+                return 2;
             }
 
-            size_t previousTest = 0;
-            size_t test = 1;
-            while (test < maximumSize && test < size && test > previousTest) {
-                previousTest = test;
-                test *= 2;
-            }
-
-            return test;
-        }
-
-        sdsp_nodiscard size_t previousOrSame(size_t size) const override
-        {
-            if (size < 2) {
-                return size;
-            }
-            if (size == maximumSize) {
-                return 1 + maximumSize / 2;
-            }
-            size_t test = 2, previous = 1;
-            for (; test > previous; test *= 2) {
-                if (size / test == 1) {
+            for (size_t test = 2; test > 0; test *= 2) {
+                if (test >= size) {
                     return test;
                 }
-                previous = test;
             }
-            return previous;
+
+            return 0;
         }
 
         sdsp_nodiscard bool is(size_t size) const override
@@ -110,16 +84,12 @@ namespace {
             if (size < 2) {
                 return false;
             }
-            size_t previousTest = 0;
-            size_t test = 1;
-            while (test < maximumSize && test < size && test > previousTest) {
-                previousTest = test;
+            for (size_t test = 2; test > 0; test *= 2) {
                 if (test == size) {
                     return true;
-                }
-                test *= 2;
+                };
             }
-            return test == size;
+            return size == 1 + (maximumSize / 2);
         }
 
         sdsp_nodiscard bool minusOne(size_t size) const override {
@@ -129,14 +99,10 @@ namespace {
             if (size == 0) {
                 return false;
             }
-            size_t previousTest = 0;
-            size_t test = 1;
-            while (test < maximumSize && test > previousTest) {
-                previousTest = test;
-                if (test - 1 == size) {
-                    return true;
+            for (size_t test = 2; test > 0; test *= 2) {
+                if (test > size) {
+                    return size == test - 1;
                 }
-                test *= 2;
             }
             return false;
         }
@@ -205,20 +171,6 @@ namespace {
         }
     };
 
-    struct PreviousPowerTestCase : public Power2TestCase<size_t, size_t> {
-
-        PreviousPowerTestCase(const size_t value, const PowerOfTwoImplementation &subject) :
-                Power2TestCase<size_t, size_t>(subject, value) {}
-
-        sdsp_nodiscard const char * methodName() const override {
-            return "sameOrSmaller";
-        }
-
-        sdsp_nodiscard size_t generateValue(const PowerOfTwoImplementation &impl) const override {
-            return impl.previousOrSame(getArgument(0));
-        }
-    };
-
     struct IsMinusOneTestCase : public Power2TestCase<bool, size_t> {
 
         IsMinusOneTestCase(const size_t value, const PowerOfTwoImplementation &subject) :
@@ -276,8 +228,6 @@ namespace {
                 testCases.emplace_back(new IsMinusOneTestCase(value, constant));
                 testCases.emplace_back(new NextPowerTestCase(value, runtime));
                 testCases.emplace_back(new NextPowerTestCase(value, constant));
-                testCases.emplace_back(new PreviousPowerTestCase(value, runtime));
-                testCases.emplace_back(new PreviousPowerTestCase(value, constant));
             }
             for (size_t offset : powerTestValues) {
                 for (size_t powerOfTwo : powerTestValues) {

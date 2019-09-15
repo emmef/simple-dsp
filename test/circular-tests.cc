@@ -245,7 +245,6 @@ BOOST_AUTO_TEST_SUITE(circularMetricTests)
         }
     }
 
-
     BOOST_AUTO_TEST_CASE(testRoundtripWithSetPrevious)
     {
         size_t reference = 0;
@@ -267,6 +266,43 @@ BOOST_AUTO_TEST_SUITE(circularMetricTests)
             BOOST_CHECK_EQUAL(reference, actual);
         }
     }
+
+    BOOST_AUTO_TEST_CASE(testMetricSetSizeOneSmaller)
+    {
+        Metric metric(requestedSize);
+        auto oldSize = metric.getSize();
+        if (metric.setSize(properSize - 1)) {
+            BOOST_CHECK_MESSAGE(metric.getSize() ==oldSize, "Setting size one below current size yields same size");
+        }
+    }
+
+    BOOST_AUTO_TEST_CASE(testMetricSetSizeSame)
+    {
+        Metric metric(requestedSize);
+        auto oldSize = metric.getSize();
+        if (metric.setSize(properSize)) {
+            BOOST_CHECK_MESSAGE(metric.getSize() ==oldSize, "Setting size to same value should not change anything");
+        }
+    }
+
+    BOOST_AUTO_TEST_CASE(testMetricSetSizeOneBigger)
+    {
+        Metric metric(requestedSize);
+        auto oldSize = metric.getSize();
+        if (metric.setSize(properSize + 1)) {
+            BOOST_CHECK_MESSAGE(metric.getSize() == 2 * oldSize, "Setting size one above yields twice as big size");
+        }
+    }
+
+    BOOST_AUTO_TEST_CASE(testMetricSetSizeHalf)
+    {
+        Metric metric(requestedSize);
+        auto oldSize = metric.getSize();
+        if (metric.setSize(properSize / 2)) {
+            BOOST_CHECK_MESSAGE(metric.getSize() == oldSize / 2, "Setting size to half, yields half size");
+        }
+    }
+
 
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -120,9 +120,9 @@ namespace simpledsp {
 
         sdsp_nodiscard SIZE_T previous(SIZE_T pointer) const { return Arithmic::previous(pointer, mask); }
 
-        void setNext(SIZE_T pointer) const { Arithmic::setNext(pointer, mask); }
+        void setNext(SIZE_T &pointer) const { Arithmic::setNext(pointer, mask); }
 
-        void setPrevious(SIZE_T pointer) const { Arithmic::setPrevious(pointer, mask); }
+        void setPrevious(SIZE_T &pointer) const { Arithmic::setPrevious(pointer, mask); }
 
         sdsp_nodiscard SIZE_T add(SIZE_T pointer, SIZE_T delta) const { return Arithmic::add(pointer, delta, mask); }
 
@@ -139,7 +139,7 @@ namespace simpledsp {
     };
 
     using CircularArithmic = CircularArithmicBase<size_t>;
-    using CircularMetric = CircularArithmicBase<size_t>;
+    using CircularMetric = CircularMetricBase<size_t>;
 
 } // namespace simpledsp::algorithm
 
