@@ -21,17 +21,14 @@ find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 include_directories(include)
 
-string(LENGTH "${CMAKE_SOURCE_DIR}/" SDSP_SOURCE_PATH_SIZE)
-add_definitions("-DSDSP_SOURCE_PATH_SIZE=${SDSP_SOURCE_PATH_SIZE}")
-
-set(SIMPLE_DSP_HEADERS include/simple-dsp/addressing.h include/simple-dsp/attributes.h include/simple-dsp/circular.h include/simple-dsp/delay.h include/simple-dsp/alignment.h include/simple-dsp/denormal.h include/simple-dsp/arrayops.h include/simple-dsp/algorithm.h include/simple-dsp/aligneddata.h)
+set(SIMPLE_DSP_HEADERS include/simple-dsp/addressing.h include/simple-dsp/attributes.h include/simple-dsp/circular.h include/simple-dsp/delay.h include/simple-dsp/alignment.h include/simple-dsp/denormal.h include/simple-dsp/arrayops.h include/simple-dsp/algorithm.h include/simple-dsp/aligneddata.h include/simple-dsp/perceptive-rms.h include/simple-dsp/integration.h include/simple-dsp/iir.h)
 
 set(SIMPLE_DSP_SOURCES)
 
-set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/circular-tests.cc test/delay-tests.cc)
+set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/circular-tests.cc test/delay-tests.cc test/integration-test.cc)
 
 add_library(simple-dsp INTERFACE)
-install(TARGETS simple-dsp)
+install(FILES ${SIMPLE_DSP_HEADERS} DESTINATION /usr/local/incluse/simple-dsp)
 
 add_executable(test ${SIMPLE_DSP_HEADERS} ${SIMPLE_DSP_TESTS} ${SIMPLE_DSP_SOURCES})
 target_link_libraries(test ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
