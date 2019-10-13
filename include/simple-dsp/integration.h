@@ -128,8 +128,8 @@ namespace simpledsp {
     IntegrationCoefficients() = default;
 
     IntegrationCoefficients(T samples) :
-        historyMultiplier(Multipliers::historyMultiplier(samples)),
-        inputMultiplier(Multipliers::uncheckedOtherMultiplier(historyMultiplier)) {
+            historyMultiplier(Multipliers::historyMultiplier(samples)),
+            inputMultiplier(Multipliers::uncheckedOtherMultiplier(historyMultiplier)) {
 
     }
 

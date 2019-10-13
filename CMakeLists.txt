@@ -7,12 +7,12 @@ if (MSVC)
     add_compile_options(/W4)
     # all warnings as errors
     add_compile_options(/WX)
-else()
+else ()
     # lots of warnings
     add_compile_options(-Wall -Wextra -pedantic)
     # all warnings as errors
     add_compile_options(-Werror)
-endif()
+endif ()
 
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)

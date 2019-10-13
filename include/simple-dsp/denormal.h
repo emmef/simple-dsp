@@ -34,228 +34,204 @@
 #endif
 
 namespace simpledsp {
-// RAII FPU state class, sets FTZ and DAZ and rounding, no exceptions
-// Adapted from code by mystran @ kvraudio
-// http://www.kvraudio.com/forum/viewtopic.php?t=312228&postdays=0&postorder=asc&start=0
+  // RAII FPU state class, sets FTZ and DAZ and rounding, no exceptions
+  // Adapted from code by mystran @ kvraudio
+  // http://www.kvraudio.com/forum/viewtopic.php?t=312228&postdays=0&postorder=asc&start=0
 
-    class ZFPUState
-    {
-    private:
+  class ZFPUState {
+  private:
 #ifdef SSE_INSTRUCTIONS_AVAILABLE
-        unsigned int sse_control_store;
+    unsigned int sse_control_store;
 #endif
-    public:
-        enum Rounding
-        {
-            kRoundNearest = 0,
-            kRoundNegative,
-            kRoundPositive,
-            kRoundToZero,
-        };
-
-        ZFPUState(Rounding mode = kRoundToZero)
-        {
-#ifdef SSE_INSTRUCTIONS_AVAILABLE
-            sse_control_store = _mm_getcsr();
-
-            // bits: 15 = flush to zero | 6 = denormals are zero
-            // bitwise-OR with exception masks 12:7 (exception flags 5:0)
-            // rounding 14:13, 00 = nearest, 01 = neg, 10 = pos, 11 = to zero
-            // The enum above is defined in the same order so just shift it up
-            _mm_setcsr(0x8040 | 0x1f80 | ((unsigned int) mode << 13));
-#endif
-        }
-
-        ~ZFPUState()
-        {
-#ifdef SSE_INSTRUCTIONS_AVAILABLE
-            // clear exception flags, just in case (probably pointless)
-            _mm_setcsr(sse_control_store & (~0x3f));
-#endif
-        }
+  public:
+    enum Rounding {
+      kRoundNearest = 0,
+      kRoundNegative,
+      kRoundPositive,
+      kRoundToZero,
     };
 
-    namespace detail {
-        namespace {
-            template<typename FPTYPE, size_t selector>
-            struct Normalize
-            {
-                static_assert(std::is_floating_point<FPTYPE>::value, "FPTYPE must be a floating-point type");
+    ZFPUState(Rounding mode = kRoundToZero) {
+#ifdef SSE_INSTRUCTIONS_AVAILABLE
+      sse_control_store = _mm_getcsr();
 
-                static inline FPTYPE getFlushedToZero(FPTYPE &value)
-                { return value; }
+      // bits: 15 = flush to zero | 6 = denormals are zero
+      // bitwise-OR with exception masks 12:7 (exception flags 5:0)
+      // rounding 14:13, 00 = nearest, 01 = neg, 10 = pos, 11 = to zero
+      // The enum above is defined in the same order so just shift it up
+      _mm_setcsr(0x8040 | 0x1f80 | ((unsigned int) mode << 13));
+#endif
+    }
 
-                static inline void flushToZero(FPTYPE )
-                {}
+    ~ZFPUState() {
+#ifdef SSE_INSTRUCTIONS_AVAILABLE
+      // clear exception flags, just in case (probably pointless)
+      _mm_setcsr(sse_control_store & (~0x3f));
+#endif
+    }
+  };
 
-                static constexpr bool normalizes = false;
+  namespace detail {
+    namespace {
+      template<typename FPTYPE, size_t selector>
+      struct Normalize {
+        static_assert(std::is_floating_point<FPTYPE>::value,
+                "FPTYPE must be a floating-point type");
 
-                static constexpr size_t bits = 8 * sizeof(FPTYPE);
+        static inline FPTYPE getFlushedToZero(FPTYPE& value) { return value; }
 
-                static const char *method()
-                {
-                    return "None: IEEE-559 compliant, but denormal definition for this size not known";
-                }
-            };
+        static inline void flushToZero(FPTYPE) { }
 
-            /**
-             * Specialization for non ieee-559/754 floating point formats.
-             */
-            template<typename FPTYPE>
-            struct Normalize<FPTYPE, 0>
-            {
-                static inline FPTYPE getFlushedToZero(FPTYPE &value)
-                { return value; }
+        static constexpr bool normalizes = false;
 
-                static inline void flushToZero(FPTYPE )
-                {}
+        static constexpr size_t bits = 8 * sizeof(FPTYPE);
 
-                static constexpr bool normalizes = false;
+        static const char* method() {
+          return "None: IEEE-559 compliant, but denormal definition for this size not known";
+        }
+      };
 
-                static constexpr size_t bits = 8 * sizeof(FPTYPE);
+      /**
+       * Specialization for non ieee-559/754 floating point formats.
+       */
+      template<typename FPTYPE>
+      struct Normalize<FPTYPE, 0> {
+        static inline FPTYPE getFlushedToZero(FPTYPE& value) { return value; }
 
-                static const char *method()
-                {
-                    return "None: Not IEEE-559 compliant";
-                }
-            };
+        static inline void flushToZero(FPTYPE) { }
 
-            /**
-             * Specialization for 32-bit single-precision floating
-             */
-            template<typename FPTYPE>
-            struct Normalize<FPTYPE, 4>
-            {
-                static inline FPTYPE getFlushedToZero(FPTYPE value)
-                {
-                    union
-                    {
-                        FPTYPE f;
-                        int32_t i;
-                    } v;
+        static constexpr bool normalizes = false;
 
-                    v.f = value;
+        static constexpr size_t bits = 8 * sizeof(FPTYPE);
 
-                    return v.i & 0x7f800000 ? value : 0.0f;
-                }
+        static const char* method() {
+          return "None: Not IEEE-559 compliant";
+        }
+      };
 
-                static inline void flushToZero(FPTYPE &value)
-                {
-                    union
-                    {
-                        FPTYPE f;
-                        int32_t i;
-                    } v;
+      /**
+       * Specialization for 32-bit single-precision floating
+       */
+      template<typename FPTYPE>
+      struct Normalize<FPTYPE, 4> {
+        static inline FPTYPE getFlushedToZero(FPTYPE value) {
+          union {
+            FPTYPE f;
+            int32_t i;
+          } v;
 
-                    v.f = value;
-                    if (v.i & 0x7f800000) {
-                        return;
-                    }
-                    value = 0.0;
-                }
+          v.f = value;
 
-                static constexpr bool normalizes = true;
-
-                static constexpr size_t bits = 8 * sizeof(FPTYPE);
-
-                static const char *method()
-                {
-                    return "IEEE-559 32-bit single precision";
-                }
-            };
-
-            template<typename FPTYPE>
-            struct Normalize<FPTYPE, 8>
-            {
-                static inline FPTYPE getFlushedToZero(FPTYPE &value)
-                {
-                    union
-                    {
-                        FPTYPE f;
-                        int64_t i;
-                    } v;
-
-                    v.f = value;
-
-                    return v.i & 0x7ff0000000000000L ? value : 0;
-                }
-
-                static inline void flushToZero(FPTYPE value)
-                {
-                    union
-                    {
-                        FPTYPE f;
-                        int64_t i;
-                    } v;
-
-                    v.f = value;
-
-                    if (v.i & 0x7ff0000000000000L) {
-                        return;
-                    }
-                    value = 0.0;
-                }
-
-                static constexpr bool normalizes = false;
-
-                static constexpr size_t bits = 8 * sizeof(FPTYPE);
-
-                static const char *method()
-                {
-                    return "IEEE-559 64-bit double precision";
-                }
-            };
-
-        } // anonymous namespace
-    } // namespace base
-
-    class Denormal
-    {
-        template<typename FPTYPE>
-        struct Selector
-        {
-            static_assert(std::is_floating_point<FPTYPE>::value, "FPTYPE must be a floating-point type");
-
-            static constexpr size_t CLASS_SELECTOR =
-                    !std::numeric_limits<FPTYPE>::is_iec559 ?
-                    0 : sizeof(FPTYPE);
-
-            typedef detail::Normalize<FPTYPE, CLASS_SELECTOR> Helper;
-
-        };
-
-    public:
-        template<typename F>
-        static inline const char *method()
-        {
-            return Selector<F>::Helper::method();
+          return v.i & 0x7f800000
+                 ? value
+                 : 0.0f;
         }
 
-        template<typename F>
-        static constexpr bool normalizes()
-        {
-            return Selector<F>::Helper::normalizes;
+        static inline void flushToZero(FPTYPE& value) {
+          union {
+            FPTYPE f;
+            int32_t i;
+          } v;
+
+          v.f = value;
+          if (v.i & 0x7f800000) {
+            return;
+          }
+          value = 0.0;
         }
 
-        template<typename F>
-        static constexpr bool bits()
-        {
-            return Selector<F>::Helper::bits;
+        static constexpr bool normalizes = true;
+
+        static constexpr size_t bits = 8 * sizeof(FPTYPE);
+
+        static const char* method() {
+          return "IEEE-559 32-bit single precision";
+        }
+      };
+
+      template<typename FPTYPE>
+      struct Normalize<FPTYPE, 8> {
+        static inline FPTYPE getFlushedToZero(FPTYPE& value) {
+          union {
+            FPTYPE f;
+            int64_t i;
+          } v;
+
+          v.f = value;
+
+          return v.i & 0x7ff0000000000000L
+                 ? value
+                 : 0;
         }
 
-        template<typename T>
-        static const T &flush(T &v)
-        {
-            Selector<T>::Helper::flushToZero(v);
-            return v;
+        static inline void flushToZero(FPTYPE value) {
+          union {
+            FPTYPE f;
+            int64_t i;
+          } v;
+
+          v.f = value;
+
+          if (v.i & 0x7ff0000000000000L) {
+            return;
+          }
+          value = 0.0;
         }
 
-        template<typename T>
-        static const T &get_flushed(const T v)
-        {
-            return Selector<T>::getFlushedToZero(v);
+        static constexpr bool normalizes = false;
+
+        static constexpr size_t bits = 8 * sizeof(FPTYPE);
+
+        static const char* method() {
+          return "IEEE-559 64-bit double precision";
         }
+      };
+
+    } // anonymous namespace
+  } // namespace base
+
+  class Denormal {
+    template<typename FPTYPE>
+    struct Selector {
+      static_assert(std::is_floating_point<FPTYPE>::value, "FPTYPE must be a floating-point type");
+
+      static constexpr size_t CLASS_SELECTOR =
+              !std::numeric_limits<FPTYPE>::is_iec559
+              ?
+              0
+              : sizeof(FPTYPE);
+
+      typedef detail::Normalize<FPTYPE, CLASS_SELECTOR> Helper;
+
     };
+
+  public:
+    template<typename F>
+    static inline const char* method() {
+      return Selector<F>::Helper::method();
+    }
+
+    template<typename F>
+    static constexpr bool normalizes() {
+      return Selector<F>::Helper::normalizes;
+    }
+
+    template<typename F>
+    static constexpr bool bits() {
+      return Selector<F>::Helper::bits;
+    }
+
+    template<typename T>
+    static const T& flush(T& v) {
+      Selector<T>::Helper::flushToZero(v);
+      return v;
+    }
+
+    template<typename T>
+    static const T& get_flushed(const T v) {
+      return Selector<T>::getFlushedToZero(v);
+    }
+  };
 
 } // namespace simpledsp
 

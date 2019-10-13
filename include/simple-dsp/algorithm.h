@@ -25,19 +25,19 @@
 #include <simple-dsp/attributes.h>
 
 namespace simpledsp {
-    /*
-     * The functions min, max and clamp are already defined in <algorithm>
-     */
+  /*
+   * The functions min, max and clamp are already defined in <algorithm>
+   */
 
-    template<typename T>
-    sdsp_nodiscard static constexpr bool is_within(const T value, const T minimum, const T maximum) {
-        return value == ::std::clamp(value, minimum, maximum);
-    }
+  template<typename T>
+  sdsp_nodiscard static constexpr bool is_within(const T value, const T minimum, const T maximum) {
+    return value == ::std::clamp(value, minimum, maximum);
+  }
 
-    template<typename T>
-    static constexpr bool is_within_excl(const T value, const T minimum, const T maximum) {
-        return value > minimum && value < maximum;
-    }
+  template<typename T>
+  static constexpr bool is_within_excl(const T value, const T minimum, const T maximum) {
+    return value > minimum && value < maximum;
+  }
 
 } // namespace simpledsp
 
