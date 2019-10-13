@@ -340,75 +340,69 @@ namespace simpledsp {
     }
   };
 
-  namespace base {
-    namespace {
+  enum class IndexPolicyType {
+    THROW,
+    WRAP,
+    UNCHECKED
+  };
 
-      enum class IndexPolicyType {
-        THROW,
-        WRAP,
-        UNCHECKED
-      };
+  template<typename SizeType, IndexPolicyType type>
+  struct IndexPolicyBase;
 
-      template<typename SizeType, IndexPolicyType type>
-      struct IndexPolicyBase;
-
-      template<typename SizeType>
-      struct IndexPolicyBase<SizeType, IndexPolicyType::THROW> {
-        sdsp_nodiscard static SizeType index(SizeType i, SizeType size) {
-          if (i < size) {
-            return i;
-          }
-          throw std::invalid_argument("IndexPolicy::index out of range");
-        }
-        sdsp_nodiscard static SizeType offset(SizeType o, SizeType maxOffset) {
-          if (o <= maxOffset) {
-            return o;
-          }
-          throw std::invalid_argument("IndexPolicy::offset out of range");
-        }
-      };
-
-      template<typename SizeType>
-      struct IndexPolicyBase<SizeType, IndexPolicyType::WRAP> {
-        sdsp_nodiscard sdsp_force_inline static SizeType index(SizeType i, SizeType size) {
-          return i % size;
-        }
-        sdsp_nodiscard sdsp_force_inline static SizeType offset(SizeType o, SizeType maxOffset) {
-          return o % (maxOffset + 1);
-        }
-      };
-
-      template<typename SizeType>
-      struct IndexPolicyBase<SizeType, IndexPolicyType::UNCHECKED> {
-        sdsp_nodiscard sdsp_force_inline static SizeType index(SizeType i, SizeType) {
-          return i;
-        }
-        sdsp_nodiscard sdsp_force_inline static SizeType offset(SizeType o, SizeType) {
-          return o;
-        }
-      };
-
+  template<typename SizeType>
+  struct IndexPolicyBase<SizeType, IndexPolicyType::THROW> {
+    sdsp_nodiscard static SizeType index(SizeType i, SizeType size) {
+      if (i < size) {
+        return i;
+      }
+      throw std::invalid_argument("IndexPolicy::index out of range");
     }
-  }
+    sdsp_nodiscard static SizeType offset(SizeType o, SizeType maxOffset) {
+      if (o <= maxOffset) {
+        return o;
+      }
+      throw std::invalid_argument("IndexPolicy::offset out of range");
+    }
+  };
+
+  template<typename SizeType>
+  struct IndexPolicyBase<SizeType, IndexPolicyType::WRAP> {
+    sdsp_nodiscard sdsp_force_inline static SizeType index(SizeType i, SizeType size) {
+      return i % size;
+    }
+    sdsp_nodiscard sdsp_force_inline static SizeType offset(SizeType o, SizeType maxOffset) {
+      return o % (maxOffset + 1);
+    }
+  };
+
+  template<typename SizeType>
+  struct IndexPolicyBase<SizeType, IndexPolicyType::UNCHECKED> {
+    sdsp_nodiscard sdsp_force_inline static SizeType index(SizeType i, SizeType) {
+      return i;
+    }
+    sdsp_nodiscard sdsp_force_inline static SizeType offset(SizeType o, SizeType) {
+      return o;
+    }
+  };
 
   template<typename S>
   struct IndexBase {
 #ifndef SDSP_INDEX_POLICY_METHODS_UNCHECKED
-    using Method = base::IndexPolicyBase<S, base::IndexPolicyType::THROW>;
+    using Method = IndexPolicyBase<S, IndexPolicyType::THROW>;
 #else
     using Method = IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
 #endif
 #ifndef SDSP_INDEX_POLICY_ARRAYS_CHECKED
-    using Array = base::IndexPolicyBase<S, base::IndexPolicyType::UNCHECKED>;
+    using Array = IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
 #else
     using Array = IndexPolicyBase<S, IndexPolicyType::THROW>;
 #endif
 
-    using Throw = base::IndexPolicyBase<S, base::IndexPolicyType::THROW>;
+    using Throw = IndexPolicyBase<S, IndexPolicyType::THROW>;
 
-    using Wrap = base::IndexPolicyBase<S, base::IndexPolicyType::WRAP>;
+    using Wrap = IndexPolicyBase<S, IndexPolicyType::WRAP>;
 
-    using Unchecked = base::IndexPolicyBase<S, base::IndexPolicyType::UNCHECKED>;
+    using Unchecked = IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
 
     sdsp_nodiscard static S arrayIndex(S i, S size) { return Array::index(i, size); }
 
