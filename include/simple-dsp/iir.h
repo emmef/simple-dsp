@@ -37,12 +37,12 @@ namespace simpledsp {
   struct IIRCoefficientsSetter {
     using Check = IndexPolicyBase<size_t, IndexPolicyType::THROW>;
 
-    [[nodiscard]] virtual size_t getOrder() const = 0;
-    [[nodiscard]] virtual size_t getMaxOrder() const = 0;
-    [[nodiscard]] virtual bool canSetOrder() const = 0;
+    sdsp_nodiscard virtual size_t getOrder() const = 0;
+    sdsp_nodiscard virtual size_t getMaxOrder() const = 0;
+    sdsp_nodiscard virtual bool canSetOrder() const = 0;
     virtual ~IIRCoefficientsSetter() = default;
 
-    size_t getCoefficients() const { return getOrder() + 1; }
+    sdsp_nodiscard size_t getCoefficients() const { return getOrder() + 1; }
 
     void setOrder(size_t order) {
       if (order == 0) {
@@ -107,17 +107,17 @@ namespace simpledsp {
             "IIRCoefficientAccess<coeff, CoefficientsClass>: "
             "coeff must be floating-point");
 
-    [[nodiscard]] sdsp_force_inline static const coeff &getC(size_t i, const CoefficientsClass
+    sdsp_nodiscard sdsp_force_inline static const coeff &getC(size_t i, const CoefficientsClass
     &coeffs) {
       return coeffs.getC(i);
     }
-    [[nodiscard]] sdsp_force_inline static const coeff &getD(size_t i, const CoefficientsClass &coeffs) {
+    sdsp_nodiscard sdsp_force_inline static const coeff &getD(size_t i, const CoefficientsClass &coeffs) {
       return coeffs.getD(i);
     }
-    [[nodiscard]] sdsp_force_inline static constexpr size_t getOrder(const CoefficientsClass &coeffs) {
+    sdsp_nodiscard sdsp_force_inline static constexpr size_t getOrder(const CoefficientsClass &coeffs) {
       return coeffs.getOrder();
     }
-    [[nodiscard]] sdsp_force_inline static constexpr size_t getMaxOrder(const CoefficientsClass &coeffs) {
+    sdsp_nodiscard sdsp_force_inline static constexpr size_t getMaxOrder(const CoefficientsClass &coeffs) {
       return coeffs.getMaxOrder();
     }
   };
@@ -148,7 +148,12 @@ namespace simpledsp {
     }
   };
 
-
+  /**
+   * Using the coefficient parameter and method of calculation, delivers various ways to
+   * calculate IIR filters.
+   * @tparam coeff The coefficient value type
+   * @tparam method The way to calculate the filter with given coefficients
+   */
   template<typename coeff, IIRCalculationMethod method>
   struct IIRFilterBase {
 
@@ -164,7 +169,7 @@ namespace simpledsp {
      * @return the calculated output value
      */
     template<class Filter, typename sample>
-    [[nodiscard]] sdsp_force_inline static sample withHistory(
+    sdsp_nodiscard sdsp_force_inline static sample withHistory(
             const Filter &filter,
             sample* __restrict xHistory,
             sample* __restrict yHistory,
@@ -209,7 +214,7 @@ namespace simpledsp {
      * @return the calculated output value
      */
     template<class Filter, typename sample, size_t ORDER>
-    [[nodiscard]] sdsp_force_inline static sample withHistoryFixedOrder(
+    sdsp_nodiscard sdsp_force_inline static sample withHistoryFixedOrder(
             const Filter &filter,
             sample* __restrict xHistory,
             sample* __restrict yHistory,
@@ -295,7 +300,7 @@ namespace simpledsp {
      * @return false if the offset is not equal to or larger than the order
      */
     template<class Filter, typename sample>
-    [[nodiscard]] sdsp_force_inline static bool withBuffers(
+    sdsp_nodiscard sdsp_force_inline static bool withBuffers(
             const Filter &filter, sample * __restrict x, sample * __restrict y,
             size_t offset, size_t count) {
 
@@ -572,20 +577,20 @@ namespace simpledsp {
   struct IIRFixedOrderCoefficients : public IIRCoefficientsClass {
 
     class Setter : public IIRCoefficientsSetter {
-      Setter(IIRFixedOrderCoefficients &o) : owner(o) {}
-      Setter(Setter && source) : owner(source.owner) {}
+      explicit Setter(IIRFixedOrderCoefficients &o) : owner(o) {}
+      Setter(Setter && source) noexcept : owner(source.owner) {}
 
-      [[nodiscard]] size_t getOrder() const override { return ORDER;}
-      [[nodiscard]] size_t getMaxOrder() const override { return ORDER; }
-      [[nodiscard]] bool canSetOrder() const override { return false; }
+      sdsp_nodiscard size_t getOrder() const override { return ORDER;}
+      sdsp_nodiscard size_t getMaxOrder() const override { return ORDER; }
+      sdsp_nodiscard bool canSetOrder() const override { return false; }
 
     protected:
 
-      virtual void setValidOrder(size_t) {
+      void setValidOrder(size_t) override {
         throw std::runtime_error("IIRFixedOrderCoefficients::setValidOrder(): illegal call");
       }
-      virtual void setValidC(size_t i, double value) { owner.c[i] = value; }
-      virtual void setValidD(size_t i, double value) { owner.d[i] = value; }
+      void setValidC(size_t i, double value) override { owner.c[i] = value; }
+      void setValidD(size_t i, double value) override { owner.d[i] = value; }
 
     private:
 
@@ -596,28 +601,29 @@ namespace simpledsp {
       return Setter(*this);
     }
 
-    IIRFixedOrderCoefficients(const IIRFixedOrderCoefficients &source) {
+    explicit IIRFixedOrderCoefficients(const IIRFixedOrderCoefficients &source) {
       operator=(source);
     }
 
-    IIRFixedOrderCoefficients(IIRFixedOrderCoefficients &&source) {
+    IIRFixedOrderCoefficients(IIRFixedOrderCoefficients &&source) noexcept {
       operator=(source);
     }
 
     template<class Coefficients>
-    IIRFixedOrderCoefficients(const Coefficients &source) {
+    explicit IIRFixedOrderCoefficients(const Coefficients &source) {
       operator=(source);
     }
 
-    void operator = (const IIRFixedOrderCoefficients &source) {
+    IIRFixedOrderCoefficients &operator = (const IIRFixedOrderCoefficients &source) {
       for (size_t i = 0; i < ORDER; i++) {
         c[i] = source.c[i];
         d[i] = source.d[i];
       }
+      return *this;
     }
 
     template<class Coefficients>
-    void operator = (const Coefficients &source) {
+    IIRFixedOrderCoefficients &operator = (const Coefficients &source) {
       using Access = IIRCoefficientAccess<coeff, Coefficients>;
       if (Access::getOrder(source)  != ORDER) {
         throw std::invalid_argument("IIRFixedOrderCoefficients::operator=(source): "
@@ -627,12 +633,13 @@ namespace simpledsp {
         c[i] = Access::getC(i, source);
         d[i] = Access::getD(i, source);
       }
+      return *this;
     }
 
-    [[nodiscard]] sdsp_force_inline coeff getC(size_t i) const { return c[i]; }
-    [[nodiscard]] sdsp_force_inline coeff getD(size_t i) const { return d[i]; }
-    [[nodiscard]] sdsp_force_inline constexpr size_t getOrder() const { return ORDER; }
-    [[nodiscard]] sdsp_force_inline constexpr size_t getMaxOrder() const { return ORDER; }
+    sdsp_nodiscard sdsp_force_inline coeff getC(size_t i) const { return c[i]; }
+    sdsp_nodiscard sdsp_force_inline coeff getD(size_t i) const { return d[i]; }
+    sdsp_nodiscard sdsp_force_inline constexpr size_t getOrder() const { return ORDER; }
+    sdsp_nodiscard sdsp_force_inline constexpr size_t getMaxOrder() const { return ORDER; }
 
   private:
     friend class Setter;
@@ -644,20 +651,20 @@ namespace simpledsp {
   struct IIRCoefficients : public IIRCoefficientsClass {
 
     class Setter : public IIRCoefficientsSetter {
-      Setter(IIRCoefficients &o) : owner(o) {}
-      Setter(Setter && source) : owner(source.owner) {}
+      explicit Setter(IIRCoefficients &o) : owner(o) {}
+      Setter(Setter && source) noexcept : owner(source.owner) {}
 
-      [[nodiscard]] size_t getOrder() const override { return owner.getOrder();}
-      [[nodiscard]] size_t getMaxOrder() const override { return owner.getMaxOrder(); }
-      [[nodiscard]] bool canSetOrder() const override { return true; }
+      sdsp_nodiscard size_t getOrder() const override { return owner.getOrder();}
+      sdsp_nodiscard size_t getMaxOrder() const override { return owner.getMaxOrder(); }
+      sdsp_nodiscard bool canSetOrder() const override { return true; }
 
     protected:
 
-      virtual void setValidOrder(size_t newOrder) {
+      void setValidOrder(size_t newOrder) override {
         owner.setOrder(newOrder);
       }
-      virtual void setValidC(size_t i, double value) { owner.c[i] = value; }
-      virtual void setValidD(size_t i, double value) { owner.d[i] = value; }
+      void setValidC(size_t i, double value) override { owner.c[i] = value; }
+      void setValidD(size_t i, double value) override { owner.d[i] = value; }
 
     private:
 
@@ -672,28 +679,28 @@ namespace simpledsp {
             c(new coeff[allocationSize(maximumOrder)]),
             maxOrder(maximumOrder),
             d(c + maximumOrder + 1),
-            order(validOrder(initialOrder, maxOrder)){}
+            order(validOrder(initialOrder, maxOrder)) {}
 
-    IIRCoefficients(size_t order) : IIRCoefficients(order, order) {}
+    explicit IIRCoefficients(size_t order) : IIRCoefficients<coeff>(order, order) {}
 
-    IIRCoefficients(const IIRCoefficients &source) : IIRCoefficients(
+    explicit IIRCoefficients(const IIRCoefficients &source) : IIRCoefficients(
             source.getMaxOrder(), source.getOrder()) {
       operator=(source);
     }
 
-    IIRCoefficients(IIRCoefficients &&source) : IIRCoefficients(
+    IIRCoefficients(IIRCoefficients &&source) noexcept : IIRCoefficients(
             source.getMaxOrder(), source.getOrder()) {
       operator=(source);
     }
 
     template<class Coefficients>
-    IIRCoefficients(const Coefficients &source) : IIRCoefficients(
+    explicit IIRCoefficients(const Coefficients &source) : IIRCoefficients(
             IIRCoefficientAccess<coeff, Coefficients>::getOrder(source),
             IIRCoefficientAccess<coeff, Coefficients>::getMaxOrder(source)) {
       operator=(source);
     }
 
-    void operator = (const IIRCoefficients &source) {
+    IIRCoefficients &operator = (const IIRCoefficients &source) {
       size_t sourceOrder = source.getOrder();
       if (sourceOrder != order) {
         if (!isValidOrder(sourceOrder, maxOrder)) {
@@ -706,10 +713,11 @@ namespace simpledsp {
         c[i] = source.c[i];
         d[i] = source.d[i];
       }
+      return *this;
     }
 
     template<class Coefficients>
-    void operator = (const Coefficients &source) {
+    IIRCoefficients &operator = (const Coefficients &source) {
       using Access = IIRCoefficientAccess<coeff, Coefficients>;
       size_t sourceOrder = Access::getOrder(source);
       if (sourceOrder != order) {
@@ -723,12 +731,13 @@ namespace simpledsp {
         c[i] = Access::getC(i, source);
         d[i] = Access::getD(i, source);
       }
+      return *this;
     }
 
-    [[nodiscard]] sdsp_force_inline coeff getC(size_t i) const { return c[i]; }
-    [[nodiscard]] sdsp_force_inline coeff getD(size_t i) const { return d[i]; }
-    [[nodiscard]] sdsp_force_inline size_t getOrder() const { return order; }
-    [[nodiscard]] sdsp_force_inline size_t getMaxOrder() const { return maxOrder; }
+    sdsp_nodiscard sdsp_force_inline coeff getC(size_t i) const { return c[i]; }
+    sdsp_nodiscard sdsp_force_inline coeff getD(size_t i) const { return d[i]; }
+    sdsp_nodiscard sdsp_force_inline size_t getOrder() const { return order; }
+    sdsp_nodiscard sdsp_force_inline size_t getMaxOrder() const { return maxOrder; }
 
     ~IIRCoefficients() {
       delete[] c;

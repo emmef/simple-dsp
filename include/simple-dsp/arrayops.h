@@ -37,7 +37,7 @@ namespace simpledsp::arrayops {
    *
    */
   template<typename T>
-  [[nodiscard]] sdsp_force_inline static T
+  sdsp_nodiscard sdsp_force_inline static T
   inline_sum(const T* data, size_t size) {
     T sum = 0;
     for (size_t i = 0; i < size; ++i) {
@@ -47,13 +47,13 @@ namespace simpledsp::arrayops {
   }
 
   template<typename T>
-  [[nodiscard]] sdsp_force_inline static T
+  sdsp_nodiscard sdsp_force_inline static T
   inline_average(const T* data, size_t size) {
     return inline_sum(data, size) / size;
   }
 
   template<typename T>
-  [[nodiscard]] sdsp_force_inline static T
+  sdsp_nodiscard sdsp_force_inline static T
   inline_self_product(const T* data, size_t size) {
     T sum = 0;
     for (size_t i = 0; i < size; ++i) {
@@ -64,7 +64,7 @@ namespace simpledsp::arrayops {
   }
 
   template<typename T>
-  [[nodiscard]] sdsp_force_inline static T
+  sdsp_nodiscard sdsp_force_inline static T
   inline_sum_of_squared_errors(const T* data, size_t size) {
     T average = inline_average(data, size);
     T sum = 0;
@@ -76,7 +76,7 @@ namespace simpledsp::arrayops {
   }
 
   template<typename T>
-  [[nodiscard]] sdsp_force_inline static T
+  sdsp_nodiscard sdsp_force_inline static T
   inline_inner_product(const T* v1, const T* v2, size_t size) {
     T sum = 0;
     for (size_t i = 0; i < size; ++i) {
@@ -185,17 +185,17 @@ namespace simpledsp::arrayops {
   }
 
   template<typename T, size_t ALIGNMENT = 0>
-  [[nodiscard]] static T sum(const T* data, size_t size) {
+  sdsp_nodiscard static T sum(const T* data, size_t size) {
     return inline_sum(assumeAligned<ALIGNMENT>(data), size);
   }
 
   template<typename T, size_t SIZE, size_t ALIGNMENT>
-  [[nodiscard]] static T sum(const AlignedArray<T, SIZE, ALIGNMENT>& array) {
+  sdsp_nodiscard static T sum(const AlignedArray<T, SIZE, ALIGNMENT>& array) {
     return inline_sum(array.ptr()(), SIZE);
   }
 
   template<typename T, size_t ALIGNMENT, class C>
-  [[nodiscard]] static T sum(const AlignedData<T, ALIGNMENT, C>& array) {
+  sdsp_nodiscard static T sum(const AlignedData<T, ALIGNMENT, C>& array) {
     return inline_sum(array.ptr()(), array.size());
   }
 
@@ -204,17 +204,17 @@ namespace simpledsp::arrayops {
    */
 
   template<typename T, size_t ALIGNMENT = 0>
-  [[nodiscard]] static T average(const T* data, size_t size) {
+  sdsp_nodiscard static T average(const T* data, size_t size) {
     return inline_average(assumeAligned<ALIGNMENT>(data), size);
   }
 
   template<typename T, size_t SIZE, size_t ALIGNMENT>
-  [[nodiscard]] static T average(const AlignedArray<T, SIZE, ALIGNMENT>& array) {
+  sdsp_nodiscard static T average(const AlignedArray<T, SIZE, ALIGNMENT>& array) {
     return inline_average(array.ptr()(), SIZE);
   }
 
   template<typename T, size_t ALIGNMENT, class C>
-  [[nodiscard]] static T average(const AlignedData<T, ALIGNMENT, C>& array) {
+  sdsp_nodiscard static T average(const AlignedData<T, ALIGNMENT, C>& array) {
     return inline_average(array.ptr()(), array.size());
   }
 
@@ -223,17 +223,17 @@ namespace simpledsp::arrayops {
    */
 
   template<typename T, size_t ALIGNMENT = 0>
-  [[nodiscard]] static T self_product(const T* data, size_t size) {
+  sdsp_nodiscard static T self_product(const T* data, size_t size) {
     return inline_self_product(assumeAligned<ALIGNMENT>(data), size);
   }
 
   template<typename T, size_t SIZE, size_t ALIGNMENT>
-  [[nodiscard]] static T self_product(const AlignedArray<T, SIZE, ALIGNMENT>& array) {
+  sdsp_nodiscard static T self_product(const AlignedArray<T, SIZE, ALIGNMENT>& array) {
     return inline_self_product(array.ptr()(), SIZE);
   }
 
   template<typename T, size_t ALIGNMENT, class C>
-  [[nodiscard]] static T self_product(const AlignedData<T, ALIGNMENT, C>& array) {
+  sdsp_nodiscard static T self_product(const AlignedData<T, ALIGNMENT, C>& array) {
     return inline_self_product(array.ptr()(), array.size());
   }
 
@@ -242,17 +242,17 @@ namespace simpledsp::arrayops {
    */
 
   template<typename T, size_t ALIGNMENT>
-  [[nodiscard]] static T sum_of_squared_errors(const T* data, size_t size) {
+  sdsp_nodiscard static T sum_of_squared_errors(const T* data, size_t size) {
     return inline_sum_of_squared_errors(assumeAligned<ALIGNMENT>(data), size);
   }
 
   template<typename T, size_t SIZE, size_t ALIGNMENT>
-  [[nodiscard]] static T sum_of_squared_errors(const AlignedArray<T, SIZE, ALIGNMENT>& array) {
+  sdsp_nodiscard static T sum_of_squared_errors(const AlignedArray<T, SIZE, ALIGNMENT>& array) {
     return inline_sum_of_squared_errors(array.ptr()(), SIZE);
   }
 
   template<typename T, size_t ALIGNMENT, class C>
-  [[nodiscard]] static T sum_of_squared_errors(const AlignedData<T, ALIGNMENT, C>& array) {
+  sdsp_nodiscard static T sum_of_squared_errors(const AlignedData<T, ALIGNMENT, C>& array) {
     return inline_sum_of_squared_errors(array.ptr()(), array.size());
   }
 
@@ -261,12 +261,12 @@ namespace simpledsp::arrayops {
    */
 
   template<typename T, size_t ALIGNMENT = 0>
-  [[nodiscard]] static T inner_product(const T* v1, const T* v2, size_t size) {
+  sdsp_nodiscard static T inner_product(const T* v1, const T* v2, size_t size) {
     return inline_inner_product(assumeAligned<ALIGNMENT>(v1), assumeAligned<ALIGNMENT>(v2), size);
   }
 
   template<typename T, size_t ALIGNMENT, class C, class D>
-  [[nodiscard]] static T inner_product(const AlignedData<T, ALIGNMENT, C>& array1,
+  sdsp_nodiscard static T inner_product(const AlignedData<T, ALIGNMENT, C>& array1,
           const AlignedData<T, ALIGNMENT, D>& array2) {
     return inline_inner_product(array1.ptr(),
             array2.ptr(),
@@ -274,7 +274,7 @@ namespace simpledsp::arrayops {
   }
 
   template<typename T, size_t ALIGNMENT, class C, class D>
-  [[nodiscard]] static T operator*(const AlignedData<T, ALIGNMENT, C>& array1,
+  sdsp_nodiscard static T operator*(const AlignedData<T, ALIGNMENT, C>& array1,
           const AlignedData<T, ALIGNMENT, D>& array2) {
     return inline_inner_product(array1.ptr(),
             array2.ptr(),
@@ -282,13 +282,13 @@ namespace simpledsp::arrayops {
   }
 
   template<typename T, size_t SIZE, size_t ALIGNMENT>
-  [[nodiscard]] static T inner_product(const AlignedArray<T, SIZE, ALIGNMENT>& array1,
+  sdsp_nodiscard static T inner_product(const AlignedArray<T, SIZE, ALIGNMENT>& array1,
           const AlignedArray<T, SIZE, ALIGNMENT>& array2) {
     return inline_inner_product(array1.ptr(), array2.ptr(), SIZE);
   }
 
   template<typename T, size_t SIZE, size_t ALIGNMENT>
-  [[nodiscard]] static T operator*(const AlignedArray<T, SIZE, ALIGNMENT>& array1,
+  sdsp_nodiscard static T operator*(const AlignedArray<T, SIZE, ALIGNMENT>& array1,
           const AlignedArray<T, SIZE, ALIGNMENT>& array2) {
     return inline_inner_product(array1.ptr(), array2.ptr(), SIZE);
   }

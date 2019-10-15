@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_FREQUENCY_HPP
-#define SIMPLE_DSP_FREQUENCY_HPP
+#ifndef SIMPLE_DSP_FREQUENCY_H
+#define SIMPLE_DSP_FREQUENCY_H
 /*
- * simple-dsp/frequency.hpp
+ * simple-dsp/frequency.h
  *
  * Added by michel on 2019-10-13
  * Copyright (C) 2015-2019 Michel Fleur.
@@ -72,6 +72,14 @@ namespace simpledsp {
     };
   }
 
+  /**
+   * Describes a frequency range between a low minimum and a sample frequency.
+   *
+   * It can be used to clamp frequencies between sample rate, Nycquist frequency. It can also
+   * be used to calculate relativce frequency or angular speed.
+   *
+   * @tparam freq Type for frequency values.
+   */
   template<typename freq>
   struct FrequencyRangeBase {
     using absolute = helper::HelperForFrequencyRange<freq>;
@@ -81,43 +89,77 @@ namespace simpledsp {
             minimum(std::clamp(minimum, absolute::min, sampleRate / 2))
     {}
 
-    FrequencyRangeBase(freq sampleFrequency) : FrequencyRangeBase(absolute::min, sampleFrequency)
+    explicit FrequencyRangeBase(freq sampleFrequency) : FrequencyRangeBase(absolute::min,
+            sampleFrequency)
     {}
 
     FrequencyRangeBase() : sampleRate(absolute::standard), minimum(absolute::min)
     {}
 
-    [[nodiscard]] freq getSampleFrequency() const { return sampleRate; }
+    FrequencyRangeBase(const FrequencyRangeBase &source) :
+            sampleRate(source.sampleRate), minimum(source.mininum)
+    {}
 
-    [[nodiscard]] freq getNycquistFrequency() const { return sampleRate / 2; }
+    FrequencyRangeBase(FrequencyRangeBase &&source) noexcept :
+            sampleRate(source.sampleRate), minimum(source.mininum)
+    {}
 
-    [[nodiscard]] freq clamp(freq f) const {
+    FrequencyRangeBase &operator = (const FrequencyRangeBase &source) {
+      sampleRate = source.sampleRate;
+      minimum = source.minimum;
+      return *this;
+    }
+
+    sdsp_nodiscard freq getSampleFrequency() const { return sampleRate; }
+
+    sdsp_nodiscard freq getNycquistFrequency() const { return sampleRate / 2; }
+
+    sdsp_nodiscard freq clamp(freq f) const {
       return std::clamp(f, absolute::min, sampleRate);
     }
 
-    [[nodiscard]] freq clampToNycquist(freq f) const {
+    sdsp_nodiscard freq clampToNycquist(freq f) const {
       return std::clamp(f, absolute::min, getNycquistFrequency());
     }
 
-    [[nodiscard]] freq relative(freq f) const {
+    sdsp_nodiscard freq relative(freq f) const {
       return clamp(f) / sampleRate;
     }
 
-    [[nodiscard]] freq relativeClampedToNycquist(freq f) const {
+    sdsp_nodiscard freq relativeClampedToNycquist(freq f) const {
       return clampToNycquist(f) / sampleRate;
     }
 
-    [[nodiscard]] freq relativeToNycquist(freq f) const {
+    sdsp_nodiscard freq relativeToNycquist(freq f) const {
       return 2 * clampToNycquist(f) / sampleRate;
     }
 
-    [[nodiscard]] double relativeAngularSpeed(freq f) const {
+    sdsp_nodiscard double relativeAngularSpeed(freq f) const {
       return absolute::angularSpeed(relativeClampedToNycquist(f));
     }
 
+    sdsp_nodiscard bool setMinimum(freq newMinimum) {
+      minimum = std::min(newMinimum, getNycquistFrequency());
+      return minimum == newMinimum;
+    }
+
+    sdsp_nodiscard FrequencyRangeBase<freq> withMinimum(freq otherMinimum) const {
+      return FrequencyRangeBase<freq>(std::min(otherMinimum, getNycquistFrequency()), sampleRate);
+    }
+
+    sdsp_nodiscard bool setSampleRate(freq newSampleRate) {
+      sampleRate = std::max(std::min(absolute::max, newSampleRate), minimum * 2);
+      return sampleRate == newSampleRate;
+    }
+
+    sdsp_nodiscard FrequencyRangeBase<freq> withSampleRate(freq otherSampleRate) const {
+      return FrequencyRangeBase<freq>(minimum,
+              std::max(std::min(absolute::max, otherSampleRate), minimum * 2));
+    }
+
   private:
-    const freq sampleRate;
-    const freq minimum;
+    freq sampleRate;
+    freq minimum;
   };
 
   using FrequencyRangeFp = FrequencyRangeBase<double>;
@@ -126,4 +168,4 @@ namespace simpledsp {
 
 } // namespace simpledsp
 
-#endif //SIMPLE_DSP_FREQUENCY_HPP
+#endif //SIMPLE_DSP_FREQUENCY_H
