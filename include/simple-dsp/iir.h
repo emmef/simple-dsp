@@ -37,14 +37,14 @@ namespace simpledsp {
   struct IIRCoefficientsSetter {
     using Check = IndexPolicyBase<size_t, IndexPolicyType::THROW>;
 
-    sdsp_nodiscard virtual size_t getOrder() const = 0;
-    sdsp_nodiscard virtual size_t getMaxOrder() const = 0;
+    sdsp_nodiscard virtual unsigned getOrder() const = 0;
+    sdsp_nodiscard virtual unsigned getMaxOrder() const = 0;
     sdsp_nodiscard virtual bool canSetOrder() const = 0;
     virtual ~IIRCoefficientsSetter() = default;
 
-    sdsp_nodiscard size_t getCoefficients() const { return getOrder() + 1; }
+    sdsp_nodiscard unsigned getCoefficients() const { return getOrder() + 1; }
 
-    void setOrder(size_t order) {
+    void setOrder(unsigned order) {
       if (order == 0) {
           throw std::invalid_argument("IIRCoefficientsSetter::setOrder(order): "
                                       "order must be 1 or higher.");
@@ -63,7 +63,7 @@ namespace simpledsp {
       setValidOrder(order);
     }
 
-    bool setOrderGetSuccess(size_t order) {
+    bool setOrderGetSuccess(unsigned order) {
       if (order == 0) {
         return false;
       }
@@ -82,11 +82,11 @@ namespace simpledsp {
     }
 
     void setD(size_t i, double value) {
-      setValidC(Check::index(i, getCoefficients()), value);
+      setValidD(Check::index(i, getCoefficients()), value);
     }
 
   protected:
-    virtual void setValidOrder(size_t order) = 0;
+    virtual void setValidOrder(unsigned order) = 0;
     virtual void setValidC(size_t i, double value) = 0;
     virtual void setValidD(size_t i, double value) = 0;
   };
@@ -114,10 +114,10 @@ namespace simpledsp {
     sdsp_nodiscard sdsp_force_inline static const coeff &getD(size_t i, const CoefficientsClass &coeffs) {
       return coeffs.getD(i);
     }
-    sdsp_nodiscard sdsp_force_inline static constexpr size_t getOrder(const CoefficientsClass &coeffs) {
+    sdsp_nodiscard sdsp_force_inline static constexpr unsigned getOrder(const CoefficientsClass &coeffs) {
       return coeffs.getOrder();
     }
-    sdsp_nodiscard sdsp_force_inline static constexpr size_t getMaxOrder(const CoefficientsClass &coeffs) {
+    sdsp_nodiscard sdsp_force_inline static constexpr unsigned getMaxOrder(const CoefficientsClass &coeffs) {
       return coeffs.getMaxOrder();
     }
   };
@@ -128,6 +128,8 @@ namespace simpledsp {
    * to be subtracted.
    */
   enum class IIRCalculationMethod { POSITIVE_Y, NEGATIVE_Y };
+  static constexpr IIRCalculationMethod IIR_CALCULATION_METHOD_DEFAULT =
+          IIRCalculationMethod::POSITIVE_Y;
 
   template<typename coeff, class sample, IIRCalculationMethod method>
   struct IIRSingleCalculation;
@@ -154,7 +156,7 @@ namespace simpledsp {
    * @tparam coeff The coefficient value type
    * @tparam method The way to calculate the filter with given coefficients
    */
-  template<typename coeff, IIRCalculationMethod method>
+  template<typename coeff, IIRCalculationMethod method = IIR_CALCULATION_METHOD_DEFAULT>
   struct IIRFilterBase {
 
     /**
@@ -580,13 +582,13 @@ namespace simpledsp {
       explicit Setter(IIRFixedOrderCoefficients &o) : owner(o) {}
       Setter(Setter && source) noexcept : owner(source.owner) {}
 
-      sdsp_nodiscard size_t getOrder() const override { return ORDER;}
-      sdsp_nodiscard size_t getMaxOrder() const override { return ORDER; }
+      sdsp_nodiscard unsigned getOrder() const override { return ORDER;}
+      sdsp_nodiscard unsigned getMaxOrder() const override { return ORDER; }
       sdsp_nodiscard bool canSetOrder() const override { return false; }
 
     protected:
 
-      void setValidOrder(size_t) override {
+      void setValidOrder(unsigned) override {
         throw std::runtime_error("IIRFixedOrderCoefficients::setValidOrder(): illegal call");
       }
       void setValidC(size_t i, double value) override { owner.c[i] = value; }
@@ -654,13 +656,13 @@ namespace simpledsp {
       explicit Setter(IIRCoefficients &o) : owner(o) {}
       Setter(Setter && source) noexcept : owner(source.owner) {}
 
-      sdsp_nodiscard size_t getOrder() const override { return owner.getOrder();}
-      sdsp_nodiscard size_t getMaxOrder() const override { return owner.getMaxOrder(); }
+      sdsp_nodiscard unsigned getOrder() const override { return owner.getOrder();}
+      sdsp_nodiscard unsigned getMaxOrder() const override { return owner.getMaxOrder(); }
       sdsp_nodiscard bool canSetOrder() const override { return true; }
 
     protected:
 
-      void setValidOrder(size_t newOrder) override {
+      void setValidOrder(unsigned newOrder) override {
         owner.setOrder(newOrder);
       }
       void setValidC(size_t i, double value) override { owner.c[i] = value; }
