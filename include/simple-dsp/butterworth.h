@@ -74,7 +74,7 @@ namespace simpledsp {
         return *this;
       }
 
-      void generate(IIRCoefficientsSetter &setter)
+      void generate(IIRCoefficientsSetter &setter) const
       {
         switch (type) {
         case Type::LOW_PASS:
@@ -131,7 +131,7 @@ namespace simpledsp {
       unsigned order;
       IIRCalculationMethod method;
 
-      void getLowPassCoefficients(IIRCoefficientsSetter &setter)
+      void getLowPassCoefficients(IIRCoefficientsSetter &setter) const
       {
         float relativeFrequency = std::min(rate.relative(frequency), 0.5);
         if (order != setter.getOrder()) {
@@ -147,7 +147,7 @@ namespace simpledsp {
         }
       }
 
-      void getHighPassCoefficients(IIRCoefficientsSetter &setter)
+      void getHighPassCoefficients(IIRCoefficientsSetter &setter) const
       {
         float relativeFrequency = std::min(rate.relative(frequency), 0.5);
                 if (order != setter.getOrder()) {
@@ -217,13 +217,12 @@ namespace simpledsp {
         for (unsigned k = 3; k <= order; ++k) {
           dcof[k] = dcof[2 * k - 2];
         }
-        if (method == IIRCalculationMethod::POSITIVE_Y) {
-          for (unsigned i = 0; i <= order; i++) {
-            /*
-             * Calculus results in coefficients that use subtraction of Y coefficients.
-             */
-            d_coefficients.setD(i, -dcof[i]);
-          }
+        /*
+         * Calculus results in coefficients that use subtraction of Y coefficients.
+         */
+        double sign = method == IIRCalculationMethod::POSITIVE_Y ? -1.0 : 1.0;
+        for (unsigned i = 0; i <= order; i++) {
+          d_coefficients.setD(i, sign * dcof[i]);
         }
       }
 

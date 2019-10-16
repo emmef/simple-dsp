@@ -44,14 +44,14 @@ namespace simpledsp {
 
     sdsp_nodiscard unsigned getCoefficients() const { return getOrder() + 1; }
 
-    void setOrder(unsigned order) {
+    IIRCoefficientsSetter& setOrder(unsigned order) {
       if (order == 0) {
           throw std::invalid_argument("IIRCoefficientsSetter::setOrder(order): "
                                       "order must be 1 or higher.");
       }
       if (!canSetOrder()) {
         if (order == getOrder()) {
-          return;
+          return *this;
         }
         throw std::runtime_error("IIRCoefficientsSetter::setOrder(order): "
                                  "implementation does not allow change of filter order.");
@@ -61,6 +61,7 @@ namespace simpledsp {
                                     "order cannot exceed maximum of implementation.");
       }
       setValidOrder(order);
+      return *this;
     }
 
     bool setOrderGetSuccess(unsigned order) {
@@ -77,12 +78,14 @@ namespace simpledsp {
       return true;
     }
 
-    void setC(size_t i, double value) {
+    IIRCoefficientsSetter& setC(size_t i, double value) {
       setValidC(Check::index(i, getCoefficients()), value);
+      return *this;
     }
 
-    void setD(size_t i, double value) {
+    IIRCoefficientsSetter& setD(size_t i, double value) {
       setValidD(Check::index(i, getCoefficients()), value);
+      return *this;
     }
 
   protected:
@@ -617,7 +620,7 @@ namespace simpledsp {
     }
 
     IIRFixedOrderCoefficients &operator = (const IIRFixedOrderCoefficients &source) {
-      for (size_t i = 0; i < ORDER; i++) {
+      for (size_t i = 0; i <= ORDER; i++) {
         c[i] = source.c[i];
         d[i] = source.d[i];
       }
@@ -631,7 +634,7 @@ namespace simpledsp {
         throw std::invalid_argument("IIRFixedOrderCoefficients::operator=(source): "
                                     "source must have same order.");
       }
-      for (size_t i = 0; i < ORDER; i++) {
+      for (size_t i = 0; i <= ORDER; i++) {
         c[i] = Access::getC(i, source);
         d[i] = Access::getD(i, source);
       }
@@ -652,10 +655,9 @@ namespace simpledsp {
   template<typename coeff>
   struct IIRCoefficients : public IIRCoefficientsClass {
 
-    class Setter : public IIRCoefficientsSetter {
+    struct Setter : public IIRCoefficientsSetter {
       explicit Setter(IIRCoefficients &o) : owner(o) {}
       Setter(Setter && source) noexcept : owner(source.owner) {}
-
       sdsp_nodiscard unsigned getOrder() const override { return owner.getOrder();}
       sdsp_nodiscard unsigned getMaxOrder() const override { return owner.getMaxOrder(); }
       sdsp_nodiscard bool canSetOrder() const override { return true; }
@@ -673,6 +675,7 @@ namespace simpledsp {
       IIRCoefficients &owner;
     };
 
+  public:
     Setter setter() {
       return Setter(*this);
     }
@@ -683,7 +686,7 @@ namespace simpledsp {
             d(c + maximumOrder + 1),
             order(validOrder(initialOrder, maxOrder)) {}
 
-    explicit IIRCoefficients(size_t order) : IIRCoefficients<coeff>(order, order) {}
+    explicit IIRCoefficients(size_t order) : IIRCoefficients(order, order) {}
 
     explicit IIRCoefficients(const IIRCoefficients &source) : IIRCoefficients(
             source.getMaxOrder(), source.getOrder()) {
@@ -695,12 +698,12 @@ namespace simpledsp {
       operator=(source);
     }
 
-    template<class Coefficients>
-    explicit IIRCoefficients(const Coefficients &source) : IIRCoefficients(
-            IIRCoefficientAccess<coeff, Coefficients>::getOrder(source),
-            IIRCoefficientAccess<coeff, Coefficients>::getMaxOrder(source)) {
-      operator=(source);
-    }
+//    template<class Coefficients>
+//    explicit IIRCoefficients(const Coefficients &source) : IIRCoefficients(
+//            IIRCoefficientAccess<coeff, Coefficients>::getOrder(source),
+//            IIRCoefficientAccess<coeff, Coefficients>::getMaxOrder(source)) {
+//      operator=(source);
+//    }
 
     IIRCoefficients &operator = (const IIRCoefficients &source) {
       size_t sourceOrder = source.getOrder();
@@ -711,7 +714,7 @@ namespace simpledsp {
         }
       }
       order = sourceOrder;
-      for (size_t i = 0; i < order; i++) {
+      for (size_t i = 0; i <= order; i++) {
         c[i] = source.c[i];
         d[i] = source.d[i];
       }
@@ -729,7 +732,7 @@ namespace simpledsp {
         }
       }
       order = sourceOrder;
-      for (size_t i = 0; i < order; i++) {
+      for (size_t i = 0; i <= order; i++) {
         c[i] = Access::getC(i, source);
         d[i] = Access::getD(i, source);
       }
@@ -754,7 +757,7 @@ namespace simpledsp {
     
   private:
     static size_t allocationSize(size_t order) {
-      return Size<coeff>::validSumGet(
+      return Size<coeff>::validSumGet(1,
               Size<coeff>::validProductGet(
                       order, 2,
                       ValidGet::RESULT), ValidGet::RESULT);
@@ -771,7 +774,6 @@ namespace simpledsp {
       return order > 0 && order <= maxOrder;
     }
 
-    friend class Setter;
     coeff *c;
     size_t maxOrder;
     coeff *d;
