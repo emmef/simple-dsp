@@ -13,7 +13,9 @@ using FloatMultipliers = simpledsp::IntegrationMulipliers<float>;
 using DoubleMultipliers = simpledsp::IntegrationMulipliers<double>;
 
 template<typename T>
-static void impulseResponseSumTest(const char* message, size_t factor = 1, double epsilon = 1e-6) {
+static void impulseResponseSumTest(const char * testName, const char* message, size_t factor = 1,
+        double
+epsilon = 1e-6) {
   T output = 0;
   T sum = 0;
   T maxSamples = simpledsp::IntegrationMulipliers<T>::maxSamples() / factor;
@@ -23,11 +25,14 @@ static void impulseResponseSumTest(const char* message, size_t factor = 1, doubl
 
   simpledsp::IntegrationCoefficients<T> integrator(maxSamples);
   auto start = std::chrono::system_clock::now();
-  auto maxDuration = std::chrono::seconds(10);
+  auto maxDuration = std::chrono::seconds(2);
 
   size_t count = 1;
   integrator.integrate(1.0, output);
   sum = output;
+  std::cout
+          << "( " << testName << ": will run for a maximum of "
+          << maxDuration.count() << " seconds )" << std::endl;
   for (size_t i = 0; i < iterationCount; i++) {
     for (size_t j = 0; j < iterationCount && count < maxCount; j++, count++) {
       integrator.integrate(0, output);
@@ -46,13 +51,16 @@ static void impulseResponseSumTest(const char* message, size_t factor = 1, doubl
   bool result = fabs(1.0 - sum) < epsilon;
   BOOST_CHECK_MESSAGE(result, message);
   if (!result) {
-    std::cout << message << ": " << sum << " for " << count << "/" << maxSamples << " samples "
-              << std::endl;
+    std::cout << testName << ": " << message
+          << ": " << sum << " for "
+          << count << "/" << maxSamples
+          << " samples "
+          << std::endl;
   }
 }
 
 template<typename T>
-static void stepResponseSumTest(const char* message) {
+static void stepResponseSumTest(const char * testName, const char* message) {
   T output = 0;
   T maxSamples = simpledsp::IntegrationMulipliers<T>::maxSamples();
   size_t iterationCount = std::sqrt(maxSamples) * 4;
@@ -62,6 +70,9 @@ static void stepResponseSumTest(const char* message) {
   simpledsp::IntegrationCoefficients<T> integrator(maxSamples);
   auto start = std::chrono::system_clock::now();
   auto maxDuration = std::chrono::seconds(2);
+  std::cout
+          << "( " << testName << ": will run for a maximum of "
+          << maxDuration.count() << " seconds )" << std::endl;
 
   size_t count = 1;
   integrator.integrate(1.0, output);
@@ -82,8 +93,10 @@ static void stepResponseSumTest(const char* message) {
   bool result = (1.0 - output) < 0.001;
   BOOST_CHECK_MESSAGE(result, message);
   if (!result) {
-    std::cout << message << ": " << output << " for " << count << "/" << maxSamples << " samples "
-              << std::endl;
+    std::cout << testName << ": "
+            << message << ": "
+            << output << " for " << count << "/" << maxSamples
+            << " samples " << std::endl;
   }
 }
 
@@ -96,24 +109,28 @@ BOOST_AUTO_TEST_SUITE(iirIntegrationTest)
 
   BOOST_AUTO_TEST_CASE(testFloatImpulseResponseSum) {
     impulseResponseSumTest<float>(
-            "Single precision Floating point impulse response sum not within promille of unity",
+            "Integration impulse response sum for single precision floats",
+            "sum not within promille of unity",
             8,
             1e-3);
   }
 
   BOOST_AUTO_TEST_CASE(testDoubleImpulseResponseSum) {
     impulseResponseSumTest<double>(
-            "Double precision Floating point impulse response sum not within promille of unity");
+            "Integration impulse response sum for double precision floats",
+            "sum not within promille of unity");
   }
 
   BOOST_AUTO_TEST_CASE(testFloatStepResponseSum) {
     stepResponseSumTest<float>(
-            "Single precision Floating point step response not within promille of unity");
+            "Integration impulse response sum for single precision floats",
+            "step response not within promille of unity");
   }
 
   BOOST_AUTO_TEST_CASE(testDoubleStepResponseSum) {
     stepResponseSumTest<double>(
-            "Double precision Floating point step response not within promille of unity");
+            "Integration impulse response sum for double precision floats",
+            "step response not within promille of unity");
   }
 
   BOOST_AUTO_TEST_CASE(testMaxSamplesDoubleOkayBig) {
