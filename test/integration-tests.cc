@@ -12,10 +12,14 @@
 using FloatMultipliers = simpledsp::IntegrationMulipliers<float>;
 using DoubleMultipliers = simpledsp::IntegrationMulipliers<double>;
 
+#ifdef SIMPLE_DSP_INTEGRATION_LONG_TESTS_SKIP
+static constexpr bool skipTests = true;
+#else
+static constexpr bool skipTests = false;
+#endif
 template<typename T>
 static void impulseResponseSumTest(const char * testName, const char* message, size_t factor = 1,
-        double
-epsilon = 1e-6) {
+        double epsilon = 1e-6) {
   T output = 0;
   T sum = 0;
   T maxSamples = simpledsp::IntegrationMulipliers<T>::maxSamples() / factor;
@@ -102,12 +106,23 @@ static void stepResponseSumTest(const char * testName, const char* message) {
 
 BOOST_AUTO_TEST_SUITE(iirIntegrationTest)
 
+  BOOST_AUTO_TEST_CASE(testAndReportSkippingLongTests) {
+    if (skipTests) {
+        std::cout <<
+                  "Skipping tests with long duration because "
+                  "SIMPLE_DSP_INTEGRATION_LONG_TESTS_SKIP is defined" << std::endl;
+    }
+  }
+
   BOOST_AUTO_TEST_CASE(testMaxSamplesFloatOkayBig) {
     BOOST_CHECK_MESSAGE(FloatMultipliers::maxSamples() > 1e6,
             "Max samples for float integration not reasonable");
   }
 
   BOOST_AUTO_TEST_CASE(testFloatImpulseResponseSum) {
+    if (skipTests) {
+      return;
+    }
     impulseResponseSumTest<float>(
             "Integration impulse response sum for single precision floats",
             "sum not within promille of unity",
@@ -116,18 +131,27 @@ BOOST_AUTO_TEST_SUITE(iirIntegrationTest)
   }
 
   BOOST_AUTO_TEST_CASE(testDoubleImpulseResponseSum) {
+    if (skipTests) {
+      return;
+    }
     impulseResponseSumTest<double>(
             "Integration impulse response sum for double precision floats",
             "sum not within promille of unity");
   }
 
   BOOST_AUTO_TEST_CASE(testFloatStepResponseSum) {
+    if (skipTests) {
+      return;
+    }
     stepResponseSumTest<float>(
             "Integration impulse response sum for single precision floats",
             "step response not within promille of unity");
   }
 
   BOOST_AUTO_TEST_CASE(testDoubleStepResponseSum) {
+    if (skipTests) {
+      return;
+    }
     stepResponseSumTest<double>(
             "Integration impulse response sum for double precision floats",
             "step response not within promille of unity");
