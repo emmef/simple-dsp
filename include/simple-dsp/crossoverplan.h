@@ -54,7 +54,7 @@ namespace simpledsp {
     }
 
     /**
-     * @return the operator index to be applied to input and the outputs.
+     * @return the operator index to be applied to and the outputs.
      */
     size_t filter() const
     {
@@ -144,6 +144,67 @@ namespace simpledsp {
       size_t index = 0;
       createSubPlan(entries, size, index, 0, size - 1);
     }
+    
+    /**
+     * Also create a "double" plan for, say, Linkwitz-Riley filters that works with buffers that
+     * need to retain history for all values. This can be done by splitting entries. 
+     * Imagine we have N frequency bands and thus N buffers. 
+     * The following processing step: 
+     *     to 4 apply filter 3 send lowpass to 2 and highpass to 6
+     *     to 6 apply filter 5 send lowpass to 5 and highpass to 6
+     *  can be split in 
+     *     to 4 apply filter 3 send lowpass to N+1 and highpass to N+2
+     *     to N+1 apply filter 3 send lowpass to 2
+     *     to N+2 apply filter 3 send highpas to 6
+     *     to 6 apply filter 5 send lowpass to N+3 and highpass to N+4
+     *     to N+3 apply filter 5 send lowpass to 5
+     *     to N+4 apply filter 5 send lowpass to 5
+     *  This is a naive implementation. It is also possible to retain the history for the next 
+     *  frame of buffers for each step, whereby we can suffice with having N+1 buffers for
+     *  samples and 3N buffers (of length = order + 1) for history. The temporary buffer is
+     *  called X.
+     *  
+     * The following processing step: 
+     *     to [input] apply [filter] lowpass to [lowpass1] and highpass to [highpass2]
+     *  can be split in:
+     *
+     *       prepend history[N+1] to [input]
+     *       prepend history[N+2] to [lowpass1]
+     *       prepend history[N+3] to [X]
+     *       to [input] apply [filter]:lowpass to [X]
+     *       to [X] apply [filter]:lowpass to [lowpass1]
+     *       capture last samples of [X] to history[N+3]
+     *       capture last samples of [lowpass1] to history[N+2]
+     *       prepend history[N+4] to [highpass2]
+     *       prepend history[N+5] to [X]
+     *       to [input] apply [filter]:highpass to [X]
+     *       to [X] apply [filter]:highpass to [highpass2]
+     *       capture last samples of [X] to history[N+4]
+     *       capture last samples of [highpass2] to history[N+5]
+     *       capture last samples of [input] to history[N+1]
+     *     
+     *  If the values of input and highpass2 are equal, we cannot reorder these. If they are NOT,
+     *  the process can be somewhat simplified to, though it is debatable whether it's worth the
+     *  fuss:
+     *
+     *       prepend history[N+1] to [input]
+     *       capture last samples of [input] to history[N+1]
+     *       prepend history[N+4] to [highpass2]
+     *       prepend history[N+2] to [lowpass1]
+     *       prepend history[N+3] to [X]
+     *       to [input] apply [filter]:lowpass to [X]
+     *       to [X] apply [filter]:lowpass to [lowpass1]
+     *       capture last samples of [lowpass1] to history[N+2]
+     *       capture last samples of [X] to history[N+3]
+     *       prepend history[N+5] to [X]
+     *       to [input] apply [filter]:highpass to [X]
+     *       to [X] apply [filter]:highpass to [highpass2]
+     *       capture last samples of [X] to history[N+4]
+     *       capture last samples of [highpass2] to history[N+5]
+     *
+     *  It is possible to remove some operations when combining multiple crossover steps. That's
+     *  another exercise.
+     */
   };
 
 } // namespace simpledsp
