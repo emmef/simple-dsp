@@ -6,8 +6,8 @@
 #include <simple-dsp/crossoverplan.h>
 #include <boost/test/unit_test.hpp>
 
-using Step = simpledsp::CrossoverProcessingStep;
-using Planner = simpledsp::CrossoverPlanCreator;
+using Step = simpledsp::CrossoverPlan::Step;
+using Planner = simpledsp::CrossoverPlan;
 
 namespace {
   bool operator == (
@@ -15,16 +15,16 @@ namespace {
     return
             step1.filter() == step2.filter() &&
                     step1.input() == step2.input() &&
-                    step1.lowpass1() == step2.lowpass1() &&
-                    step1.highpass2() == step2.highpass2();
+                    step1.lowOut() == step2.lowOut() &&
+                    step1.highOut() == step2.highOut();
   }
 
   std::ostream &operator << (std::ostream &output, const Step &step) {
     output <<
            "(on " << step.input() <<
            " apply " << step.filter() <<
-           " lowpass1->" << step.lowpass1() <<
-           "; highpass2->" << step.highpass2() << ")";
+           " lowOut->" << step.lowOut() <<
+           "; highOut->" << step.highOut() << ")";
     return output;
   }
 
@@ -88,19 +88,19 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
       Step step2;
       switch (i) {
       case 1:
-        step2 = {step1.filter() * 7, step1.input(), step1.lowpass1(), step1.highpass2()};
+        step2 = {step1.filter() * 7, step1.input(), step1.lowOut(), step1.highOut()};
         break;
       case 2:
-        step2 = {step1.filter(), step1.input() * 7, step1.lowpass1(), step1.highpass2()};
+        step2 = {step1.filter(), step1.input() * 7, step1.lowOut(), step1.highOut()};
         break;
       case 3:
-        step2 = {step1.filter(), step1.input(), step1.lowpass1() * 7, step1.highpass2()};
+        step2 = {step1.filter(), step1.input(), step1.lowOut() * 7, step1.highOut()};
         break;
       case 4:
-        step2 = {step1.filter(), step1.input(), step1.lowpass1(), step1.highpass2() * 7};
+        step2 = {step1.filter(), step1.input(), step1.lowOut(), step1.highOut() * 7};
         break;
       default:
-        step2 = {step1.filter(), step1.input(), step1.lowpass1(), step1.highpass2()};
+        step2 = {step1.filter(), step1.input(), step1.lowOut(), step1.highOut()};
         break;
       }
       bool p = !(step1 == step2);
@@ -115,12 +115,12 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
 
   BOOST_AUTO_TEST_CASE(testPlanOfSize1) {
     std::vector<Step> plan;
-    Planner::createPlan(plan, 1);
+    Planner::create(plan, 1);
   }
 
   BOOST_AUTO_TEST_CASE(testPlanOfSizeZeroThrowsInvalidArgument) {
     std::vector<Step> plan;
-    BOOST_CHECK_THROW(Planner::createPlan(plan, 0), std::invalid_argument);
+    BOOST_CHECK_THROW(Planner::create(plan, 0), std::invalid_argument);
   }
 
   BOOST_AUTO_TEST_CASE(testPlanOfSizeOne) {
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
     expected.push_back({1, 0, 0, 1});
 
     std::vector<Step> actual;
-    Planner::createPlan(actual, 1);
+    Planner::create(actual, 1);
 
     testSameSteps(expected, actual);
   }
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
     expected.push_back({1, 0, 0, 1});
 
     std::vector<Step> actual;
-    Planner::createPlan(actual, 2);
+    Planner::create(actual, 2);
 
     testSameSteps(expected, actual);
   }
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
     expected.push_back({1, 0, 0, 1});
 
     std::vector<Step> actual;
-    Planner::createPlan(actual, 3);
+    Planner::create(actual, 3);
 
     testSameSteps(expected, actual);
   }
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
     expected.push_back({1, 0, 0, 1});
 
     std::vector<Step> actual;
-    Planner::createPlan(actual, 4);
+    Planner::create(actual, 4);
 
     testSameSteps(expected, actual);
   }
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
     expected.push_back({1, 0, 0, 1});
 
     std::vector<Step> actual;
-    Planner::createPlan(actual, 5);
+    Planner::create(actual, 5);
 
     testSameSteps(expected, actual);
   }
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
     expected.push_back({1, 0, 0, 1});
 
     std::vector<Step> actual;
-    Planner::createPlan(actual, 6);
+    Planner::create(actual, 6);
 
     testSameSteps(expected, actual);
   }
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_SUITE(CrossoverPlanTests)
     expected.push_back({1, 0, 0, 1});
 
     std::vector<Step> actual;
-    Planner::createPlan(actual, 7);
+    Planner::create(actual, 7);
 
     testSameSteps(expected, actual);
   }

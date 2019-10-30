@@ -27,72 +27,25 @@
 #include <stdexcept>
 #include <stdio.h>
 #include <vector>
+#include <simple-dsp/addressing.h>
 
 namespace simpledsp {
 
   /**
-   * Describes a single operation in a butterfly filter execution pattern. For example, consider
-   * a multi-crossover that uses a list of filters from the lowest to the highest crossover
-   * frequency. A butterfly entry gives the input index via @var{filter()}, the index of the filter
-   * to use in @var{input()}, the output for the lower frequencies in @var{lowpass1()} and the
-   * output of the higher frequencies in @var{highpass2()}. The lower pass should be done first,
-   * as it never coincides with the input, while the high pass might.
+   * Describes a crossover implementation plan, using the "butterfly" pattern. A crossover that
+   * output N frequency bands has N - 1 crossover filters. The plan assumes that both the output
+   * frequency ands and the filters are sorted from the lowest to the highest frequency.
+   * Let M be N if N is a power of 2 the next power of 2 that is greater than N otherwise. The
+   * butterfly plan ensures that each frequency band passes thourgh <em>at most</em> 2log(M)
+   * filters. This is obtained in N - 1 steps, that are described by a #Plan object.
    */
-  class CrossoverProcessingStep {
-    size_t filter_ = 0;
-    size_t input_ = 0;
-    size_t lowpass_ = 0;
-    size_t highpass_ = 0;
-
-  public:
-    CrossoverProcessingStep() {}
-    CrossoverProcessingStep(size_t input,
-            size_t filter,
-            size_t lowpass,
-            size_t highpass) :
-            filter_(filter), input_(input), lowpass_(lowpass), highpass_(highpass) {
-    }
-
-    /**
-     * @return the operator index to be applied to and the outputs.
-     */
-    size_t filter() const
-    {
-      return filter_;
-    }
-
-    /**
-     * @return the input index
-     */
-    size_t input() const {
-      return input_;
-    }
-
-    /**
-     * @return the output for the applied operator that contains the lower half as related to
-     * the order of the operators.
-     */
-    size_t lowpass1() const {
-      return lowpass_;
-    }
-
-    /**
-     * @return the output for the applied operator that contains the higher half as related to
-     * the order of the operators.
-     */
-    size_t highpass2() const {
-      return highpass_;
-    }
-  };
-
-  class CrossoverPlanCreator {
-
+  class CrossoverPlan {
     template<typename T>
     static void addToPlan(
             T &entries,
             size_t size, size_t &index, size_t input, size_t output1, size_t output2) {
       size_t operators = size;
-      entries[index++] = CrossoverProcessingStep(
+      entries[index++] = Step(
               operators - input,
               operators - 1 - input,
               operators - output1,
@@ -128,23 +81,158 @@ namespace simpledsp {
     }
 
   public:
-    static void createPlan(CrossoverProcessingStep *entries, size_t size) {
-      createPlanGeneric<CrossoverProcessingStep *>(entries, size);
+
+    /**
+     * Defines one step in a butterfly crossover plan. In pseudo code, processing can be
+     * done as follows:
+     * \code
+     * input = sample[step.input()]
+     * filter = filters[step.filter()]
+     * sample[step.lowOut()] = filter.lowpass(input)
+     * sample[step.highOut()] = filter.highpass(input)
+     * \endcode
+     * It is important to realise that step.highpass2() and step.input() can be the same index:
+     * therefore low-pass and high-pass should never be swapped! If your filter is phase-free and
+     * the high-pass part can be obtain by subtracting it from the original, the step can be
+     * simplified as follows:
+     * \code
+     * input = sample[step.input()]
+     * filter = filters[step.filter()]
+     * sample[step.lowOut()] = filter.lowpass(input)
+     * sample[step.highOut()] = input - sample[step.lowOut()]
+     * \endcode
+     */
+    class Step {
+      size_t filter_ = 0;
+      size_t input_ = 0;
+      size_t lowOut_ = 0;
+      size_t highOut_ = 0;
+
+    public:
+      Step() {}
+      Step(size_t input,
+              size_t filter,
+              size_t lowOut,
+              size_t highOut) :
+              filter_(filter), input_(input), lowOut_(lowOut), highOut_(highOut) {
+      }
+
+      /**
+       * @return the filter-index to be applied to the input with index #input() to obtain outputs.
+       */
+      sdsp_nodiscard size_t filter() const
+      {
+        return filter_;
+      }
+
+      /**
+       * @return the input-index.
+       */
+      sdsp_nodiscard size_t input() const {
+        return input_;
+      }
+
+      /**
+       * Returns the low-pass output index. Filtered information should always be written to this
+       * output before the output is written to the output with index #highOut(), as that might
+       * overwrite the input.
+       * @return the index of the output when the low-pass part of the filter with index #filter()
+       * is applied to the input with index #input().
+       */
+      sdsp_nodiscard size_t lowOut() const {
+        return lowOut_;
+      }
+
+      /**
+       * Returns the high-pass output index. Filtered information should always be written to
+       * the output with index #lowOut() before it is written to this one, as this one might
+       * overwrite the input.
+       * @return the index of the output when the high-pass part of the filter with index #filter()
+       * is applied to the input with index #input().
+       */
+      sdsp_nodiscard size_t highOut() const {
+        return highOut_;
+      }
+    };
+
+    /**
+     * Creates a crossover plan with \a crossover crossovers.
+     * @param crossovers The number of crossovers, that must be one or larger
+     */
+    CrossoverPlan(size_t crossovers) :
+    steps_(new Step[Size<Step>::validGet(crossovers)]),
+    crossovers_(crossovers) {
+      create(steps_, crossovers);
     }
 
-    static void createPlan(std::vector<CrossoverProcessingStep> &entries, size_t size) {
-      checkValidSize(size);
-      entries.resize(size);
-      createPlanGeneric<std::vector<CrossoverProcessingStep>>(entries, size);
+    const Step &operator[](size_t idx) const {
+      return steps_[Index::Array::index(idx, crossovers_)];
     }
 
+    const Step &at(size_t idx) const {
+      return steps_[Index::Method::index(idx, crossovers_)];
+    }
+
+    const Step * begin() const noexcept {
+      return steps_;
+    }
+
+    const Step * cbegin() const noexcept {
+      return steps_;
+    }
+
+    ~CrossoverPlan() {
+      if (steps_) {
+        delete[] steps_;
+        crossovers_ = 0;
+      }
+    }
+
+    /**
+     * Creates a butterfly plan for a crossover with \a crossover crossovers and thus \a
+     * crossover + 1 frequency bands.
+     * @param steps A buffer that can contain at least \a crossover steps.
+     * @param crossovers The number of crossovers that must be larger than zero and yields
+     * (crossover + 1) frequency bands.
+     */
+    static void create(Step *steps, size_t crossovers) {
+      createGeneric<Step*>(steps, crossovers);
+    }
+
+    /**
+     * Creates a butterfly plan for a crossover with \a crossover crossovers and thus \a
+     * crossover + 1 frequency bands.
+     * @param steps A vector that will have size \a crossovers and contains the #{Step}s.
+     * @param crossovers The number of crossovers that must be larger than zero and yields
+     * (crossover + 1) frequency bands.
+     */
+    static void create(std::vector<Step> &steps, size_t crossovers) {
+      checkValidSize(crossovers);
+      steps.resize(crossovers);
+      steps.begin();
+      createGeneric<std::vector<Step>>(steps, crossovers);
+    }
+
+    /**
+     * Creates a butterfly plan for a crossover with \a crossover crossovers and thus \a
+     * crossover + 1 frequency bands.
+     * @param steps An object that has an operator \code{.cpp}
+     * Step &operator[](size_t)
+     * \endcode.
+     * @param crossovers The number of crossovers that must be larger than zero and yields
+     * (crossover + 1) frequency bands.
+     */
     template<typename T>
-    static void createPlanGeneric(T &entries, size_t size) {
-      checkValidSize(size);
+    static void createGeneric(T &steps, size_t crossovers) {
+      checkValidSize(crossovers);
       size_t index = 0;
-      createSubPlan(entries, size, index, 0, size - 1);
+      createSubPlan(steps, crossovers, index, 0, crossovers - 1);
     }
-    
+
+  private:
+    Step *steps_;
+    size_t crossovers_;
+
     /**
      * Also create a "double" plan for, say, Linkwitz-Riley filters that works with buffers that
      * need to retain history for the next "frame" of buffers. This can be done by splitting
@@ -176,6 +264,8 @@ namespace simpledsp {
      *  reduces the number of history buffers. But that is for advanced users.
      */
   };
+
+
 
 } // namespace simpledsp
 
