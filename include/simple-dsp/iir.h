@@ -325,11 +325,6 @@ namespace simpledsp {
         }
         y[n] = yN;
       }
-      for (size_t dst = offset - order, src = dst + count; dst < offset; dst++, src++) {
-        x[dst] = x[src];
-        y[dst] = y[src];
-      }
-
       return true;
     }
 
@@ -372,10 +367,6 @@ namespace simpledsp {
         }
         y[n] = yN;
       }
-      for (size_t dst = OFFSET - ORDER, src = dst + count; dst < OFFSET; dst++, src++) {
-        x[dst] = x[src];
-        y[dst] = y[src];
-      }
     }
 
     /**
@@ -415,10 +406,6 @@ namespace simpledsp {
                   Coefficients::getD(j, filter), y[n - j]);
         }
         y[n] = yN;
-      }
-      for (size_t dst = OFFSET - ORDER, src = dst + COUNT; dst < OFFSET; dst++, src++) {
-        x[dst] = x[src];
-        y[dst] = y[src];
       }
     }
 
@@ -485,10 +472,6 @@ namespace simpledsp {
         }
         y[n] = yN;
       }
-      for (size_t src = 0, dst = count; dst < order; dst++, src++) {
-        x[dst] = x[src];
-        y[dst] = y[src];
-      }
     }
 
     /**
@@ -528,10 +511,6 @@ namespace simpledsp {
         }
         y[n] = yN;
       }
-      for (size_t src = 0, dst = count; dst < ORDER; dst++, src++) {
-        x[dst] = x[src];
-        y[dst] = y[src];
-      }
     }
 
     /**
@@ -570,12 +549,90 @@ namespace simpledsp {
         }
         y[n] = yN;
       }
-      for (size_t src = 0, dst = COUNT; dst < ORDER; dst++, src++) {
-        x[dst] = x[src];
-        y[dst] = y[src];
+    }
+
+  };
+
+  /**
+   * Provides methods to "wrap" history data for buffer based filtering that uses history.
+   *
+   * The IIRFiltebase methods that also use past data, assume history "surrounding" those buffers.
+   * If the same input and output buffers are used for the next block of samples, glitches can
+   * only be prevented when the the lastly generated data is "wrapped" so that it becomes the
+   * history for the next blockof samples.
+   *
+   * The parameters of these methods are the same as those of the corresponding filter methods.
+   *
+   * The methods are force-inline and should be used to construct methods with specific array
+   * indexed access.
+   */
+  struct BufferHistoryWrap {
+
+    template<class C>
+    sdsp_force_inline static void forwardUnchecked(
+            C &data, size_t offset, size_t order, size_t count) {
+      for (size_t dst = offset - order, src = dst + count; dst < offset; ++dst, ++src) {
+        data[dst] = data[src];
       }
     }
 
+    template<class C>
+    sdsp_force_inline static void withBuffers(
+            C &data, size_t offset, size_t order, size_t count) {
+      if (offset < order) {
+        throw std::invalid_argument("BufferHistoryWrap:forward(): "
+                                    "offset must be greater than order.");
+      }
+      forwardUnchecked(data, offset, order, count);
+    }
+
+    template<class C, size_t order>
+    sdsp_force_inline static void withBuffersFixedOrder(C &data, size_t offset, size_t count) {
+      static_assert(offset >= order, "BufferHistoryWrap:forward(): "
+                                     "offset must be greater than order.");
+      for (size_t dst = offset - order, src = dst + count; dst < offset; ++dst, ++src) {
+        data[dst] = data[src];
+      }
+    }
+
+    template<class C, size_t offset, size_t order>
+    sdsp_force_inline static void withBuffersFixedOffsetOrder(C &data, size_t count) {
+      static_assert(offset >= order, "BufferHistoryWrap:forward(): "
+                                     "offset must be greater than order.");
+      for (size_t dst = offset - order, src = dst + count; dst < offset; ++dst, ++src) {
+        data[dst] = data[src];
+      }
+    }
+
+    template<class C, size_t offset, size_t order, size_t count>
+    sdsp_force_inline static void withBuffersFixedOffsetOrderCount(C &data) {
+      static_assert(offset >= order, "BufferHistoryWrap:forward(): "
+                                     "offset must be greater than order.");
+      for (size_t dst = offset - order, src = dst + count; dst < offset; ++dst, ++src) {
+        data[dst] = data[src];
+      }
+    }
+
+    template<class C>
+    sdsp_force_inline static void withBuffersBackwards(C &data, size_t order, size_t count) {
+      for (size_t src = order - 1, dst = src + count; dst >= count; dst--, src--) {
+        data[dst] = data[src];
+      }
+    }
+
+    template<class C, size_t ORDER>
+    sdsp_force_inline static void withBuffersBackwardsFixedOrder(C &data, size_t count) {
+      for (size_t src = ORDER - 1, dst = src + count; dst >= count; dst--, src--) {
+        data[dst] = data[src];
+      }
+    }
+
+    template<class C, size_t ORDER, size_t COUNT>
+    sdsp_force_inline static void withBuffersBackwardsFixedOrderCount(C &data) {
+      for (size_t src = ORDER - 1, dst = src + COUNT; dst >= COUNT; dst--, src--) {
+        data[dst] = data[src];
+      }
+    }
   };
 
   template<typename coeff, size_t ORDER>

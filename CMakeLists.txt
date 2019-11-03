@@ -24,7 +24,7 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
-set(SIMPLE_DSP_HEADERS include/simple-dsp/addressing.h include/simple-dsp/attributes.h include/simple-dsp/circular.h include/simple-dsp/delay.h include/simple-dsp/alignment.h include/simple-dsp/denormal.h include/simple-dsp/arrayops.h include/simple-dsp/algorithm.h include/simple-dsp/aligneddata.h include/simple-dsp/integration.h include/simple-dsp/iir.h include/simple-dsp/samplerate.h include/simple-dsp/biquad.h include/simple-dsp/butterworth.h include/simple-dsp/crossoverplan.h)
+set(SIMPLE_DSP_HEADERS include/simple-dsp/addressing.h include/simple-dsp/attributes.h include/simple-dsp/circular.h include/simple-dsp/delay.h include/simple-dsp/alignment.h include/simple-dsp/denormal.h include/simple-dsp/arrayops.h include/simple-dsp/algorithm.h include/simple-dsp/aligneddata.h include/simple-dsp/integration.h include/simple-dsp/iir.h include/simple-dsp/samplerate.h include/simple-dsp/biquad.h include/simple-dsp/butterworth.h include/simple-dsp/crossoverplan.h include/simple-dsp/linkwitz-riley-plan.h include/simple-dsp/sample-frame.h)
 
 set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/circular-tests.cc test/delay-tests.cc test/integration-tests.cc test/butterworth-tests.cc test/crossoverplan-tests.cc)
 

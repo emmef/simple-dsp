@@ -31,51 +31,59 @@ namespace simpledsp {
     using ArrayIndex = Index::Array;
     using MethodIndex = Index::Method;
 
-    sdsp_nodiscard sdsp_force_inline size_t size() const {
+    using value_type = T;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = size_t;
+    using difference_type = ptrdiff_t;
+
+    sdsp_nodiscard sdsp_force_inline size_type size() const {
       return reinterpret_cast<const Data*>(this)->trait_size();
     }
 
-    sdsp_nodiscard sdsp_force_inline const T* ptr() const {
+    sdsp_nodiscard sdsp_force_inline const_pointer ptr() const {
       return Metric::assumeAligned(reinterpret_cast<const Data*>(this)->trait_unsafe_ptr());
     }
 
-    sdsp_nodiscard sdsp_force_inline T* ptr() {
+    sdsp_nodiscard sdsp_force_inline pointer ptr() {
       return Metric::assumeAligned(reinterpret_cast<Data*>(this)->trait_unsafe_ptr());
     }
 
-    sdsp_nodiscard sdsp_force_inline T* frame(size_t i) {
+    sdsp_nodiscard sdsp_force_inline pointer frame(size_type i) {
       return Metric::assumeAligned(
               ptr() + MethodIndex::index(i * ALIGNMENT, size()));
     }
 
-    sdsp_nodiscard sdsp_force_inline const T* frame(size_t i) const {
+    sdsp_nodiscard sdsp_force_inline const_pointer frame(size_type i) const {
       return Metric::assumeAligned(
               ptr() + MethodIndex::index(i * ALIGNMENT, size()));
     }
 
-    sdsp_nodiscard sdsp_force_inline T* operator()(size_t i) {
+    sdsp_nodiscard sdsp_force_inline pointer operator()(size_type i) {
       return Metric::assumeAligned(
               ptr() + ArrayIndex::index(i * ALIGNMENT, size()));
     }
 
-    sdsp_nodiscard sdsp_force_inline const T* operator()(size_t i) const {
+    sdsp_nodiscard sdsp_force_inline const_pointer operator()(size_type i) const {
       return Metric::assumeAligned(
               ptr() + ArrayIndex::index(i * ALIGNMENT, size()));
     }
 
-    sdsp_nodiscard sdsp_force_inline const T& operator[](size_t i) const {
+    sdsp_nodiscard sdsp_force_inline const_reference operator[](size_type i) const {
       return ptr()[ArrayIndex::index(i, size())];
     }
 
-    sdsp_nodiscard sdsp_force_inline T& operator[](size_t i) {
+    sdsp_nodiscard sdsp_force_inline reference operator[](size_type i) {
       return ptr()[ArrayIndex::index(i, size())];
     }
 
-    sdsp_nodiscard sdsp_force_inline const T& at(size_t i) const {
+    sdsp_nodiscard sdsp_force_inline const_reference at(size_type i) const {
       return ptr()[MethodIndex::index(i, size())];
     }
 
-    sdsp_nodiscard sdsp_force_inline T& at(size_t i) {
+    sdsp_nodiscard sdsp_force_inline reference at(size_type i) {
       return ptr()[MethodIndex::index(i, size())];
     }
 
@@ -89,16 +97,19 @@ namespace simpledsp {
       using Metric = typename Base::Metric;
       using ArrayIndex = typename Base::ArrayIndex;
       using MethodIndex = typename Base::MethodIndex;
+      using size_type = typename Base::size_type;
+      using pointer = typename Base::pointer;
+      using const_pointer = typename Base::const_pointer;
 
-      sdsp_nodiscard sdsp_force_inline constexpr size_t trait_size() const {
+      sdsp_nodiscard sdsp_force_inline constexpr size_type trait_size() const {
         return data_.trait_size();
       }
 
-      sdsp_nodiscard sdsp_force_inline constexpr const T* trait_unsafe_ptr() const {
+      sdsp_nodiscard sdsp_force_inline constexpr const pointer trait_unsafe_ptr() const {
         return Metric::assumeAligned(data_.trait_unsafe_ptr());
       }
 
-      sdsp_nodiscard sdsp_force_inline constexpr T* trait_unsafe_ptr() {
+      sdsp_nodiscard sdsp_force_inline constexpr const_pointer trait_unsafe_ptr() {
         return Metric::assumeAligned(data_.trait_unsafe_ptr());
       }
 
