@@ -5,7 +5,8 @@
 #include <simple-dsp/queue.h>
 #include <boost/test/unit_test.hpp>
 
-using Q = simpledsp::QueueSingleThreaded<int>;
+using Q = simpledsp::Queue<int>;
+using R = simpledsp::QueueResult;
 
 namespace {
   constexpr int QUEUESIZE = 9;
@@ -34,16 +35,16 @@ namespace {
   };
 
   void fillThenEmptyBufferSize(Q& queue, Generator& generator) {
-    int size = queue.maxElements();
+    int size = queue.capacity();
     for (int i = 0; i < size; i++) {
       BOOST_CHECK_MESSAGE(
-              queue.put(generator.nextWrite()),
+              queue.put(generator.nextWrite()) == R::SUCCESS,
               "fillThenEmptyBufferSize: Should be able to put value.");
     }
     for (int i = 0; i < size; i++) {
       int result;
       BOOST_CHECK_MESSAGE(
-              queue.get(result),
+              queue.get(result) == R::SUCCESS,
               "fillThenEmptyBufferSize: Should be able to get value.");
       BOOST_CHECK_MESSAGE(
               result == generator.nextRead(),
@@ -52,21 +53,21 @@ namespace {
   }
 
   void fillMoreThanBufferSize(Q& queue, Generator& generator) {
-    int size = queue.maxElements();
+    int size = queue.capacity();
 
     for (int i = 0; i < size; i++) {
       BOOST_CHECK_MESSAGE(
-              queue.put(generator.nextWrite()),
+              queue.put(generator.nextWrite()) == R::SUCCESS,
               "fillMoreThanBufferSize: Should be able to put value.");
     }
     BOOST_CHECK_MESSAGE(
-            !queue.put(generator.nextWrite()),
+            queue.put(generator.nextWrite()) == R::FULL,
             "fillMoreThanBufferSize: Should not be able to put value.");
 
     for (int i = 0; i < size; i++) {
       int result;
       BOOST_CHECK_MESSAGE(
-              queue.get(result),
+              queue.get(result) == R::SUCCESS,
               "fillThenEmptyBufferSize: Should be able to get value.");
       BOOST_CHECK_MESSAGE(
               result == generator.nextRead(),
@@ -77,11 +78,11 @@ namespace {
   void synchronousPutAndGet(Q& queue, Generator& generator, int size) {
     for (int i = 0; i < size; i++) {
       BOOST_CHECK_MESSAGE(
-              queue.put(generator.nextWrite()),
+              queue.put(generator.nextWrite()) == R::SUCCESS,
               "synchronousPutAndGet: Should be able to put value.");
       int result;
       BOOST_CHECK_MESSAGE(
-              queue.get(result),
+              queue.get(result) == R::SUCCESS,
               "synchronousPutAndGet: Should be able to get value.");
       BOOST_CHECK_MESSAGE(
               result == generator.nextRead(),
@@ -98,7 +99,7 @@ BOOST_AUTO_TEST_SUITE(QueueTests)
   }
 
   BOOST_AUTO_TEST_CASE(initQueueTooLargeSizeThrows) {
-    int size = 1 + std::numeric_limits<int>::max() / sizeof(int);
+    size_t size = 1 + simpledsp::queue_data::DefaultData<int>::maxCapacity;
     std::unique_ptr<Q> x;
     BOOST_CHECK_THROW(x = std::make_unique<Q>(size), std::invalid_argument);
   }
