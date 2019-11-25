@@ -52,21 +52,39 @@ namespace simpledsp {
 
   enum class ValidGet { FIRST, RESULT };
 
-  template<typename T, size_t customMaximum = 0>
-  struct AddressRange {
-    static constexpr size_t absolueMaximumSize =
-            (maximumSizeInBytes - alignof(T)) / sizeof(T);
+  template<typename size_type>
+  struct SizeTypeMax
+  {
+    static_assert(
+            std::is_integral<size_type>::value && std::is_unsigned<size_type>::value,
+            "Size type must be an unsigned integral");
 
-    static constexpr size_t maximumArraySize = is_within_excl<size_t>(
+    static constexpr size_type size_type_max = std::numeric_limits<size_type>::max();
+    static constexpr size_type value =
+            std::min(static_cast<size_t>(size_type_max), maximumSizeInBytes);
+  };
+
+  template<typename T, typename size_type>
+  struct SizeTypeMaxForType {
+    static constexpr size_type size_type_max = SizeTypeMax<size_type>::value;
+    static_assert(alignof(T) < size_type_max, "Size type too small for value type");
+    static constexpr size_type value = (size_type_max - alignof(T)) / sizeof(T);
+  };
+
+  template<typename T, typename size_type, size_t customMaximum = 0>
+  struct AddressRange {
+    static constexpr size_type absolueMaximumSize = SizeTypeMaxForType<T, size_type>::value;
+
+    static constexpr size_type maximumArraySize = is_within_excl<size_type>(
             customMaximum, 0, absolueMaximumSize)
                                                ? customMaximum
                                                : absolueMaximumSize;
 
-    static constexpr bool isValidRelaxed(size_t value) {
+    static constexpr bool isValidRelaxed(size_type value) {
       return value <= maximumArraySize;
     }
 
-    static constexpr bool isValidStrict(size_t value) {
+    static constexpr bool isValidStrict(size_type value) {
       return value && isValidRelaxed(value);
     }
 
@@ -79,7 +97,7 @@ namespace simpledsp {
      * @param value2 The second value
      * @return {@code true} if the sum does not exceed the maximum.
      */
-    static constexpr bool isValidSumRelaxed(size_t value1, size_t value2) {
+    static constexpr bool isValidSumRelaxed(size_type value1, size_type value2) {
       return value1 <= maximumArraySize && maximumArraySize - value1 >= value2;
     }
 
@@ -91,7 +109,7 @@ namespace simpledsp {
      * @param value2 The second value
      * @return {@code true} if the product does not exceed the maximum.
      */
-    static constexpr bool isValidProductRelaxed(size_t value1, size_t value2) {
+    static constexpr bool isValidProductRelaxed(size_type value1, size_type value2) {
       return value1 == 0 || maximumArraySize / value1 >= value2;
     }
 
@@ -103,7 +121,7 @@ namespace simpledsp {
      * @param value2 The second value that cannot be zero
      * @return {@code true} if the product does not exceed the maximum.
      */
-    static constexpr bool isValidProductStrict(size_t value1, size_t value2) {
+    static constexpr bool isValidProductStrict(size_type value1, size_type value2) {
       return value1 && value2 && maximumArraySize / value1 >= value2;
     }
 
@@ -116,11 +134,11 @@ namespace simpledsp {
      * @param value2 The second value, that cannot be zero.
      * @return {@code true} if the sum does not exceed the maximum.
      */
-    static constexpr bool isValidSumStrict(size_t value1, size_t value2) {
+    static constexpr bool isValidSumStrict(size_type value1, size_type value2) {
       return value1 && value2 && isValidSumRelaxed(value1, value2);
     }
 
-    static size_t validStrictGet(size_t value) {
+    static size_type validStrictGet(size_type value) {
       if (isValidStrict(value)) {
         return value;
       }
@@ -128,7 +146,7 @@ namespace simpledsp {
               "Size::get_valid_product: value exceeds exceeds maximum addressing range for type or is zero.");
     }
 
-    static size_t validRelaxedGet(size_t value) {
+    static size_type validRelaxedGet(size_type value) {
       if (isValidRelaxed(value)) {
         return value;
       }
@@ -147,7 +165,7 @@ namespace simpledsp {
      * @param validGet Indicates whether the first value or result is returned if result is valid.
      * @return the first value or result, based on the value of validGet.
      */
-    static size_t validProductStrictGet(size_t value1, size_t value2, ValidGet validGet) {
+    static size_type validProductStrictGet(size_type value1, size_type value2, ValidGet validGet) {
       if (isValidProductStrict(value1, value2)) {
         return validGet == ValidGet::FIRST
                ? value1
@@ -169,7 +187,7 @@ namespace simpledsp {
      * @param validGet Indicates whether the first value or result is returned if result is valid.
      * @return the first value or result, based on the value of validGet.
      */
-    static size_t validProductRelaxedGet(size_t value1, size_t value2, ValidGet validGet) {
+    static size_type validProductRelaxedGet(size_type value1, size_type value2, ValidGet validGet) {
       if (isValidProductRelaxed(value1, value2)) {
         return validGet == ValidGet::FIRST
                ? value1
@@ -191,7 +209,7 @@ namespace simpledsp {
      * @param validGet Indicates whether the first value or result is returned if result is valid.
      * @return the first value or result, based on the value of validGet.
      */
-    static size_t validSumStrictGet(size_t value1, size_t value2, ValidGet validGet) {
+    static size_type validSumStrictGet(size_type value1, size_type value2, ValidGet validGet) {
       if (isValidSumStrict(value1, value2)) {
         return validGet == ValidGet::FIRST
                ? value1
@@ -213,7 +231,7 @@ namespace simpledsp {
      * @param validGet Indicates whether the first value or result is returned if result is valid.
      * @return the first value or result, based on the value of validGet.
      */
-    static size_t validSumRelaxedGet(size_t value1, size_t value2, ValidGet validGet) {
+    static size_type validSumRelaxedGet(size_type value1, size_type value2, ValidGet validGet) {
       if (isValidSumRelaxed(value1, value2)) {
         return validGet == ValidGet::FIRST
                ? value1
@@ -226,17 +244,17 @@ namespace simpledsp {
 
   };
 
-  template<typename T, size_t customMaximum = 0>
-  struct Size {
-    using Range = AddressRange<T, customMaximum>;
-    static constexpr size_t absolueMaximumSize = Range::absolueMaximumSize;
-    static constexpr size_t maximum = Range::maximumArraySize;
+  template<typename T, typename size_type, size_type customMaximum = 0>
+  struct BaseSize {
+    using Range = AddressRange<T, size_type, customMaximum>;
+    static constexpr size_type absolueMaximumSize = Range::absolueMaximumSize;
+    static constexpr size_type maximum = Range::maximumArraySize;
 
     /**
      * @return {@code true} if the given value is nonzero and smaller than
      * maximum, {@code false} otherwise.
      */
-    static constexpr bool isValid(size_t value) {
+    static constexpr bool isValid(size_type value) {
       return Range::isValidStrict(value);
     }
 
@@ -244,7 +262,7 @@ namespace simpledsp {
      * @return Returns {@code true} if both values and their product are nonzero and
      * smaller than maximum, {@code false} otherwise.
      */
-    static constexpr bool isValidProduct(size_t value1, size_t value2) {
+    static constexpr bool isValidProduct(size_type value1, size_type value2) {
       return Range::isValidProductStrict(value1, value2);
     }
 
@@ -252,7 +270,7 @@ namespace simpledsp {
      * @return Returns {@code true} if both values and their sum are nonzero and
      * smaller than maximum, {@code false} otherwise.
      */
-    static constexpr bool isValidSum(size_t value1, size_t value2) {
+    static constexpr bool isValidSum(size_type value1, size_type value2) {
       return Range::isValidSumStrict(value1, value2);
     }
 
@@ -260,7 +278,7 @@ namespace simpledsp {
      * @return value if it is valid according to isValid(value),
      * throws invalid_argument otheriwse.
      */
-    static size_t validGet(size_t value) {
+    static size_type validGet(size_type value) {
       return Range::validStrictGet(value);
     }
 
@@ -269,7 +287,7 @@ namespace simpledsp {
      * isValidProduct(value1, value2) returns {code true}, throws
      * invalid_argument otherwise.
      */
-    static size_t validProductGet(size_t value1, size_t value2, ValidGet validGet) {
+    static size_type validProductGet(size_type value1, size_type value2, ValidGet validGet) {
       return Range::validProductStrictGet(value1, value2, validGet);
     }
 
@@ -278,22 +296,25 @@ namespace simpledsp {
      * isValidSum(value1, value2) returns {code true}, throws
      * invalid_argument otherwise.
      */
-    static size_t validSumGet(size_t value1, size_t value2, ValidGet validGet) {
+    static size_type validSumGet(size_type value1, size_type value2, ValidGet validGet) {
       return Range::validSumStrictGet(value1, value2, validGet);
     }
   };
 
   template<typename T, size_t customMaximum = 0>
-  struct Offset {
-    using Range = AddressRange<T, customMaximum>;
-    static constexpr size_t absoluteMaximum = Range::absolueMaximumSize;
-    static constexpr size_t maximum = Range::maximumArraySize;
+  using Size = BaseSize<T, size_t, customMaximum>;
+
+  template<typename T, typename size_type, size_t customMaximum = 0>
+  struct BaseOffset {
+    using Range = AddressRange<T, size_type, customMaximum>;
+    static constexpr size_type absoluteMaximum = Range::absolueMaximumSize;
+    static constexpr size_type maximum = Range::maximumArraySize;
 
     /**
      * @return {@code true} if the given value is nonzero and smaller than
      * maximum, {@code false} otherwise.
      */
-    static constexpr size_t isValid(size_t value) {
+    static constexpr size_type isValid(size_type value) {
       return Range::isValidRelaxed(value);
     }
 
@@ -301,7 +322,7 @@ namespace simpledsp {
      * @return {@code true} if the product of value1 and value2 is nonzero
      * and smaller than maximum, {@code false} otherwise.
      */
-    static constexpr size_t isValidProduct(size_t value1, size_t value2) {
+    static constexpr size_type isValidProduct(size_type value1, size_type value2) {
       return Range::isValidProductRelaxed(value1, value2);
     }
 
@@ -309,7 +330,7 @@ namespace simpledsp {
      * @return {@code true} if the sum of value1 and value2 is nonzero
      * and smaller than maximum, {@code false} otherwise.
      */
-    static constexpr size_t isValidSum(size_t value1, size_t value2) {
+    static constexpr size_type isValidSum(size_type value1, size_type value2) {
       return Range::isValidSumRelaxed(value1, value2);
     }
 
@@ -317,7 +338,7 @@ namespace simpledsp {
      * @return value if it is valid according to isValid(value),
      * throws invalid_argument otheriwse.
      */
-    static size_t validGet(size_t value) {
+    static size_type validGet(size_type value) {
       return Range::validRelaxedGet(value);
     }
 
@@ -326,7 +347,7 @@ namespace simpledsp {
      * isValidProduct(value1, value2) returns {code true}, throws
      * invalid_argument otherwise.
      */
-    static constexpr size_t validProductGet(size_t value1, size_t value2, ValidGet validGet) {
+    static constexpr size_type validProductGet(size_type value1, size_type value2, ValidGet validGet) {
       return Range::validProductRelaxedGet(value1, value2, validGet);
     }
 
@@ -335,10 +356,14 @@ namespace simpledsp {
      * isValidSum(value1, value2) returns {code true}, throws
      * invalid_argument otherwise.
      */
-    static constexpr size_t validSumGet(size_t value1, size_t value2, ValidGet validGet) {
+    static constexpr size_type validSumGet(size_type value1, size_type value2, ValidGet validGet) {
       return Range::validSumRelaxedGet(value1, value2, validGet);
     }
   };
+
+  template<typename T, size_t customMaximum = 0>
+  using Offset = BaseOffset<T, size_t, customMaximum>;
+
 
   enum class IndexPolicyType {
     THROW,
