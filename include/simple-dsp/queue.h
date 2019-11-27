@@ -250,11 +250,11 @@ namespace simpledsp {
       sdsp_nodiscard size_t capacityTrait() const noexcept { return capacity_; }
 
       sdsp_nodiscard Value &refTrait(size_t index) noexcept {
-        return data_[IndexBase<Value>::arrayOffset(index, capacity_)];
+        return data_[Index::arrayOffset(index, capacity_)];
       }
 
       sdsp_nodiscard const Value &refTrait(size_t index) const noexcept {
-        return data_[IndexBase<Value>::arrayOffset(index, capacity_)];
+        return data_[Index::arrayOffset(index, capacity_)];
       }
 
       ~DefaultData() {
@@ -462,7 +462,7 @@ namespace simpledsp {
    * This type of queue should only be used in a single thread at both ends.
    * @see BaseQueue
    */
-  template<typename Value, typename Allocator = std::allocator<Value>>
+  template<typename Value>
   using QueueUnsafe = BaseQueue<
           Value, queue_position::Unsafe, queue_data::DefaultData<Value>>;
 
@@ -471,11 +471,11 @@ namespace simpledsp {
    * This type of queue should have one producer and one consumer thread.
    * @see BaseQueue
    */
-  template<typename Value, typename Allocator = std::allocator<Value>>
+  template<typename Value>
   using QueueProducerConsumer = BaseQueue<
           Value, queue_position::Atomic, queue_data::DefaultData<Value>>;
 
-  template<typename Value, typename Allocator = std::allocator<Value>>
+  template<typename Value>
   using Queue = BaseQueue<
           Value, queue_position::Consistent, queue_data::DefaultData<Value>>;
 

@@ -147,5 +147,16 @@ BOOST_AUTO_TEST_SUITE(QueueTests)
     fillMoreThanBufferSize(queue, generator);
   }
 
+  BOOST_AUTO_TEST_CASE(testAtomicBehaviourToSeeIfIAmMad) {
+    std::atomic<int> atomic = 3;
+    int expected = 5;
+    BOOST_CHECK_MESSAGE(
+            !atomic.compare_exchange_strong(expected, 6),
+            "Expected compare and exchange failure for atomic(3).compare_exchange(5, 6)");
+    BOOST_CHECK_MESSAGE(
+            expected == 3,
+            "Expected result in `expected` parameter");
+  }
+
 BOOST_AUTO_TEST_SUITE_END()
 
