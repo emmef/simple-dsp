@@ -23,6 +23,15 @@
 
 #include <atomic>
 namespace simpledsp {
+  template <typename Object>
+  static void deleteOnceNotNull(std::atomic<Object*> &atomic) {
+    Object *value = atomic;
+    if (atomic.compare_exchange_strong(value, nullptr)) {
+      if (value) {
+        delete value;
+      }
+    }
+  }
 
   /**
    * Guards an atomic flag, by trying to set it on construction. If setting the flag was successful,
@@ -97,64 +106,50 @@ namespace simpledsp {
 
   };
 
-  enum class VisibilityType {
-    ATOMIC,
-    FENCE
-  };
+  class MemoryFence {
+    enum class Type { FORCED, RECURSIVE, DISCONNECTED };
+    enum class Operation { INCREASE, DECREASE };
+    static int setLevel(Operation operation) {
+      /*
+       * Normally, an atomic thread local makes no sense. But I have difficulty reading the C++
+       * memory model. If a std::atomic_memory_fence(std::memory_order_acquire) ensures that all
+       * the loads after this statement will read values that have been stored by another thread
+       * before a std::atomic_memory_fence(std::memory_order_release) without explict loads and
+       * stores surrounding those statements, then we can use a normal, non atomic integer.
+       */
+      static thread_local std::atomic<int> scopeRecursion_ = 0;
 
-  namespace queue_detail { namespace {
-      template<typename T, VisibilityType visibilityType>
-      class BaseVisibleValue;
-
-      template <typename T>
-      class BaseVisibleValue<T, VisibilityType::FENCE> {
-        T v_;
-      public:
-        BaseVisibleValue(const T& value) : v_(value) {
-          std::atomic_thread_fence(std::memory_order_release);
-        }
-
-        const T load() const noexcept {
-          std::atomic_thread_fence(std::memory_order_acquire);
-          return v_;
-        }
-        void store(const T &value) noexcept {
-          v_ = value;
-          std::atomic_thread_fence(std::memory_order_release);
-        }
-      };
-
-      template <typename T>
-      class BaseVisibleValue<T, VisibilityType::ATOMIC> {
-        std::atomic<T> v_;
-      public:
-        BaseVisibleValue(const T& value) : v_(value) {
-        }
-
-        const T load() const noexcept {
-          return v_;
-        }
-        void store(const T &value) noexcept {
-          v_ = value;
-        }
-      };
-
-      template <typename T>
-      static constexpr VisibilityType deduceVisibilityType() {
-        return std::atomic<T>::is_always_lock_free
-               ? VisibilityType::ATOMIC
-               : VisibilityType::FENCE;
+      if (operation == Operation::INCREASE) {
+        return scopeRecursion_++;
       }
+      return --scopeRecursion_;
+    }
+    Type type_;
+    MemoryFence(Type type) : type_(type) {
+      if (
+              type_ == Type::FORCED ||
+              (type_ == Type::RECURSIVE && setLevel(Operation::INCREASE) == 0)) {
+        std::atomic_thread_fence(std::memory_order_acquire);
+      }
+    }
+  public:
 
-    }} // namespace anonymous and detail
+    MemoryFence(MemoryFence &&original) : type_(original.type_) {
+      original.type_ = Type::DISCONNECTED;
+    }
 
-  template <typename T>
-  struct VisibleValue : public queue_detail::BaseVisibleValue<T, queue_detail::deduceVisibilityType<T>()> {
-    using queue_detail::BaseVisibleValue<T, queue_detail::deduceVisibilityType<T>()>::load;
-    using queue_detail::BaseVisibleValue<T, queue_detail::deduceVisibilityType<T>()>::store;
+    static MemoryFence recursive() noexcept { return MemoryFence(Type::RECURSIVE); }
+    static MemoryFence forced() { return MemoryFence(Type::FORCED); }
+
+    ~MemoryFence() {
+      if (
+              type_ == Type::FORCED ||
+              (type_ == Type::RECURSIVE && setLevel(Operation::DECREASE) == 0)) {
+        std::atomic_thread_fence(std::memory_order_release);
+      }
+    }
+
   };
-
-
 
 } // namespace simpledsp
 
