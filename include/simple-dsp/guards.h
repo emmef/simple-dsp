@@ -22,14 +22,14 @@
  */
 
 #include <atomic>
+#include <simple-dsp/attributes.h>
+
 namespace simpledsp {
   template <typename Object>
   static void deleteOnceNotNull(std::atomic<Object*> &atomic) {
     Object *value = atomic;
-    if (atomic.compare_exchange_strong(value, nullptr)) {
-      if (value) {
-        delete value;
-      }
+    if (value && atomic.compare_exchange_strong(value, nullptr)) {
+      delete value;
     }
   }
 
@@ -106,49 +106,59 @@ namespace simpledsp {
 
   };
 
+  /**
+   * Ensures that all loads within the scope of this instance see all stores of another
+   * instance's scope-exit in another thread. This is about memory visibility on scope
+   * boundaries, not about synchronising blocks of code.
+   */
   class MemoryFence {
-    enum class Type { FORCED, RECURSIVE, DISCONNECTED };
-    enum class Operation { INCREASE, DECREASE };
-    static int setLevel(Operation operation) {
-      /*
-       * Normally, an atomic thread local makes no sense. But I have difficulty reading the C++
-       * memory model. If a std::atomic_memory_fence(std::memory_order_acquire) ensures that all
-       * the loads after this statement will read values that have been stored by another thread
-       * before a std::atomic_memory_fence(std::memory_order_release) without explict loads and
-       * stores surrounding those statements, then we can use a normal, non atomic integer.
-       */
-      static thread_local std::atomic<int> scopeRecursion_ = 0;
+    static std::atomic<bool> variable_;
+  public:
+    MemoryFence() { acquire(); }
+    ~MemoryFence() { release(); }
 
-      if (operation == Operation::INCREASE) {
-        return scopeRecursion_++;
-      }
-      return --scopeRecursion_;
+    /**
+     * Ensures that all loads after acquire() in this thread, will see all stores of another thread
+     * that happen before that calls release().
+     */
+    static void acquire() noexcept {
+      variable_.load(std::memory_order_relaxed);
+      std::atomic_thread_fence(std::memory_order_acquire);
     }
-    Type type_;
-    MemoryFence(Type type) : type_(type) {
-      if (
-              type_ == Type::FORCED ||
-              (type_ == Type::RECURSIVE && setLevel(Operation::INCREASE) == 0)) {
-        std::atomic_thread_fence(std::memory_order_acquire);
-      }
+
+    /**
+     * Ensures that all stores before release() in this thread, will be seen by all loads of another
+     * thread that happen after that calls acquire().
+     */
+    static void release() noexcept {
+      std::atomic_thread_fence(std::memory_order_release);
+      variable_.store(1, std::memory_order_relaxed);
     }
+  };
+
+  /**
+   * A MemoryFence that only acts when it is the outer one in a thread.
+   * There are architectures where a memory fence is almost a no-op, but on some architectures it
+   * can be a heavy operation. Fences in nested code might incur considerable burdens.
+   */
+  class NestedMemoryFence {
+    static thread_local int level_;
+
   public:
 
-    MemoryFence(MemoryFence &&original) : type_(original.type_) {
-      original.type_ = Type::DISCONNECTED;
-    }
-
-    static MemoryFence recursive() noexcept { return MemoryFence(Type::RECURSIVE); }
-    static MemoryFence forced() { return MemoryFence(Type::FORCED); }
-
-    ~MemoryFence() {
-      if (
-              type_ == Type::FORCED ||
-              (type_ == Type::RECURSIVE && setLevel(Operation::DECREASE) == 0)) {
-        std::atomic_thread_fence(std::memory_order_release);
+    NestedMemoryFence(const NestedMemoryFence &) = delete;
+    NestedMemoryFence(NestedMemoryFence &&original) = delete;
+    NestedMemoryFence() noexcept {
+      if (level_++ == 0) {
+        MemoryFence::acquire();
       }
     }
 
+    ~NestedMemoryFence() noexcept {
+      if (--level_ == 0) {
+        MemoryFence::release();
+      }
+    }
   };
 
 } // namespace simpledsp

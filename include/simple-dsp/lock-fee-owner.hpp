@@ -22,9 +22,11 @@
  */
 
 #include <chrono>
+#include <random>
 #include <cstddef>
 #include <thread>
 #include <simple-dsp/guards.h>
+#include <simple-dsp/timeout.h>
 #include <simple-dsp/queue.h>
 
 namespace simpledsp {
@@ -45,7 +47,7 @@ namespace simpledsp {
     GuardedFlag flag_;
     std::atomic<Object*> current_ = nullptr;
     std::atomic<Object*> next_ = nullptr;
-    QueueUnsafe<Object*> queue_;
+    QueueProducerConsumer<Object*> queue_;
 
   public:
 
@@ -80,7 +82,7 @@ namespace simpledsp {
         }
       }
       // Make sure this thread "sees" all constructed data.
-      auto fence = MemoryFence::recursive();
+      MemoryFence::acquire();
       current_ = next;
       return next;
     }
@@ -94,7 +96,7 @@ namespace simpledsp {
      * @return The current object or nullptr if it was not set.
      */
     sdsp_nodiscard const Object* getCurrent() noexcept {
-      auto fence = MemoryFence::recursive();
+      MemoryFence::acquire();
       return current_;
     }
 
@@ -105,26 +107,12 @@ namespace simpledsp {
      *
      * Because of the lock, this method MUST NOT be used by real-time threads.
      *
-     * @param timeOutMicros The number of microseconds allowed to set the object.
+     * @param timeOut The time out, allowed to set the object.
      * @param object The new "version" of the object to set.
      * @return Result::SUCCESS on success and another Result otherwise
      */
-    LockFeeOwnerResult setWithTimeout(long timeOutMicros, Object *object) {
-      return setProduced(timeOutMicros, passObject, object);
-    }
-
-    /**
-     * Sets a new object, that will be OWNED by this LockFreeAtomicOwner. If setting the object
-     * does not work at once, there will be a busy-yield-spinlock for at most one second.
-     * If setting the object fails, it will be deleted by this method.
-     *
-     * Because of the lock, this method MUST NOT be used by real-time threads.
-     *
-     * @param object The new "version" of the object to set.
-     * @return Result::SUCCESS on success and another Result otherwise
-     */
-    LockFeeOwnerResult set(Object *object) {
-      return setProduced(1000000L, passObject, object);
+    LockFeeOwnerResult set(TimeOut& timeOut, Object *object) {
+      return setProduced(timeOut, passObject, object);
     }
 
     /**
@@ -132,27 +120,14 @@ namespace simpledsp {
      * busy-yield-spinlock for at most the specified number of microseconds.
      *
      * @tparam ConstructorArguments The types of constructor parameters
-     * @param timeOutMicros The number of microseconds allowed to set the object.
+     * @param timeOut The time out, allowed to set the object.
      * @param arguments Actual arguments, used to construct the object.
      * @return Result::SUCCESS on success and another Result otherwise
     */
     template<typename... ConstructorArguments>
-    LockFeeOwnerResult constructWithTimeout(long timeOutMicros, ConstructorArguments... arguments) {
-      return setProduced<ConstructorArguments...>(timeOutMicros,
+    LockFeeOwnerResult construct(TimeOut& timeOut, ConstructorArguments... arguments) {
+      return setProduced<ConstructorArguments...>(timeOut,
               constructObject<ConstructorArguments...>, arguments...);
-    }
-
-    /**
-     * Constructs a new object. If setting the object does not work at once, there will be a
-     * busy-yield-spinlock for at most one second..
-     *
-     * @tparam ConstructorArguments The types of constructor parameters
-     * @param arguments Actual arguments, used to construct the object.
-     * @return Result::SUCCESS on success and another Result otherwise
-     */
-    template<typename... ConstructorArguments>
-    LockFeeOwnerResult construct(ConstructorArguments... arguments) {
-      return constructWithTimeout(1000000L, arguments...);
     }
 
     /**
@@ -163,12 +138,9 @@ namespace simpledsp {
         auto guard = flag_.guard();
         if (guard.isSet()) {
           Object* object = nullptr;
-          // make sure destructor "sees" all data that might have
-          // See comment about atomic: this might be moved inside the block where queue fetch
-          // was successful.
-          auto fence = MemoryFence::recursive();
           if (queue_.get(object) == QueueResult::SUCCESS) {
             if (object) {
+              MemoryFence::acquire();
               delete object;
             }
           }
@@ -180,7 +152,7 @@ namespace simpledsp {
     }
 
     ~LockfreeOwner() {
-      auto fence = MemoryFence::recursive();
+      MemoryFence fence;
       cleanup();
       deleteOnceNotNull(current_);
       deleteOnceNotNull(next_);
@@ -190,19 +162,14 @@ namespace simpledsp {
 
     template<typename... ProducerParameters>
     LockFeeOwnerResult setProduced(
-            long timeoutMicros,
+            TimeOut &timeOut,
             Object *(*objectProducer)(ProducerParameters...),
             ProducerParameters... parameters) {
       if (!objectProducer) {
         return LockFeeOwnerResult::INVALID;
       }
       Object* object = nullptr;
-      long micros = std::clamp(timeoutMicros, 10L, 10000000L);
-      std::chrono::time_point now = std::chrono::system_clock::now();
-      std::chrono::time_point deadline = now + std::chrono::microseconds(timeoutMicros);
-      std::chrono::time_point lastYield = now;
-      std::chrono::microseconds yieldDuration(std::max(1L, micros / 100));
-
+      timeOut.start();
       do {
         if (!object) {
           object = objectProducer(parameters...);
@@ -216,22 +183,15 @@ namespace simpledsp {
             Object* expected = nullptr;
             if (next_.compare_exchange_strong(expected, object)) {
               // ensure that produced object is visible to all threads that use acquire fence.
-              auto fence = MemoryFence::recursive();
+              MemoryFence fence;
               cleanupUnsafe();
               return LockFeeOwnerResult::SUCCESS;
             }
           }
         }
-        now = std::chrono::system_clock::now();
-        if (now - lastYield >= yieldDuration) {
-          lastYield = now;
-          std::this_thread::yield();
-        }
       }
-      while (now < deadline);
-      if (object) {
-        delete object;
-      }
+      while (timeOut.inTime());
+      delete object;
       return LockFeeOwnerResult::TIMEOUT;
     }
 
@@ -248,9 +208,9 @@ namespace simpledsp {
         // make sure destructor "sees" all data that might have
         // See comment about atomic: this might be moved inside the block where queue fetch
         // was successful.
-        auto fence = MemoryFence::recursive();
         if (queue_.get(object) == QueueResult::SUCCESS) {
           if (object) {
+            MemoryFence::acquire();
             delete object;
           }
         }
