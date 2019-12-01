@@ -222,7 +222,7 @@ namespace simpledsp {
 
   };
 
-
 } // namespace simpledsp
+
 
 #endif //SIMPLE_DSP_LOCK_FEE_OWNER_HPP

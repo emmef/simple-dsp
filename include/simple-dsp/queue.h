@@ -47,9 +47,8 @@ namespace simpledsp {
        * was successful, it also loads the read and write positions.
        *
        * If this method returns false, the caller is free to move on and it MUST NOT call
-       * leave(). If the method returns true, the caller MUST invoke #leave() before leaving
-       * the scope. Any invocations of #storeRead(size_t) and #storeWrite(size_t) MUST preceed
-       * the invocation of #leave().
+       * leave(). If the method returns true, the caller MUST invoke exactly one of #storeRead,
+       * #storeWrite or #leave().
        *
        * @param rd Contains the read position on success.
        * @param wr Contains the write position on success.
@@ -63,7 +62,7 @@ namespace simpledsp {
        * Stores the read position.
        *
        * The caller MUST have invoked #enterAndLoad(size_t&,size_t&) successfully before
-       * using this method and MUST invoke leave() after it.
+       * using this method.
        *
        * @param newReadPosition The value to store in the read pointer.
        */
@@ -75,7 +74,7 @@ namespace simpledsp {
        * Stores the write position.
        *
        * The caller MUST have invoked #enterAndLoad(size_t&,size_t&) successfully before
-       * using this method and MUST invoke leave() after it.
+       * using this method.
        *
        * @param newWritePosition The value to store in the write pointer.
        */
@@ -134,22 +133,24 @@ namespace simpledsp {
     public:
 
       sdsp_force_inline bool enterAndLoadTrait(size_t &rd, size_t &wr) noexcept {
-        std::atomic_thread_fence(std::memory_order_acquire);
         rd = rd_.load(std::memory_order_relaxed);
         wr = wr_.load(std::memory_order_relaxed);
+        std::atomic_thread_fence(std::memory_order_acquire);
         return true;
       }
 
       sdsp_force_inline void storeReadTrait(size_t value) noexcept {
+        std::atomic_thread_fence(std::memory_order_release);
         rd_.store(value, std::memory_order_relaxed);
       }
 
       sdsp_force_inline void storeWriteTrait(size_t value) noexcept {
+        std::atomic_thread_fence(std::memory_order_release);
         wr_.store(value, std::memory_order_relaxed);
       }
 
       sdsp_force_inline void leaveTrait() noexcept {
-        std::atomic_thread_fence(std::memory_order_release);
+        MemoryFence::release();
       }
     };
 
@@ -157,32 +158,26 @@ namespace simpledsp {
      * A position implementation that offers memory visibility and consistency.
      */
     class Consistent : public PositionTraits<Consistent> {
+      Atomic atomic_;
       std::atomic_flag busy_ = ATOMIC_FLAG_INIT;
-      std::atomic<size_t> wr_ = 0;
-      std::atomic<size_t> rd_ = 0;
     public:
 
       sdsp_force_inline bool enterAndLoadTrait(size_t &rd, size_t &wr) noexcept {
-        if (busy_.test_and_set()) {
-          return false;
-        }
-        std::atomic_thread_fence(std::memory_order_acquire);
-        rd = rd_.load(std::memory_order_relaxed);
-        wr = wr_.load(std::memory_order_relaxed);
-        return true;
+        return busy_.test_and_set() && atomic_.enterAndLoadTrait(rd, wr);
       }
 
       sdsp_force_inline void storeReadTrait(size_t value) noexcept {
-        rd_.store(value, std::memory_order_relaxed);
+        atomic_.storeReadTrait(value);
+        busy_.clear();
       }
 
       sdsp_force_inline void storeWriteTrait(size_t value) noexcept {
-        wr_.store(value, std::memory_order_relaxed);
+        atomic_.storeWriteTrait(value);
+        busy_.clear();
       }
 
       sdsp_force_inline void leaveTrait() noexcept {
-        busy_.clear(std::memory_order_relaxed);
-        std::atomic_thread_fence(std::memory_order_release);
+        busy_.clear();
       }
     };
   }
@@ -375,7 +370,8 @@ namespace simpledsp {
 
     /**
      * Puts a value and returns QueueResult#SUCCESS or returns an error result.
-     *
+     * When the Queue uses an Atomic or Consistent position, all values put will be guaranteed to
+     * be visible by any get that gets them.
      * @param value The value to put
      * @return QueueResult#SUCCESS, QueueResult#BUSY or QueueResult#FULL.
      */
@@ -386,20 +382,19 @@ namespace simpledsp {
       if (!position.enterAndLoad(rd, wr)) {
         return QueueResult::BUSY;
       }
-
       if (isFull(rd, wr, next)) {
         position.leave();
         return QueueResult::FULL;
       }
       data_[wr] = value;
       position.storeWrite(next);
-      position.leave();
       return QueueResult::SUCCESS;
     }
 
     /**
      * Gets a value and returns QueueResult#SUCCESS or returns an error result.
-     *
+     * When the Queue uses an Atomic or Consistent position, all got values will be guaranteed to
+     * be completely visible with what was put previously.
      * @param value Contains the value on success.
      * @return QueueResult#SUCCESS, QueueResult#BUSY or QueueResult#FULL.
      */
@@ -416,7 +411,6 @@ namespace simpledsp {
       }
       value = data_[rd];
       position.storeRead(nextValue(rd));
-      position.leave();
       return QueueResult::SUCCESS;
     }
 
