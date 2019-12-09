@@ -158,25 +158,35 @@ namespace simpledsp {
      * A position implementation that offers memory visibility and consistency.
      */
     class Consistent : public PositionTraits<Consistent> {
-      Atomic atomic_;
+      std::atomic<size_t> wr_ = 0;
+      std::atomic<size_t> rd_ = 0;
       std::atomic_flag busy_ = ATOMIC_FLAG_INIT;
     public:
 
       sdsp_force_inline bool enterAndLoadTrait(size_t &rd, size_t &wr) noexcept {
-        return busy_.test_and_set() && atomic_.enterAndLoadTrait(rd, wr);
+        if (busy_.test_and_set()) {
+          return false;
+        }
+        rd = rd_.load(std::memory_order_relaxed);
+        wr = wr_.load(std::memory_order_relaxed);
+        std::atomic_thread_fence(std::memory_order_acquire);
+        return true;
       }
 
       sdsp_force_inline void storeReadTrait(size_t value) noexcept {
-        atomic_.storeReadTrait(value);
+        std::atomic_thread_fence(std::memory_order_release);
+        rd_.store(value, std::memory_order_relaxed);
         busy_.clear();
       }
 
       sdsp_force_inline void storeWriteTrait(size_t value) noexcept {
-        atomic_.storeWriteTrait(value);
+        std::atomic_thread_fence(std::memory_order_release);
+        wr_.store(value, std::memory_order_relaxed);
         busy_.clear();
       }
 
       sdsp_force_inline void leaveTrait() noexcept {
+        std::atomic_thread_fence(std::memory_order_release);
         busy_.clear();
       }
     };
@@ -327,7 +337,7 @@ namespace simpledsp {
     sdsp_nodiscard ssize_t size() noexcept {
       size_t rd;
       size_t wr;
-      if (!position.enterAndLoad(rd, wr)) {
+      if (position.enterAndLoad(rd, wr)) {
         if (wr < rd) {
           wr += data_.capacity() + 1;
         }
