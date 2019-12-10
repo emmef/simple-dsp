@@ -33,6 +33,8 @@ namespace simpledsp {
     }
   }
 
+  enum class UseFence { YES, NO };
+
   /**
    * Guards an atomic flag, by trying to set it on construction. If setting the flag was successful,
    * guard clears the flag on destruction. The guard returns whether it was successful in setting
@@ -41,37 +43,50 @@ namespace simpledsp {
    * There is no locking or blocking involved, however, the guard can act as a spinlock.
    */
   class FlagGuard {
-    enum class Set { NO, YES, DISOWNED };
+    enum class Set { NO, DISOWNED, UNFENCED, FENCED };
 
     std::atomic_flag &flag_;
     Set set_;
 
-    bool trySet() noexcept {
+    bool trySet(UseFence fence, int tries) noexcept {
       if (set_ == Set::NO) {
-        if (!flag_.test_and_set()) {
-          set_ = Set::YES;
-          return true;
+        for (int i = 0; i < tries; i++) {
+          if (!flag_.test_and_set()) {
+            if (fence == UseFence::YES) {
+              std::atomic_thread_fence(std::memory_order_acquire);
+              set_ = Set::FENCED;
+            }
+            else {
+              set_ = Set::UNFENCED;
+            }
+            return true;
+          }
         }
       }
       return isSet();
     }
 
   public:
+
     FlagGuard(const FlagGuard &) = delete;
     FlagGuard(FlagGuard && moved) : flag_(moved.flag_), set_(moved.set_) {
       moved.set_ = Set::DISOWNED;
     }
 
-    FlagGuard(std::atomic_flag &flag) : flag_(flag), set_(Set::NO) {
-      trySet();
+    FlagGuard(std::atomic_flag &flag, UseFence fence, int tries) : flag_(flag), set_(Set::NO) {
+      trySet(fence, tries);
     }
 
     [[nodiscard]] bool isSet() const noexcept {
-      return set_ == Set::YES;
+      return set_ == Set::UNFENCED || set_ == Set::FENCED;
     }
 
-    [[nodiscard]] bool set() noexcept {
-      return trySet();
+    [[nodiscard]] bool set(UseFence fence = UseFence::NO) noexcept {
+      return trySet(fence, 1);
+    }
+
+    [[nodiscard]] bool setWitTries(int tries, UseFence fence = UseFence::NO) noexcept {
+      return trySet(fence, tries);
     }
 
     template<typename...Args>
@@ -94,6 +109,9 @@ namespace simpledsp {
 
     ~FlagGuard() {
       if (isSet()) {
+        if (set_ == Set::FENCED) {
+          std::atomic_thread_fence(std::memory_order_release);
+        }
         flag_.clear();
       }
     }
@@ -102,8 +120,12 @@ namespace simpledsp {
   class GuardedFlag {
     std::atomic_flag flag_ = ATOMIC_FLAG_INIT;
   public:
-    [[nodiscard]] FlagGuard guard() { return FlagGuard(flag_); }
-
+    [[nodiscard]] FlagGuard guard(UseFence fence = UseFence::NO) {
+      return FlagGuard(flag_, fence, 1);
+    }
+    [[nodiscard]] FlagGuard guard(int tries, UseFence fence = UseFence::NO) {
+      return FlagGuard(flag_, fence, tries);
+    }
   };
 
   /**
