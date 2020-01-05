@@ -37,37 +37,80 @@ namespace simpledsp {
       struct HelperForSampleRateBase<freq, true> {
         static constexpr freq min = 2 * std::numeric_limits<freq>::min();
         static constexpr freq max = std::numeric_limits<freq>::max();
+
+        template <typename f>
+        static constexpr freq getClamped(f value) {
+          if (std::is_same<freq, f>::value) {
+            return std::clamp(value, min, max);
+          }
+          else if (std::is_floating_point<f>::value) {
+            return freq(std::clamp((long double)(value), (long double)(min), (long double)(max)));
+          }
+          else if (value > 0) {
+            return freq(value);
+          }
+          return min;
+        }
       };
 
       template<typename freq>
       struct HelperForSampleRateBase<freq, false> {
         static constexpr freq min = 2;
         static constexpr freq max = std::numeric_limits<freq>::max();
+
+        template <typename f>
+        static constexpr freq getClamped(f value) {
+          if (std::is_same<freq, f>::value) {
+            return std::clamp(value, min, max);
+          }
+          if (std::is_floating_point<f>::value) {
+            return freq(std::clamp((long double)(value), (long double)(min), (long double)(max)));
+          }
+          else if (value > 2) {
+            return freq(std::clamp(uint64_t(value), uint64_t(min), uint64_t(max)));
+          }
+          return 2;
+        }
       };
     }
 
     template<typename freq>
     struct HelperForSampleRate :
             public HelperForSampleRateBase<freq, std::is_floating_point<freq>::value> {
+      static_assert(std::is_integral<freq>::value || std::is_floating_point<freq>::value,
+                      "Frequency type must be floating point or integral");
+      using Base = HelperForSampleRateBase<freq, std::is_floating_point<freq>::value>;
+      using Base::min;
+      using Base::max;
+      using frequency_type = freq;
 
-      using HelperForSampleRateBase<freq, std::is_floating_point<freq>::value>::min;
-      using HelperForSampleRateBase<freq, std::is_floating_point<freq>::value>::max;
+      template <typename f>
+      static constexpr freq clamped(f value) { return Base::template getClamped<f>(value); }
 
-      static constexpr freq clamped(freq f) { return std::clamp(f, min, max); }
+      template <typename f>
+      static constexpr bool equals(freq value, f other) { return value == clamped(other); }
+
     };
   }
 
-  template <typename freq>
-  class SampleRateBase {
+  template <typename freq = uint32_t>
+  class SampleRate {
     using absolute = helper::HelperForSampleRate<freq>;
 
     freq rate = 1;
   public:
-    explicit SampleRateBase(freq f) : rate(absolute::clamped(f)) {}
+    using frequency_type = freq;
 
-    explicit SampleRateBase(const SampleRateBase &f) : rate(f.rate) {}
+    template<typename otherFreq>
+    static freq clamped(otherFreq value) { return absolute::clamped(value); }
 
-    SampleRateBase(SampleRateBase &&f) : rate(f.rate) {}
+    explicit SampleRate(freq f) : rate(clamped(f)) {}
+
+    SampleRate(const SampleRate &f) = default;
+
+    SampleRate(const SampleRate &&f) : rate(f.rate) {}
+
+    SampleRate(SampleRate &&f) = default;
 
     operator const freq&() const { return rate; }
 
@@ -83,27 +126,30 @@ namespace simpledsp {
 
     sdsp_nodiscard double relativeAngular(freq f) { return M_PI * 2 * relative(f); }
 
-    SampleRateBase &operator = (freq f) { rate = absolute::clamped(f); return *this; }
+    template<typename otherFreq>
+    SampleRate &operator = (otherFreq f) { rate = clamped(f); return *this; }
 
-    SampleRateBase &operator = (const SampleRateBase &f) { rate = f.rate; return *this; }
+    SampleRate operator * (freq v) { return SampleRate(rate * v); }
 
-    SampleRateBase operator * (freq v) { return SampleRateBase(rate * v); }
+    SampleRate operator + (freq v) { return SampleRate(rate * v); }
 
-    SampleRateBase operator + (freq v) { return SampleRateBase(rate * v); }
+    SampleRate operator / (freq v) { return SampleRate(rate / clamped(v)); }
 
-    SampleRateBase operator / (freq v) { return SampleRateBase(rate / absolute::clamped(v)); }
+    SampleRate &operator *= (freq v) { rate = clamped(rate * v); return *this; }
 
-    SampleRateBase &operator *= (freq v) { rate = absolute::clamped(rate * v); return *this; }
+    SampleRate &operator += (freq v) { rate = clamped(rate + v); return *this; }
 
-    SampleRateBase &operator += (freq v) { rate = absolute::clamped(rate + v); return *this; }
-
-    SampleRateBase &operator /= (freq v) {
-      rate = absolute::clamped(rate / absolute::clamped(v)); return *this;
+    SampleRate &operator /= (freq v) {
+      rate = clamped(rate / clamped(v)); return *this;
     }
 
+    template<typename otherFreq>
+    bool operator == (const otherFreq &other) const noexcept {
+      return absolute::equals(other);
+    }
   };
 
-  using SampleRate = SampleRateBase<float>;
+
 
 } // namespace simpledsp
 

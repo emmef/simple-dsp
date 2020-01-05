@@ -54,7 +54,7 @@ namespace simpledsp {
 
       explicit Butterworth(Butterworth &&source) = default;
 
-      sdsp_nodiscard const SampleRate &getSampleRate() const { return rate; }
+      sdsp_nodiscard const SampleRate<float> &getSampleRate() const { return rate; }
 
       sdsp_nodiscard Type getType() const { return type; }
 
@@ -126,7 +126,7 @@ namespace simpledsp {
       }
       
       Type type;
-      SampleRate rate;
+      SampleRate<float> rate;
       float frequency;
       unsigned order;
       IIRCalculationMethod method;

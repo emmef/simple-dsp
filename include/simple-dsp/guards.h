@@ -77,6 +77,8 @@ namespace simpledsp {
       trySet(fence, tries);
     }
 
+    FlagGuard(std::atomic_flag &flag) : FlagGuard(flag, UseFence::YES, 1) {}
+
     [[nodiscard]] bool isSet() const noexcept {
       return set_ == Set::UNFENCED || set_ == Set::FENCED;
     }

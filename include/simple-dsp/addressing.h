@@ -50,7 +50,11 @@ namespace simpledsp {
   static constexpr size_t maximumSizeInBytes =
           maximumSizeValue >> SDSP_MEMORY_MODEL_STOLEN_ADDRESS_BITS;
 
-  enum class ValidGet { FIRST, RESULT };
+  enum class ValidGet {
+    RESULT, // Default
+    FIRST,
+    RESULT_OR_INVALID
+  };
 
   template<typename size_type>
   struct SizeTypeMax
@@ -59,9 +63,9 @@ namespace simpledsp {
             std::is_integral<size_type>::value && std::is_unsigned<size_type>::value,
             "Size type must be an unsigned integral");
 
-    static constexpr size_type size_type_max = std::numeric_limits<size_type>::max();
+    static constexpr size_type limit = std::numeric_limits<size_type>::max();
     static constexpr size_type value =
-            std::min(static_cast<size_t>(size_type_max), maximumSizeInBytes);
+            std::min(static_cast<size_t>(limit), maximumSizeInBytes);
   };
 
   template<typename T, typename size_type>
@@ -74,6 +78,7 @@ namespace simpledsp {
   template<typename T, typename size_type, size_t customMaximum = 0>
   struct AddressRange {
     static constexpr size_type absolueMaximumSize = SizeTypeMaxForType<T, size_type>::value;
+    static constexpr size_type sizeTypeLimit = SizeTypeMax<size_type>::limit;
 
     static constexpr size_type maximumArraySize = is_within_excl<size_type>(
             customMaximum, 0, absolueMaximumSize)
@@ -167,9 +172,15 @@ namespace simpledsp {
      */
     static size_type validProductStrictGet(size_type value1, size_type value2, ValidGet validGet) {
       if (isValidProductStrict(value1, value2)) {
-        return validGet == ValidGet::FIRST
-               ? value1
-               : value1 * value2;
+        switch (validGet) {
+        case ValidGet::FIRST:
+          return value1;
+        default:
+          return value1 * value2;
+        }
+      }
+      if (validGet == ValidGet::RESULT_OR_INVALID) {
+        return sizeTypeLimit;
       }
       throw std::invalid_argument(
               "Size::get_valid_product: product of values exceeds maximum addressing range for type or"
@@ -189,9 +200,15 @@ namespace simpledsp {
      */
     static size_type validProductRelaxedGet(size_type value1, size_type value2, ValidGet validGet) {
       if (isValidProductRelaxed(value1, value2)) {
-        return validGet == ValidGet::FIRST
-               ? value1
-               : value1 * value2;
+        switch (validGet) {
+        case ValidGet::FIRST:
+          return value1;
+        default:
+          return value1 * value2;
+        }
+      }
+      if (validGet == ValidGet::RESULT_OR_INVALID) {
+        return sizeTypeLimit;
       }
       throw std::invalid_argument(
               "Size::get_valid_product: product of values exceeds exceeds maximum addressing range for"
@@ -211,9 +228,15 @@ namespace simpledsp {
      */
     static size_type validSumStrictGet(size_type value1, size_type value2, ValidGet validGet) {
       if (isValidSumStrict(value1, value2)) {
-        return validGet == ValidGet::FIRST
-               ? value1
-               : value1 * value2;
+        switch (validGet) {
+        case ValidGet::FIRST:
+          return value1;
+        default:
+          return value1 + value2;
+        }
+      }
+      if (validGet == ValidGet::RESULT_OR_INVALID) {
+        return sizeTypeLimit;
       }
       throw std::invalid_argument(
               "Size::get_valid_product: sum of values exceeds exceeds maximum addressing range for type"
@@ -233,9 +256,15 @@ namespace simpledsp {
      */
     static size_type validSumRelaxedGet(size_type value1, size_type value2, ValidGet validGet) {
       if (isValidSumRelaxed(value1, value2)) {
-        return validGet == ValidGet::FIRST
-               ? value1
-               : value1 * value2;
+        switch (validGet) {
+        case ValidGet::FIRST:
+          return value1;
+        default:
+          return value1 + value2;
+        }
+      }
+      if (validGet == ValidGet::RESULT_OR_INVALID) {
+        return sizeTypeLimit;
       }
       throw std::invalid_argument(
               "Size::get_valid_product: product of values exceeds exceeds maximum addressing range for"
