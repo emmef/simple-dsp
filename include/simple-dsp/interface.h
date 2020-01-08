@@ -40,6 +40,7 @@ namespace simpledsp {
 #else
     using Size_ = Size<double>;
 #endif
+
     static bool isValidCombination(size_t inputs, size_t outputs, size_t bufferSize) {
       size_t y = Size_::validProductGet(inputs, outputs, ValidGet::RESULT_OR_INVALID);
       if (Size_::isValid(y)) {
@@ -50,8 +51,11 @@ namespace simpledsp {
     }
 
     Interface(
-            size_t inputs, size_t outputs,
-            SampleRate<freq> sampleRate, bool realTime, size_t bufferSize) :
+            size_t inputs,
+            size_t outputs,
+            SampleRate<freq> sampleRate,
+            bool realTime,
+            size_t bufferSize) :
             inputs_(inputs),
             outputs_(outputs),
             sampleRate_(sampleRate),
@@ -60,6 +64,7 @@ namespace simpledsp {
     {}
 
   public:
+
     using frequency_type = freq;
     using sample_rate_type = SampleRate<freq>;
 
@@ -84,14 +89,18 @@ namespace simpledsp {
     }
 
     template<typename Freq>
-    bool operator == (const Interface<Freq> &other) {
-      freq otherRate = sample_rate_type::clamped(other.sampleRate());
+    bool operator == (const Interface<Freq> &other)  {
       return
-              inputs_ == other.inputs_ &&
-                      outputs_ == other.outputs_ &&
-                      sampleRate_ == otherRate &&
-                      realTime_ == other.realTime_ &&
-                      bufferSize_ == other.bufferSize_;
+              inputs_ == other.inputs() &&
+                      outputs_ == other.outputs() &&
+                      sampleRate_ == other.sampleRate() &&
+                      realTime_ == other.realTime() &&
+                      bufferSize_ == other.bufferSize();
+    }
+
+    template<typename Freq>
+    bool operator != (const Interface<Freq> &other)  {
+      return !operator == (other);
     }
 
     Interface withInputs(size_t inputs) const {

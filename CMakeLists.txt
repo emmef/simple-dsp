@@ -25,9 +25,9 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 find_package (Threads)
 
-set(SIMPLE_DSP_HEADERS include/simple-dsp/addressing.h include/simple-dsp/attributes.h include/simple-dsp/circular.h include/simple-dsp/delay.h include/simple-dsp/alignment.h include/simple-dsp/denormal.h include/simple-dsp/arrayops.h include/simple-dsp/algorithm.h include/simple-dsp/aligneddata.h include/simple-dsp/integration.h include/simple-dsp/iir.h include/simple-dsp/samplerate.h include/simple-dsp/biquad.h include/simple-dsp/butterworth.h include/simple-dsp/crossoverplan.h include/simple-dsp/linkwitz-riley-plan.h include/simple-dsp/sample-frame.h include/simple-dsp/queue.h  include/simple-dsp/processnode.h include/simple-dsp/lock-fee-owner.hpp include/simple-dsp/timeout.h include/simple-dsp/dspruntime.h)
+set(SIMPLE_DSP_HEADERS include/simple-dsp/addressing.h include/simple-dsp/attributes.h include/simple-dsp/circular.h include/simple-dsp/delay.h include/simple-dsp/alignment.h include/simple-dsp/denormal.h include/simple-dsp/arrayops.h include/simple-dsp/algorithm.h include/simple-dsp/aligneddata.h include/simple-dsp/integration.h include/simple-dsp/iir.h include/simple-dsp/samplerate.h include/simple-dsp/biquad.h include/simple-dsp/butterworth.h include/simple-dsp/crossoverplan.h include/simple-dsp/linkwitz-riley-plan.h include/simple-dsp/sample-frame.h include/simple-dsp/queue.h  include/simple-dsp/processnode.h include/simple-dsp/lock-fee-owner.hpp include/simple-dsp/timeout.h include/simple-dsp/dspruntime.h include/simple-dsp/interface.h)
 set(SIMPLE_DSP_SRC src/simple-dsp/guards.cc)
-set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/circular-tests.cc test/delay-tests.cc test/integration-tests.cc test/butterworth-tests.cc test/crossoverplan-tests.cc test/guards-tests.cc test/queue-tests.cc test/lock-free-owner-tests.cc)
+set(SIMPLE_DSP_TESTS test/test-helper.h test/test.cc test/power2-tests.cc test/ranges-tests.cc test/circular-tests.cc test/delay-tests.cc test/integration-tests.cc test/butterworth-tests.cc test/crossoverplan-tests.cc test/guards-tests.cc test/queue-tests.cc test/lock-free-owner-tests.cc test/interface_tests.cc test/samplerate-tests.cc)
 
 # Create the library
 
@@ -80,6 +80,7 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME} DESTINATION incl
 
 # Create unit tests. This executable will not be installed.
 set(TEST_PROJECT "test")
-add_executable(${TEST_PROJECT} ${SIMPLE_DSP_HEADERS} ${SIMPLE_DSP_TESTS})
+add_executable(${TEST_PROJECT} ${SIMPLE_DSP_TESTS})
+target_include_directories(${TEST_PROJECT} BEFORE PRIVATE ${SIMPLE_DSP_HEADERS})
 target_link_libraries(${TEST_PROJECT} ${PROJECT_NAME} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 include_directories(${TEST_PROJECT}  ${CMAKE_SOURCE_DIR}/include)
