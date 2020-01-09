@@ -65,7 +65,17 @@ namespace simpledsp {
             return std::clamp(value, f(min), f(max));
           }
           if (std::is_floating_point<f>::value) {
-            return freq(std::clamp((long double)(value), (long double)(min), (long double)(max)));
+            /* As the value of some integers, including max, cannot be represented accurately by a
+             * floating point number, we cannot use a clamp with the floating point
+             * representations.
+             */
+            if (value < (long double)(min)) {
+              return min;
+            }
+            if (value > (long double)(max)) {
+              return max;
+            }
+            return value;
           }
           else if (value > 2) {
             return freq(std::clamp(uint64_t(value), uint64_t(min), uint64_t(max)));
@@ -103,6 +113,7 @@ namespace simpledsp {
     using absolute = helper::HelperForSampleRate<freq>;
 
     freq rate_ = 1;
+
   public:
     using frequency_type = freq;
 
@@ -111,6 +122,26 @@ namespace simpledsp {
 
     template<typename otherFreq>
     static freq clamped(const SampleRate<otherFreq> &value) { return absolute::clamped(value.rate()); }
+
+    /**
+     * Returns the relative representation error for the given value if it would be stored in the
+     * frequency type of this sample rate.
+     *
+     * @tparam otherFreq Type of the given value
+     * @param other Value of the given value
+     * @return A relative representation error that is 0 for exact representation.
+     */
+    template<typename otherFreq>
+    static constexpr double representationError(otherFreq other) noexcept {
+      freq f1 = other;
+      double r1 = f1;
+      double r2 = other;
+      return r1 == r2
+             ? 0
+             : r2 == 0
+               ? std::numeric_limits<double>::infinity()
+               : fabs(r1 - r2) / fabs(r2);
+    }
 
     explicit SampleRate(freq f) : rate_(clamped(f)) {}
 
