@@ -38,19 +38,22 @@ namespace {
   template <class Q>
   void fillThenEmptyBufferSize(Q& queue, Generator& generator) {
     int size = queue.capacity();
+    std::string message = "\n\t";
+    message += typeid(Q).name();
+    message += " of size " + std::to_string(size) + ":\n\t fillThenEmptyBufferSize: ";
     for (int i = 0; i < size; i++) {
       BOOST_CHECK_MESSAGE(
               queue.put(generator.nextWrite()) == R::SUCCESS,
-              "fillThenEmptyBufferSize: Should be able to put value.");
+              message + "Should be able to put value.");
     }
     for (int i = 0; i < size; i++) {
       int result;
       BOOST_CHECK_MESSAGE(
               queue.get(result) == R::SUCCESS,
-              "fillThenEmptyBufferSize: Should be able to get value.");
+              message + "Should be able to get value.");
       BOOST_CHECK_MESSAGE(
               result == generator.nextRead(),
-              "fillThenEmptyBufferSize: Get values should correspond with put values.");
+              message + "Get values should correspond with put values.");
     }
   }
 
@@ -58,39 +61,46 @@ namespace {
   void fillMoreThanBufferSize(Q& queue, Generator& generator) {
     int size = queue.capacity();
 
+    std::string message = "\n\t";
+    message += typeid(Q).name();
+    message += " of size " + std::to_string(size) + ":\n\tfillMoreThanBufferSize: ";
     for (int i = 0; i < size; i++) {
       BOOST_CHECK_MESSAGE(
               queue.put(generator.nextWrite()) == R::SUCCESS,
-              "fillMoreThanBufferSize: Should be able to put value.");
+              message + "Should be able to put value.");
     }
+
     BOOST_CHECK_MESSAGE(
             queue.put(generator.nextWrite()) == R::FULL,
-            "fillMoreThanBufferSize: Should not be able to put value.");
+            message + "Should not be able to put value.");
 
     for (int i = 0; i < size; i++) {
       int result;
       BOOST_CHECK_MESSAGE(
               queue.get(result) == R::SUCCESS,
-              "fillThenEmptyBufferSize: Should be able to get value.");
+              message + "Should be able to get value.");
       BOOST_CHECK_MESSAGE(
               result == generator.nextRead(),
-              "fillThenEmptyBufferSize: Get values should correspond with put values.");
+              message + "Get values should correspond with put values.");
     }
   }
 
   template <class Q>
   void synchronousPutAndGet(Q& queue, Generator& generator, int size) {
+    std::string message = "\n\t";
+    message += typeid(Q).name();
+    message += " of size " + std::to_string(queue.capacity()) + ":\n\tsynchronousPutAndGet: ";
     for (int i = 0; i < size; i++) {
       BOOST_CHECK_MESSAGE(
               queue.put(generator.nextWrite()) == R::SUCCESS,
-              "synchronousPutAndGet: Should be able to put value.");
+              message + "Should be able to put value.");
       int result;
       BOOST_CHECK_MESSAGE(
               queue.get(result) == R::SUCCESS,
-              "synchronousPutAndGet: Should be able to get value.");
+              message + "Should be able to get value.");
       BOOST_CHECK_MESSAGE(
               result == generator.nextRead(),
-              "synchronousPutAndGet: Get values should correspond with put values.");
+              message + "Get values should correspond with put values.");
     }
   }
 
