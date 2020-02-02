@@ -26,199 +26,192 @@
 
 namespace simpledsp {
 
-  template<typename T, size_t N>
-  class SampleFrame {
-    T x_[N];
-  public:
-    SampleFrame() : SampleFrame(T(0)) {}
-    explicit SampleFrame(const T &value) {
-      assignScalar(value);
+template <typename T, size_t N> class SampleFrame {
+  T x_[N];
+
+public:
+  SampleFrame() : SampleFrame(T(0)) {}
+  explicit SampleFrame(const T &value) { assignScalar(value); }
+
+  SampleFrame(const SampleFrame &source) = default;
+  SampleFrame(SampleFrame &&source) noexcept = default;
+  SampleFrame &operator=(const SampleFrame &) = default;
+
+  SampleFrame &operator=(const T &value) {
+    assignScalar(value);
+    return *this;
+  }
+
+  void assignScalar(const T &value) const {
+    for (T *dst = &x_; dst < &x_ + this->N; ++dst) {
+      *dst = value;
     }
+  }
 
-    SampleFrame(const SampleFrame &source) = default;
-    SampleFrame(SampleFrame &&source) noexcept = default;
-    SampleFrame &operator=(const SampleFrame &) = default;
+  void assignFrame(const SampleFrame &source) const { this->operator=(source); }
 
-    SampleFrame &operator=(const T &value) {
-      assignScalar(value);
-      return *this;
+  T &operator[](size_t i) { return x_[Index::Array::index(i, N)]; }
+
+  const T &operator[](size_t i) const { return x_[Index::Array::index(i, N)]; }
+
+  T &ref(size_t i) { return x_[Index::Method::index(i, N)]; }
+
+  const T &ref(size_t i) const { return x_[Index::Method::index(i, N)]; }
+
+  SampleFrame &operator+=(const SampleFrame &value) {
+    for (T *dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
+      *dst += *src;
     }
+    return *this;
+  }
 
-    void assignScalar(const T& value) const {
-      for (T * dst = &x_; dst < &x_ + this->N; ++dst) {
-        *dst = value;
-      }
+  SampleFrame &operator+=(SampleFrame &&value) {
+    for (T *dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
+      *dst += *src;
     }
+    return *this;
+  }
 
-    void assignFrame(const SampleFrame&source) const {
-      this->operator=(source);
+  SampleFrame &operator-=(const SampleFrame &value) {
+    for (T *dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
+      *dst -= *src;
     }
+    return *this;
+  }
 
-    T &operator[](size_t i) {
-      return x_[Index::Array::index(i,N)];
+  SampleFrame &operator-=(SampleFrame &&value) {
+    for (T *dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
+      *dst -= *src;
     }
+    return *this;
+  }
 
-    const T &operator[](size_t i) const {
-      return x_[Index::Array::index(i,N)];
+  SampleFrame &operator*=(const T &value) {
+    for (T *dst = &x_; dst < &x_ + this->N; ++dst) {
+      *dst *= value;
     }
+    return *this;
+  }
 
-    T &ref(size_t i) {
-      return x_[Index::Method::index(i,N)];
+  SampleFrame &operator/=(const T &value) {
+    for (T *dst = &x_; dst < &x_ + this->N; ++dst) {
+      *dst /= value;
     }
+    return *this;
+  }
 
-    const T &ref(size_t i) const {
-      return x_[Index::Method::index(i,N)];
+  T dot(const SampleFrame &value) {
+    T result = 0;
+    for (T *dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
+      result += *dst * *src;
     }
-
-    SampleFrame & operator += (const SampleFrame &value) {
-      for (T * dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
-        *dst += *src;
-      }
-      return *this;
-    }
-
-    SampleFrame & operator += (SampleFrame &&value) {
-      for (T * dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
-        *dst += *src;
-      }
-      return *this;
-    }
-
-    SampleFrame & operator -= (const SampleFrame &value) {
-      for (T * dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
-        *dst -= *src;
-      }
-      return *this;
-    }
-
-    SampleFrame & operator -= (SampleFrame &&value) {
-      for (T * dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
-        *dst -= *src;
-      }
-      return *this;
-    }
-
-    SampleFrame & operator *= (const T &value) {
-      for (T * dst = &x_; dst < &x_ + this->N; ++dst) {
-        *dst *= value;
-      }
-      return *this;
-    }
-
-    SampleFrame & operator /= (const T &value) {
-      for (T * dst = &x_; dst < &x_ + this->N; ++dst) {
-        *dst /= value;
-      }
-      return *this;
-    }
-
-    T dot(const SampleFrame &value) {
-      T result = 0;
-      for (T * dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {
-        result += *dst * *src;
-      }
-      return result;
-    }
-
-    T sqr() {
-      T result = 0;
-      for (T * dst = &x_; dst < &x_ + this->N; ++dst) {
-        result += *dst * *dst;
-      }
-      return result;
-    }
-  };
-
-
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator+(const SampleFrame<T, N> &v1, const SampleFrame<T,N> &v2) {
-    SampleFrame result(v1);
-    result += v2;
     return result;
   }
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator+(SampleFrame<T, N> &&v1, const SampleFrame<T,N> &v2) {
-    v1 += v2;
-    return v1;
-  }
-
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator+(const SampleFrame<T, N> &v1, SampleFrame<T,N> &&v2) {
-    v2 += v1;
-    return v2;
-  }
-
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator+(SampleFrame<T, N> &&v1, SampleFrame<T,N> &&v2) {
-    v1 += v2;
-    return v1;
-  }
-
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator-(const SampleFrame<T, N> &v1, const SampleFrame<T,N> &v2) {
-    SampleFrame result(v1);
-    result -= v2;
+  T sqr() {
+    T result = 0;
+    for (T *dst = &x_; dst < &x_ + this->N; ++dst) {
+      result += *dst * *dst;
+    }
     return result;
   }
+};
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator-(SampleFrame<T, N> &&v1, const SampleFrame<T,N> &v2) {
-    v1 -= v2;
-    return v1;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator+(const SampleFrame<T, N> &v1,
+                            const SampleFrame<T, N> &v2) {
+  SampleFrame result(v1);
+  result += v2;
+  return result;
+}
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator-(const SampleFrame<T, N> &v1, SampleFrame<T,N> &&v2) {
-    v2 -= v1;
-    return v2;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator+(SampleFrame<T, N> &&v1,
+                            const SampleFrame<T, N> &v2) {
+  v1 += v2;
+  return v1;
+}
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator-(SampleFrame<T, N> &&v1, SampleFrame<T,N> &&v2) {
-    v1 -= v2;
-    return v1;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator+(const SampleFrame<T, N> &v1,
+                            SampleFrame<T, N> &&v2) {
+  v2 += v1;
+  return v2;
+}
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator*(const SampleFrame<T, N> &v1, const T &v2) {
-    SampleFrame result(v1);
-    result *= v2;
-    return result;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator+(SampleFrame<T, N> &&v1, SampleFrame<T, N> &&v2) {
+  v1 += v2;
+  return v1;
+}
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator*(SampleFrame<T, N> &&v1, const T &v2) {
-    v1 *= v2;
-    return v1;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator-(const SampleFrame<T, N> &v1,
+                            const SampleFrame<T, N> &v2) {
+  SampleFrame result(v1);
+  result -= v2;
+  return result;
+}
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator*(const T &v1, const SampleFrame<T, N> &v2) {
-    SampleFrame result(v2);
-    result *= v1;
-    return result;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator-(SampleFrame<T, N> &&v1,
+                            const SampleFrame<T, N> &v2) {
+  v1 -= v2;
+  return v1;
+}
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator*(const T &v1, SampleFrame<T, N> &&v2) {
-    v2 *= v1;
-    return v1;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator-(const SampleFrame<T, N> &v1,
+                            SampleFrame<T, N> &&v2) {
+  v2 -= v1;
+  return v2;
+}
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator/(const SampleFrame<T, N> &v1, const T &v2) {
-    SampleFrame result(v1);
-    result /= v2;
-    return result;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator-(SampleFrame<T, N> &&v1, SampleFrame<T, N> &&v2) {
+  v1 -= v2;
+  return v1;
+}
 
-  template<typename T, size_t N>
-  SampleFrame<T, N> operator/(SampleFrame<T, N> &&v1, const T &v2) {
-    v1 /= v2;
-    return v1;
-  }
+template <typename T, size_t N>
+SampleFrame<T, N> operator*(const SampleFrame<T, N> &v1, const T &v2) {
+  SampleFrame result(v1);
+  result *= v2;
+  return result;
+}
+
+template <typename T, size_t N>
+SampleFrame<T, N> operator*(SampleFrame<T, N> &&v1, const T &v2) {
+  v1 *= v2;
+  return v1;
+}
+
+template <typename T, size_t N>
+SampleFrame<T, N> operator*(const T &v1, const SampleFrame<T, N> &v2) {
+  SampleFrame result(v2);
+  result *= v1;
+  return result;
+}
+
+template <typename T, size_t N>
+SampleFrame<T, N> operator*(const T &v1, SampleFrame<T, N> &&v2) {
+  v2 *= v1;
+  return v1;
+}
+
+template <typename T, size_t N>
+SampleFrame<T, N> operator/(const SampleFrame<T, N> &v1, const T &v2) {
+  SampleFrame result(v1);
+  result /= v2;
+  return result;
+}
+
+template <typename T, size_t N>
+SampleFrame<T, N> operator/(SampleFrame<T, N> &&v1, const T &v2) {
+  v1 /= v2;
+  return v1;
+}
 
 } // namespace simpledsp
 
-#endif //SIMPLE_DSP_SAMPLE_FRAME_H
+#endif // SIMPLE_DSP_SAMPLE_FRAME_H

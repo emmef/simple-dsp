@@ -33,4 +33,4 @@
 #define sdsp_force_inline inline
 #endif
 
-#endif //SIMPLE_DSP_ATTRIBUTES_H
+#endif // SIMPLE_DSP_ATTRIBUTES_H

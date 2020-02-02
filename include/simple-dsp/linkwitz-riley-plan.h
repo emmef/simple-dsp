@@ -21,12 +21,9 @@
  * limitations under the License.
  */
 
-#include <simple-dsp/crossoverplan.h>
 #include <simple-dsp/butterworth.h>
+#include <simple-dsp/crossoverplan.h>
 
-namespace simpledsp {
+namespace simpledsp {} // namespace simpledsp
 
-
-} // namespace simpledsp
-
-#endif //SIMPLE_DSP_LINKWITZ_RILEY_PLAN_H
+#endif // SIMPLE_DSP_LINKWITZ_RILEY_PLAN_H

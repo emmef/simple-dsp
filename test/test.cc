@@ -10,6 +10,4 @@
 /**
  * This serves just to keep the clang analyser happy
  */
-BOOST_AUTO_TEST_CASE(placeHolder) {
-  BOOST_CHECK(true);
-}
+BOOST_AUTO_TEST_CASE(placeHolder) { BOOST_CHECK(true); }
