@@ -29,8 +29,8 @@
 #define sdsp_force_inline __forceinline
 #endif
 #else
-#undef sdsp_nodiscard
-#undef sdsp_force_inline
+#define sdsp_nodiscard
+#define sdsp_force_inline inline
 #endif
 
 #endif //SIMPLE_DSP_ATTRIBUTES_H
