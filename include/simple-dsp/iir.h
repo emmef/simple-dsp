@@ -90,6 +90,15 @@ struct IIRCoefficientsSetter {
     return *this;
   }
 
+  IIRCoefficientsSetter &unity(double scale = 1.0) noexcept {
+    setValidC(0, scale);
+    setValidD(0, 0.0);
+    for (size_t i = 0; i <= getOrder(); i++) {
+      setValidC(i, 0.0);
+      setValidD(i, 0.0);
+    }
+  }
+
 protected:
   virtual void setValidOrder(unsigned order) = 0;
   virtual void setValidC(size_t i, double value) = 0;
@@ -240,9 +249,8 @@ struct IIRFilterBase {
     sample Y = 0;
     sample X = x; // input is xN0
     sample yN0 = 0.0;
-    size_t order = Coefficients::getOrder(filter);
     size_t i, j;
-    for (i = 0, j = 1; i < order; i++, j++) {
+    for (i = 0, j = 1; i < ORDER; i++, j++) {
       const sample xN1 = xHistory[i];
       const sample yN1 = yHistory[i];
       xHistory[i] = X;
@@ -710,6 +718,10 @@ struct IIRFixedOrderCoefficients : public IIRCoefficientsClass {
     operator=(source);
   }
 
+  explicit IIRFixedOrderCoefficients(double scale) {
+    setter().unity(scale);
+  }
+
   IIRFixedOrderCoefficients &
   operator=(const IIRFixedOrderCoefficients &source) {
     for (size_t i = 0; i <= ORDER; i++) {
@@ -790,13 +802,10 @@ public:
     operator=(source);
   }
 
-  //    template<class Coefficients>
-  //    explicit IIRCoefficients(const Coefficients &source) : IIRCoefficients(
-  //            IIRCoefficientAccess<coeff, Coefficients>::getOrder(source),
-  //            IIRCoefficientAccess<coeff, Coefficients>::getMaxOrder(source))
-  //            {
-  //      operator=(source);
-  //    }
+  explicit IIRCoefficients(double scale) {
+    setter().unity(scale);
+  }
+
 
   IIRCoefficients &operator=(const IIRCoefficients &source) {
     size_t sourceOrder = source.getOrder();
