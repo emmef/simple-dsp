@@ -32,7 +32,7 @@ class Interface {
   size_t inputs_;
   size_t outputs_;
   SampleRate sampleRate_;
-  bool realTime_;
+  bool lockFree_;
   size_t bufferSize_;
 #if defined(SIMPLE_DSP_INTERFACE_SIZELIMIT) &&                                 \
     SIMPLE_DSP_INTERFACE_SIZELIMIT > 0
@@ -54,9 +54,9 @@ class Interface {
 
   template <typename freq>
   Interface(size_t inputs, size_t outputs, SampleRateBase<freq> sampleRate,
-            bool realTime, size_t bufferSize)
+            bool lockFree, size_t bufferSize)
       : inputs_(inputs), outputs_(outputs), sampleRate_(sampleRate),
-        realTime_(realTime), bufferSize_(bufferSize) {}
+        lockFree_(lockFree), bufferSize_(bufferSize) {}
 
 public:
   explicit Interface(const Interface &source) = default;
@@ -65,15 +65,18 @@ public:
   size_t inputs() const noexcept { return inputs_; }
   size_t outputs() const noexcept { return outputs_; }
   const SampleRate sampleRate() const noexcept { return sampleRate_; }
-  bool realTime() const noexcept { return realTime_; }
+  bool lockFree() const noexcept { return lockFree_; }
   size_t bufferSize() const noexcept { return bufferSize_; }
+  float bufferSeconds() const noexcept {
+    return sampleRate_.rate() * bufferSize_;
+  }
 
   template <typename freq>
   static Interface of(size_t inputs, size_t outputs,
-                      SampleRateBase<freq> sampleRate, bool realTime,
+                      SampleRateBase<freq> sampleRate, bool lockFree,
                       size_t bufferSize) {
     if (isValidCombination(inputs, outputs, bufferSize)) {
-      return {inputs, outputs, sampleRate, realTime, bufferSize};
+      return {inputs, outputs, sampleRate, lockFree, bufferSize};
     }
     throw std::invalid_argument("Interface::of(): "
                                 "Number of inputs, outputs, buffer size or "
@@ -82,7 +85,7 @@ public:
 
   bool operator==(const Interface &other) {
     return inputs_ == other.inputs() && outputs_ == other.outputs() &&
-           sampleRate_ == other.sampleRate() && realTime_ == other.realTime() &&
+           sampleRate_ == other.sampleRate() && lockFree_ == other.lockFree() &&
            bufferSize_ == other.bufferSize();
   }
 
@@ -90,7 +93,7 @@ public:
 
   Interface withInputs(size_t inputs) const {
     if (isValidCombination(inputs, outputs_, bufferSize_)) {
-      return {inputs, outputs_, sampleRate_, realTime_, bufferSize_};
+      return {inputs, outputs_, sampleRate_, lockFree_, bufferSize_};
     }
     throw std::invalid_argument(
         "Interface::withInputs(inputs): Invalid number of inputs or "
@@ -99,7 +102,7 @@ public:
 
   Interface withOutputs(size_t outputs) const {
     if (isValidCombination(inputs_, outputs, bufferSize_)) {
-      return {inputs_, outputs, sampleRate_, realTime_, bufferSize_};
+      return {inputs_, outputs, sampleRate_, lockFree_, bufferSize_};
     }
     throw std::invalid_argument(
         "Interface::withOutputs(outputs): Invalid number of outputs or "
@@ -108,7 +111,7 @@ public:
 
   Interface withBufferSize(size_t bufferSize) const {
     if (isValidCombination(inputs_, outputs_, bufferSize)) {
-      return {inputs_, outputs_, sampleRate_, realTime_, bufferSize};
+      return {inputs_, outputs_, sampleRate_, lockFree_, bufferSize};
     }
     throw std::invalid_argument(
         "Interface::withBufferSize(bufferSize): Invalid buffer size or "
@@ -117,11 +120,11 @@ public:
 
   template <typename freq>
   Interface withSampleRate(SampleRateBase<freq> sampleRate) const noexcept {
-    return {inputs_, outputs_, sampleRate, realTime_, bufferSize_};
+    return {inputs_, outputs_, sampleRate, lockFree_, bufferSize_};
   }
 
-  Interface withRealTime(bool realTime) const noexcept {
-    return {inputs_, outputs_, sampleRate_, realTime, bufferSize_};
+  Interface withLockFree(bool lockFree) const noexcept {
+    return {inputs_, outputs_, sampleRate_, lockFree, bufferSize_};
   }
 };
 
