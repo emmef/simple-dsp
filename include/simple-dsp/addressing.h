@@ -3,7 +3,7 @@
 /*
  * simple-dsp/util/addressing.h
  *
- * Copyright (C) 2015-2019 Michel Fleur.
+ * Copyright (C) 2015-2020 Michel Fleur.
  * Source https://github.com/emmef/simple-dsp
  * Email simple-dsp@emmef.org
  *

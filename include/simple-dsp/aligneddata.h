@@ -4,7 +4,7 @@
  * simple-dsp/aligneddata.h
  *
  * Added by michel on 2019-09-12
- * Copyright (C) 2015-2019 Michel Fleur.
+ * Copyright (C) 2015-2020 Michel Fleur.
  * Source https://github.com/emmef/simple-dsp
  * Email simple-dsp@emmef.org
  *
