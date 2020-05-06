@@ -21,9 +21,9 @@
  * limitations under the License.
  */
 
-#include "attributes.h"
 #include "guards.h"
 #include "queue.h"
+#include "simple-dsp/core/attributes.h"
 #include <algorithm>
 #include <cstddef>
 #include <limits>

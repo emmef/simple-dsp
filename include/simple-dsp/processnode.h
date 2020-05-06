@@ -25,7 +25,7 @@
 #include <thread>
 #include <type_traits>
 
-#include <simple-dsp/attributes.h>
+#include <simple-dsp/core/attributes.h>
 #include <simple-dsp/queue.h>
 
 namespace simpledsp {

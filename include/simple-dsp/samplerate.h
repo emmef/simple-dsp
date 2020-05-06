@@ -24,7 +24,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <simple-dsp/algorithm.h>
+#include <simple-dsp/core/algorithm.h>
 #include <type_traits>
 
 namespace simpledsp {

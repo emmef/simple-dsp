@@ -22,8 +22,8 @@
  */
 
 #include <limits>
-#include <simple-dsp/attributes.h>
-#include <simple-dsp/power2.h>
+#include <simple-dsp/core/attributes.h>
+#include <simple-dsp/core/algorithm.h>
 #include <type_traits>
 
 namespace simpledsp {

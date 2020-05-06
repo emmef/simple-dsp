@@ -20,8 +20,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <simple-dsp/addressing.h>
 #include <simple-dsp/alignment.h>
+#include <simple-dsp/core/addressing.h>
 
 namespace simpledsp {
 

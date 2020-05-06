@@ -22,7 +22,7 @@
  */
 
 #include <limits>
-#include <simple-dsp/addressing.h>
+#include <simple-dsp/core/addressing.h>
 #include <simple-dsp/guards.h>
 #include <stdexcept>
 #include <type_traits>
@@ -249,16 +249,16 @@ class DefaultData : public DataTraits<Value, DefaultData<Value>> {
 public:
   DefaultData(size_t capacity)
       : capacity_(validCapacity(capacity)), data_(new Value[capacity_ + 1]) {}
-  static constexpr size_t maxCapacity = Size<Value>::maximum - 1;
+  static constexpr size_t maxCapacity = addr::Elements<Value>::Index::max;
 
   sdsp_nodiscard size_t capacityTrait() const noexcept { return capacity_; }
 
   sdsp_nodiscard Value &refTrait(size_t index) noexcept {
-    return data_[Index::arrayOffset(index, capacity_)];
+    return data_[addr::Offset::unsafe(index, capacity_)];
   }
 
   sdsp_nodiscard const Value &refTrait(size_t index) const noexcept {
-    return data_[Index::arrayOffset(index, capacity_)];
+    return data_[addr::Offset::unsafe(index, capacity_)];
   }
 
   ~DefaultData() { delete[] data_; }

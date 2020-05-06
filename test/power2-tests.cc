@@ -2,9 +2,8 @@
 // Created by michel on 18-08-19.
 //
 
-#include <simple-dsp/addressing.h>
-#include <simple-dsp/power2.h>
-
+#include <simple-dsp/core/addressing.h>
+#include <simple-dsp/core/algorithm.h>
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
 
@@ -12,7 +11,7 @@
 
 namespace {
 
-constexpr size_t maximumSize = simpledsp::maximumSizeValue;
+constexpr size_t maximumSize = std::numeric_limits<size_t>::max();
 
 /**
  * Defines a wrapper for power of two-related implementations.
@@ -114,20 +113,20 @@ struct ReferenceImpl : public PowerOfTwoImplementation {
 } referenceImplementation;
 
 template <typename T, typename A, class P>
-using ValueTestCase = simpledsp::testhelper::ValueTestCase<T, A, P>;
+using AbstractPower2TestCase = simpledsp::testhelper::CompareWithReferenceTestCase<T, A, P>;
 
 template <typename T, typename A>
-class Power2TestCase : public ValueTestCase<T, A, PowerOfTwoImplementation> {
+class Power2TestCase : public AbstractPower2TestCase<T, A, PowerOfTwoImplementation> {
   const std::string name;
 
 public:
   Power2TestCase(const PowerOfTwoImplementation &subject, A arg)
-      : ValueTestCase<T, A, PowerOfTwoImplementation>(referenceImplementation,
+      : AbstractPower2TestCase<T, A, PowerOfTwoImplementation>(referenceImplementation,
                                                       subject, arg),
         name(subject.name()) {}
 
   Power2TestCase(const PowerOfTwoImplementation &subject, A arg1, A arg2)
-      : ValueTestCase<T, A, PowerOfTwoImplementation>(referenceImplementation,
+      : AbstractPower2TestCase<T, A, PowerOfTwoImplementation>(referenceImplementation,
                                                       subject, arg1, arg2),
         name(subject.name()) {}
 
@@ -215,8 +214,8 @@ struct TestSet {
       addIfAbsent(powerTestValues, j);
       addIfAbsent(powerTestValues, j + 1);
     }
-    addIfAbsent(powerTestValues, simpledsp::Size<char>::maximum - 1);
-    addIfAbsent(powerTestValues, simpledsp::Size<char>::maximum);
+    addIfAbsent(powerTestValues, std::numeric_limits<size_t>::max() - 1);
+    addIfAbsent(powerTestValues, std::numeric_limits<size_t>::max());
 
     for (size_t value : powerTestValues) {
       testCases.emplace_back(new IsPowerTestCase(value, runtime));

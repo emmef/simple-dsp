@@ -22,9 +22,9 @@
  */
 
 #include <cstddef>
-#include <simple-dsp/addressing.h>
-#include <simple-dsp/attributes.h>
-#include <simple-dsp/power2.h>
+#include <simple-dsp/core/addressing.h>
+#include <simple-dsp/core/attributes.h>
+#include <simple-dsp/core/algorithm.h>
 
 /**
  * The C++20 standard is going to include a template that makes the compiler
@@ -81,7 +81,7 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
   static constexpr size_t alignment = ALIGNMENT;
   static constexpr size_t elementSize = sizeof(T);
   static constexpr size_t alignmentElements = ALIGNMENT / sizeof(T);
-  static constexpr size_t maximumElements = Size<T>::maximum;
+  static constexpr size_t maximumElements = addr::Elements<T>::Size::max;
   static constexpr size_t maximumFrames = maximumElements / alignmentElements;
 
   using type = T;
@@ -144,7 +144,7 @@ template <typename T> struct BaseAlignedMetric<T, 0> {
   static constexpr size_t alignment = 0;
   static constexpr size_t elementSize = sizeof(T);
   static constexpr size_t alignmentElements = 1;
-  static constexpr size_t maximumElements = Size<T>::maximum;
+  static constexpr size_t maximumElements = addr::Elements<T>::Size::max;
   static constexpr size_t maximumFrames = maximumElements;
   using type = T;
 

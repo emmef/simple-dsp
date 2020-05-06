@@ -22,7 +22,7 @@
  */
 
 #include <cstddef>
-#include <simple-dsp/addressing.h>
+#include <simple-dsp/core/addressing.h>
 
 namespace simpledsp {
 

@@ -22,14 +22,27 @@
  */
 
 #include <array>
+#include <boost/test/data/test_case.hpp>
+#include <boost/test/unit_test.hpp>
 #include <iostream>
-#include <simple-dsp/attributes.h>
+#include <simple-dsp/core/attributes.h>
+#include <typeinfo>
 
 namespace simpledsp::testhelper {
 
 namespace {
-struct AbstractValueTestCase {
+class AbstractValueTestCase {
+protected:
+  static std::stringstream &log() {
+    static thread_local std::stringstream *log_ptr = nullptr;
+    if (!log_ptr) {
+      log_ptr = new std::stringstream();
+    }
+    log_ptr->str("");
+    return *log_ptr;
+  }
 
+public:
   virtual void test() const = 0;
 
   virtual std::ostream &print(std::ostream &stream) const = 0;
@@ -37,8 +50,206 @@ struct AbstractValueTestCase {
   virtual ~AbstractValueTestCase() = default;
 };
 
+class AbstractSimpleTestCase {
+protected:
+public:
+  virtual void test() noexcept = 0;
+
+  ~AbstractSimpleTestCase() = default;
+};
+
+template <typename Value> class SimpleTestCase : public AbstractValueTestCase {
+  Value expectedValue;
+  bool throws;
+
+public:
+  virtual Value actualValue() const = 0;
+
+  SimpleTestCase(Value expected) : expectedValue(expected), throws(false) {}
+
+  SimpleTestCase() : throws(true) {}
+
+  void test() const override final {
+    std::stringstream &out = log();
+    if (throws) {
+      try {
+        Value actual = actualValue();
+        // Expected an R thrown
+        print(out);
+        out << " expected exception, but instead got value " << actual << ".";
+        BOOST_TEST_FAIL(out.str());
+        return;
+      } catch (const std::exception &e) {
+        return;
+      } catch (...) {
+        print(out);
+        out << " expected exception, but instead something else was thrown.";
+        BOOST_TEST_FAIL(out.str());
+        throw;
+      }
+    } else {
+      try {
+        Value actual = actualValue();
+        if (actual != expectedValue) {
+          print(out);
+          out << " expected " << expectedValue << ", but instead got "
+              << actual;
+          BOOST_TEST_FAIL(out.str());
+        }
+        return;
+      } catch (const std::exception &e) {
+        print(out);
+        out << " expected value " << expectedValue
+            << ", but instead got thrown " << typeid(e).name() << " saying "
+            << e.what();
+        BOOST_TEST_FAIL(out.str());
+      } catch (...) {
+        print(out);
+        out << " expected value " << expectedValue
+            << ", but instead something "
+               "was thrown";
+        BOOST_TEST_FAIL(out.str());
+      }
+    }
+  }
+};
+
+template <typename Result, typename V1>
+class OneArgumentFunctionTestCase : public SimpleTestCase<Result> {
+  std::string name;
+  Result (*fn)(V1);
+  V1 arg1;
+
+public:
+  OneArgumentFunctionTestCase(const std::string &functionName,
+                              Result (*function)(V1), Result expectedValue,
+                              V1 argument)
+      : SimpleTestCase<Result>(expectedValue), name(functionName), fn(function),
+        arg1(argument) {}
+
+  OneArgumentFunctionTestCase(const std::string &functionName,
+                              Result (*function)(V1), V1 argument)
+      : SimpleTestCase<Result>(), name(functionName), fn(function),
+        arg1(argument) {}
+
+  Result actualValue() const override { return fn(arg1); }
+
+  std::ostream &print(std::ostream &stream) const override {
+    stream << name << "(" << arg1 << ")";
+    return stream;
+  }
+};
+
+template <typename Result, typename V1, typename V2>
+class TwoArgumentFunctionTestCase : public SimpleTestCase<Result> {
+  std::string name;
+  Result (*fn)(V1, V2);
+  V1 arg1;
+  V2 arg2;
+
+public:
+  TwoArgumentFunctionTestCase(const std::string &functionName,
+                              Result (*function)(V1, V2), Result expectedValue,
+                              V1 argument1, V2 argument2)
+      : SimpleTestCase<Result>(expectedValue), name(functionName), fn(function),
+        arg1(argument1), arg2(argument2) {}
+
+  TwoArgumentFunctionTestCase(const std::string &functionName,
+                              Result (*function)(V1, V2), V1 argument1,
+                              V2 argument2)
+      : SimpleTestCase<Result>(), name(functionName), fn(function),
+        arg1(argument1), arg2(argument2) {}
+
+  Result actualValue() const override { return fn(arg1, arg2); }
+
+  std::ostream &print(std::ostream &stream) const override {
+    stream << name << "(" << arg1 << ", " << arg2 << ")";
+    return stream;
+  }
+};
+
+template <typename Result, typename V1, typename V2, typename V3>
+class ThreeArgumentFunctionTestCase : public SimpleTestCase<Result> {
+  std::string name;
+  Result (*fn)(V1, V2, V3);
+  V1 arg1;
+  V2 arg2;
+  V3 arg3;
+
+public:
+  ThreeArgumentFunctionTestCase(const std::string &functionName,
+                                Result (*function)(V1, V2, V3), Result expectedValue,
+                                V1 argument1, V2 argument2, V3 argument3)
+      : SimpleTestCase<Result>(expectedValue), name(functionName), fn(function),
+        arg1(argument1), arg2(argument2), arg3(argument3) {}
+
+  ThreeArgumentFunctionTestCase(const std::string &functionName,
+                                Result (*function)(V1, V2, V3), V1 argument1,
+                                V2 argument2, V3 argument3)
+      : SimpleTestCase<Result>(), name(functionName), fn(function),
+        arg1(argument1), arg2(argument2), arg3(argument3) {}
+
+  Result actualValue() const override { return fn(arg1, arg2, arg3); }
+
+  std::ostream &print(std::ostream &stream) const override {
+    stream << name << "(" << arg1 << ", " << arg2 << ")";
+    return stream;
+  }
+};
+
+struct FunctionTestCases {
+
+  template <typename Result, typename V1>
+  static AbstractValueTestCase* create(
+      const std::string &nm, Result(*fn)(V1),
+      Result expected, V1 v1) {
+    return new OneArgumentFunctionTestCase<Result, V1>(
+        nm, fn, expected, v1);
+  }
+
+  template <typename Result, typename V1>
+  static AbstractValueTestCase* create(
+      const std::string &nm, Result(*fn)(V1),
+      V1 v1) {
+    return new OneArgumentFunctionTestCase<Result, V1>(
+        nm, fn, v1);
+  }
+
+  template <typename Result, typename V1, typename V2>
+  static AbstractValueTestCase* create(
+      const std::string &nm, Result(*fn)(V1, V2),
+      Result expected, V1 v1, V2 v2) {
+    return new TwoArgumentFunctionTestCase<Result, V1, V2>(
+        nm, fn, expected, v1, v2);
+  }
+
+  template <typename Result, typename V1, typename V2>
+  static AbstractValueTestCase* create(
+      const std::string &nm, Result(*fn)(V1, V2),
+      V1 v1, V2 v2) {
+    return new TwoArgumentFunctionTestCase<Result, V1, V2>(
+        nm, fn, v1, v2);
+  }
+
+  template <typename Result, typename V1, typename V2, typename V3>
+  static AbstractValueTestCase* create(
+      const std::string &nm, Result(*fn)(V1, V2, V3),
+      Result expected, V1 v1, V2 v2, V3 v3) {
+    return new ThreeArgumentFunctionTestCase<Result, V1, V2, V3>(
+        nm, fn, expected, v1, v2, v3);
+  }
+
+  template <typename Result, typename V1, typename V2, typename V3>
+  static AbstractValueTestCase* create(
+      const std::string &nm, Result(*fn)(V1, V2, V3),
+      V1 v1, V2 v2, V3 v3) {
+    return new ThreeArgumentFunctionTestCase<Result, V1, V2, V3>(
+        nm, fn, v1, v2, v3);
+  }
+};
+
 template <typename T, typename A, class TestInterface>
-class ValueTestCase : public AbstractValueTestCase {
+class CompareWithReferenceTestCase : public AbstractValueTestCase {
   const TestInterface &expectedValues;
   const TestInterface &actualValues;
   const size_t count;
@@ -66,21 +277,22 @@ protected:
   A getArgument(size_t i) const { return arguments.at(i); }
 
 public:
-  ValueTestCase(const TestInterface &expected, const TestInterface &actual)
+  CompareWithReferenceTestCase(const TestInterface &expected,
+                               const TestInterface &actual)
       : expectedValues(expected), actualValues(actual), count(1) {}
 
-  ValueTestCase(const TestInterface &expected, const TestInterface &actual,
-                A value)
+  CompareWithReferenceTestCase(const TestInterface &expected,
+                               const TestInterface &actual, A value)
       : expectedValues(expected), actualValues(actual), count(1),
         arguments({value, value, value}) {}
 
-  ValueTestCase(const TestInterface &expected, const TestInterface &actual,
-                A v1, A v2)
+  CompareWithReferenceTestCase(const TestInterface &expected,
+                               const TestInterface &actual, A v1, A v2)
       : expectedValues(expected), actualValues(actual), count(2),
         arguments({v1, v2, v1}) {}
 
-  ValueTestCase(const TestInterface &expected, const TestInterface &actual,
-                A v1, A v2, A v3)
+  CompareWithReferenceTestCase(const TestInterface &expected,
+                               const TestInterface &actual, A v1, A v2, A v3)
       : expectedValues(expected), actualValues(actual), count(3),
         arguments({v1, v2, v3}) {}
 

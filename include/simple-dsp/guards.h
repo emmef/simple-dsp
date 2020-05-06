@@ -22,7 +22,7 @@
  */
 
 #include <atomic>
-#include <simple-dsp/attributes.h>
+#include <simple-dsp/core/attributes.h>
 
 namespace simpledsp {
 template <typename Object>

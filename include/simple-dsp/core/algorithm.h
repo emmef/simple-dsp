@@ -1,9 +1,9 @@
-#ifndef SIMPLE_DSP_POWER2_H
-#define SIMPLE_DSP_POWER2_H
+#ifndef SIMPLE_DSP_ALGORITHM_H
+#define SIMPLE_DSP_ALGORITHM_H
 /*
- * simple-dsp/power2.h
+ * simple-dsp/algorithm.h
  *
- * Added by michel on 2019-08-18
+ * Added by michel on 2019-09-12
  * Copyright (C) 2015-2020 Michel Fleur.
  * Source https://github.com/emmef/simple-dsp
  * Email simple-dsp@emmef.org
@@ -20,12 +20,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <algorithm>
 #include <cstddef>
 #include <type_traits>
+#include <simple-dsp/core/attributes.h>
 
 namespace simpledsp {
 
-namespace base {
+template <typename T>
+sdsp_nodiscard static constexpr bool is_within(const T value, const T minimum,
+                                               const T maximum) {
+  return value == ::std::clamp(value, minimum, maximum);
+}
+
+template <typename T>
+static constexpr bool is_within_excl(const T value, const T minimum,
+                                     const T maximum) {
+  return value > minimum && value < maximum;
+}
+
+namespace internal {
+namespace {
 
 template <typename SIZE_T, size_t SIZE_OF_SIZE_T> struct BaseFillBitsToRight {};
 
@@ -100,25 +116,18 @@ public:
   };
 };
 
-} // namespace base
+} // anonymous namespace
+}
 
-template <typename SIZE_T, bool guaranteedConstexpr>
-struct FillBitsToRight
-    : base::BaseFillBitsToRight<size_t,
-                                guaranteedConstexpr ? 0 : sizeof(size_t)> {
-  static_assert(std::is_integral<SIZE_T>::value,
-                "Type must be an integral type");
+template <bool constExpr, typename SIZE_T> class BasePowerOfTwo {
+  static_assert(std::is_integral<SIZE_T>::value &&
+                !std::is_signed<SIZE_T>::value,
+                "Type must be an integral, unsigned type");
 
-  using base::BaseFillBitsToRight<
-      size_t, guaranteedConstexpr ? 0 : sizeof(size_t)>::fill;
-};
+  using BitFiller =
+  internal::BaseFillBitsToRight<size_t, constExpr ? 0 : sizeof(size_t)>;
 
-namespace base {
-
-template <bool constExpr, typename SIZE_T = size_t> class BasePowerOfTwo {
-  using Fill = FillBitsToRight<SIZE_T, constExpr>;
-
-  static constexpr SIZE_T fill(SIZE_T value) { return Fill::fill(value); }
+  static constexpr SIZE_T fill(SIZE_T value) { return BitFiller::fill(value); }
 
   static constexpr SIZE_T getAligned(SIZE_T value, SIZE_T alignment) {
     SIZE_T filled = fill(alignment >> 1);
@@ -166,10 +175,9 @@ public:
   }
 };
 
-} // namespace base
-
-using Power2 = base::BasePowerOfTwo<false>;
-using Power2Const = base::BasePowerOfTwo<true>;
+using Power2 = BasePowerOfTwo<false, size_t>;
+using Power2Const = BasePowerOfTwo<true, size_t>;
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_POWER2_H
+
+#endif // SIMPLE_DSP_ALGORITHM_H

@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <simple-dsp/addressing.h>
+#include <simple-dsp/core/addressing.h>
 #include <stdexcept>
 #include <stdio.h>
 #include <vector>
@@ -143,17 +143,17 @@ public:
    * @param crossovers The number of crossovers, that must be one or larger
    */
   CrossoverPlan(size_t crossovers)
-      : steps_(new Step[Size<Step>::validGet(crossovers)]),
+      : steps_(new Step[addr::Elements<Step>::Size::get_value_if_valid(crossovers)]),
         crossovers_(crossovers) {
     create(steps_, crossovers);
   }
 
   const Step &operator[](size_t idx) const {
-    return steps_[Index::Array::index(idx, crossovers_)];
+    return steps_[addr::Index::unsafe(idx, crossovers_)];
   }
 
   const Step &at(size_t idx) const {
-    return steps_[Index::Method::index(idx, crossovers_)];
+    return steps_[addr::Index::safe(idx, crossovers_)];
   }
 
   const Step *begin() const noexcept { return steps_; }

@@ -23,7 +23,7 @@
 
 #include <algorithm>
 #include <chrono>
-#include <simple-dsp/attributes.h>
+#include <simple-dsp/core/attributes.h>
 #include <thread>
 
 namespace simpledsp {
