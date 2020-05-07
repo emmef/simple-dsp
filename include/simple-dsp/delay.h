@@ -22,9 +22,9 @@
  */
 
 #include <array>
-#include <simple-dsp/circular.h>
 #include <simple-dsp/core/addressing.h>
 #include <simple-dsp/core/algorithm.h>
+#include <simple-dsp/core/circular.h>
 #include <vector>
 
 namespace simpledsp {
@@ -46,13 +46,13 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
-  getMaximumDelay(const CircularMetricBase<SizeType> &metric) {
+  getMaximumDelay(const base::CircularMetric<SizeType> &metric) {
     return metric.getSize();
   }
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr bool
-  isValidDelay(const CircularMetricBase<SizeType> &metric,
+  isValidDelay(const base::CircularMetric<SizeType> &metric,
                SizeType delaySamples) {
     return is_within(delaySamples, getMinimumDelay<SizeType>(),
                      getMaximumDelay<SizeType>(metric));
@@ -60,14 +60,14 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
-  getUncheckedDelta(const CircularMetricBase<SizeType> &metric,
+  getUncheckedDelta(const base::CircularMetric<SizeType> &metric,
                     SizeType delaySamples) {
     return metric.wrap(delaySamples);
   }
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
-  getValidDelay(const CircularMetricBase<SizeType> &metric,
+  getValidDelay(const base::CircularMetric<SizeType> &metric,
                 SizeType delaySamples) {
     if (isValidDelay<SizeType>(metric, delaySamples)) {
       return delaySamples;
@@ -78,7 +78,7 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getDelta(const CircularMetricBase<SizeType> &metric, SizeType delaySamples) {
+  getDelta(const base::CircularMetric<SizeType> &metric, SizeType delaySamples) {
     return getUncheckedDelta<SizeType>(
         metric, getValidDelay<SizeType>(metric, delaySamples));
   }
@@ -86,12 +86,12 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
   getAllocationSize(SizeType delaySamples) {
-    return CircularArithmicBase<SizeType>::properCircularSize(delaySamples);
+    return base::CircularArithmic<SizeType>::proper_circular_size(delaySamples);
   }
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getReadPtrForDelay(const CircularMetricBase<SizeType> &metric,
+  getReadPtrForDelay(const base::CircularMetric<SizeType> &metric,
                      SizeType writePtr, SizeType delay) {
     SizeType validDelay = getValidDelay(metric, delay);
     return metric.subtract(writePtr, validDelay);
@@ -99,16 +99,16 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getWritePtrForDelay(const CircularMetricBase<SizeType> &metric,
+  getWritePtrForDelay(const base::CircularMetric<SizeType> &metric,
                       SizeType readPtr, SizeType delay) {
     SizeType validDelay = getValidDelay(metric, delay);
     return metric.add(readPtr, validDelay);
   }
 
   template <typename SizeType>
-  sdsp_nodiscard static CircularMetricBase<SizeType>
+  sdsp_nodiscard static base::CircularMetric<SizeType>
   createMetricFor(SizeType delaySamples) {
-    return CircularMetricBase<SizeType>(delaySamples);
+    return base::CircularArithmic<SizeType>(delaySamples);
   }
 
   template <typename Sample>
@@ -137,19 +137,20 @@ template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
-  getMaximumDelay(const CircularMetricBase<SizeType> &metric) {
+  getMaximumDelay(const base::CircularMetric<SizeType> &metric) {
     return metric.getSize() - 1;
   }
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
   getAllocationSize(SizeType delaySamples) {
-    return CircularArithmicBase<SizeType>::properCircularSize(delaySamples + 1);
+    return base::CircularArithmic<SizeType>::proper_circular_size(delaySamples +
+                                                                  1);
   }
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr bool
-  isValidDelay(const CircularMetricBase<SizeType> &metric,
+  isValidDelay(const base::CircularMetric<SizeType> &metric,
                SizeType delaySamples) {
     return is_within(delaySamples, getMinimumDelay<SizeType>(),
                      getMaximumDelay<SizeType>(metric));
@@ -157,14 +158,14 @@ template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
-  getUncheckedDelta(const CircularMetricBase<SizeType> &metric,
+  getUncheckedDelta(const base::CircularMetric<SizeType> &metric,
                     SizeType delaySamples) {
     return metric.wrap(delaySamples);
   }
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
-  getValidDelay(const CircularMetricBase<SizeType> &metric,
+  getValidDelay(const base::CircularMetric<SizeType> &metric,
                 SizeType delaySamples) {
     if (isValidDelay<SizeType>(metric, delaySamples)) {
       return delaySamples;
@@ -175,7 +176,7 @@ template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getReadPtrForDelay(const CircularMetricBase<SizeType> &metric,
+  getReadPtrForDelay(const base::CircularMetric<SizeType> &metric,
                      SizeType writePtr, SizeType delay) {
     SizeType validDelay = getValidDelay(metric, delay);
     return metric.subtract(writePtr, validDelay);
@@ -183,16 +184,16 @@ template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getWritePtrForDelay(const CircularMetricBase<SizeType> &metric,
+  getWritePtrForDelay(const base::CircularMetric<SizeType> &metric,
                       SizeType readPtr, SizeType delay) {
     SizeType validDelay = getValidDelay(metric, delay);
     return metric.add(readPtr, validDelay);
   }
 
   template <typename SizeType>
-  sdsp_nodiscard static CircularMetricBase<SizeType>
+  sdsp_nodiscard static base::CircularMetric<SizeType>
   createMetricFor(SizeType delaySamples) {
-    return CircularMetricBase<SizeType>(delaySamples + 1);
+    return base::CircularArithmic<SizeType>(delaySamples + 1);
   }
 
   template <typename Sample>
@@ -215,7 +216,7 @@ class DelayOffsetsBase {
 
 public:
   using Basics = DelayBasics<accessType>;
-  using Metric = CircularMetricBase<SizeType>;
+  using Metric = base::CircularMetric<SizeType>;
 
   template <typename... args>
   explicit DelayOffsetsBase(SizeType initialMetricSize, args... arguments)

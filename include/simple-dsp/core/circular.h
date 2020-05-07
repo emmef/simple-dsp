@@ -22,31 +22,33 @@
  */
 
 #include <limits>
-#include <simple-dsp/core/attributes.h>
+#include <simple-dsp/core/addressing.h>
 #include <simple-dsp/core/algorithm.h>
+#include <simple-dsp/core/attributes.h>
 #include <type_traits>
 
 namespace simpledsp {
 
-template <typename SIZE_T> struct CircularArithmicBase {
+namespace base {
+template <typename SIZE_T> struct CircularArithmic {
   static_assert(std::is_integral<SIZE_T>::value &&
-                    !std::is_signed<SIZE_T>::value,
+                !std::is_signed<SIZE_T>::value,
                 "SIZE_T must be an integral, unsigned type");
 
-  static constexpr SIZE_T maximumMask = std::numeric_limits<SIZE_T>::max() >> 1;
+  static constexpr SIZE_T maximumMask = addr::Elements<char,SIZE_T,0>::Index::max >> 1;
 
   sdsp_nodiscard static constexpr SIZE_T
-  properCircularSize(SIZE_T requestedSize) {
+  proper_circular_size(SIZE_T requestedSize) {
 
     return requestedSize > static_cast<SIZE_T>(2)
-               ? Power2::sameOrBigger(requestedSize)
-               : static_cast<SIZE_T>(2);
+           ? Power2::same_or_bigger(requestedSize)
+           : static_cast<SIZE_T>(2);
   }
 
   sdsp_nodiscard static constexpr SIZE_T
-  properCircularMask(SIZE_T requestedSize) {
+  proper_circular_mask(SIZE_T requestedSize) {
 
-    return Power2::surroundingMask(requestedSize) & maximumMask;
+    return Power2::surrounding_mask(requestedSize) & maximumMask;
   }
 
   sdsp_nodiscard static constexpr SIZE_T next(SIZE_T circularPointer,
@@ -80,32 +82,32 @@ template <typename SIZE_T> struct CircularArithmicBase {
   }
 
   sdsp_nodiscard static constexpr SIZE_T
-  subtractUnsafe(SIZE_T circularPointer, SIZE_T delta, SIZE_T uncheckedMask) {
+  subtract_unsafe(SIZE_T circularPointer, SIZE_T delta, SIZE_T uncheckedMask) {
 
     return (delta & circularPointer + uncheckedMask + 1 - delta &
             uncheckedMask) &
            uncheckedMask;
   }
 
-  static constexpr void setNext(SIZE_T &circularPointer, SIZE_T uncheckedMask) {
+  static constexpr void set_next(SIZE_T &circularPointer, SIZE_T uncheckedMask) {
 
     ++circularPointer &= uncheckedMask;
   }
 
-  static constexpr void setPrevious(SIZE_T &circularPointer,
+  static constexpr void set_previous(SIZE_T &circularPointer,
                                     SIZE_T uncheckedMask) {
 
     --circularPointer &= uncheckedMask;
   }
 };
 
-template <typename SIZE_T> class CircularMetricBase {
+template <typename SIZE_T> class CircularMetric {
   SIZE_T mask;
-  using Arithmic = CircularArithmicBase<SIZE_T>;
+  using Arithmic = CircularArithmic<SIZE_T>;
 
 public:
-  explicit CircularMetricBase(SIZE_T requestedSize)
-      : mask(Arithmic::properCircularMask(requestedSize)) {}
+  explicit CircularMetric(SIZE_T requestedSize)
+      : mask(Arithmic::proper_circular_mask(requestedSize)) {}
 
   sdsp_nodiscard SIZE_T getSize() const { return mask + 1; }
 
@@ -121,10 +123,10 @@ public:
     return Arithmic::previous(pointer, mask);
   }
 
-  void setNext(SIZE_T &pointer) const { Arithmic::setNext(pointer, mask); }
+  void setNext(SIZE_T &pointer) const { Arithmic::set_next(pointer, mask); }
 
   void setPrevious(SIZE_T &pointer) const {
-    Arithmic::setPrevious(pointer, mask);
+    Arithmic::set_previous(pointer, mask);
   }
 
   sdsp_nodiscard SIZE_T add(SIZE_T pointer, SIZE_T delta) const {
@@ -136,7 +138,7 @@ public:
   }
 
   sdsp_nodiscard bool setSize(size_t requestedSize) {
-    SIZE_T newMask = Arithmic::properCircularMask(requestedSize);
+    SIZE_T newMask = Arithmic::proper_circular_mask(requestedSize);
     if (newMask + 1 >= requestedSize) {
       mask = newMask;
       return true;
@@ -145,8 +147,10 @@ public:
   }
 };
 
-using CircularArithmic = CircularArithmicBase<size_t>;
-using CircularMetric = CircularMetricBase<size_t>;
+} // namespace base
+
+using CircularArithmic = base::CircularArithmic<size_t>;
+using CircularMetric = base::CircularMetric<size_t>;
 
 } // namespace simpledsp
 

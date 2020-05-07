@@ -117,9 +117,10 @@ public:
 };
 
 } // anonymous namespace
-}
+} // namespace internal
 
-template <bool constExpr, typename SIZE_T> class BasePowerOfTwo {
+namespace base {
+template <bool constExpr, typename SIZE_T> class PowerOfTwo {
   static_assert(std::is_integral<SIZE_T>::value &&
                 !std::is_signed<SIZE_T>::value,
                 "Type must be an integral, unsigned type");
@@ -129,34 +130,34 @@ template <bool constExpr, typename SIZE_T> class BasePowerOfTwo {
 
   static constexpr SIZE_T fill(SIZE_T value) { return BitFiller::fill(value); }
 
-  static constexpr SIZE_T getAligned(SIZE_T value, SIZE_T alignment) {
+  static constexpr SIZE_T get_aligned(SIZE_T value, SIZE_T alignment) {
     SIZE_T filled = fill(alignment >> 1);
     return (value + filled) & ~filled;
   }
 
 public:
-  static constexpr bool isMinusOne(const SIZE_T value) {
+  static constexpr bool is_minus_one(const SIZE_T value) {
     return value != 0 && fill(value) == value;
   }
 
   static constexpr bool is(const SIZE_T value) {
-    return value >= 2 && isMinusOne(value - 1);
+    return value >= 2 && is_minus_one(value - 1);
   }
 
   /**
    * Returns value if it is a power of two or else the next power of two that is
    * greater.
    */
-  static constexpr SIZE_T sameOrBigger(const SIZE_T value) {
+  static constexpr SIZE_T same_or_bigger(const SIZE_T value) {
     return value <= 2 ? 2 : fill(value - 1) + 1;
   }
 
   /**
    * Returns an offset mask to use for offsets inside a space of size
-   * sameOrBigger(value)..
+   * same_or_bigger(value)..
    */
-  static constexpr SIZE_T surroundingMask(const SIZE_T value) {
-    return fill(value - 1);
+  static constexpr SIZE_T surrounding_mask(const SIZE_T value) {
+    return value <= 2 ? 1 : fill(value - 1);
   }
 
   /**
@@ -169,14 +170,15 @@ public:
    * of two.
    * @return the aligned value
    */
-  static constexpr SIZE_T alignedWith(const SIZE_T value,
+  static constexpr SIZE_T is_aligned_with(const SIZE_T value,
                                       const SIZE_T power_of_two) {
-    return getAligned(value, power_of_two);
+    return get_aligned(value, power_of_two);
   }
 };
+} // namespace base
 
-using Power2 = BasePowerOfTwo<false, size_t>;
-using Power2Const = BasePowerOfTwo<true, size_t>;
+using Power2 = base::PowerOfTwo<false, size_t>;
+using Power2Const = base::PowerOfTwo<true, size_t>;
 } // namespace simpledsp
 
 

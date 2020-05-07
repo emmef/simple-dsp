@@ -41,17 +41,17 @@ struct SubjectImpl : public PowerOfTwoImplementation {
   }
 
   sdsp_nodiscard size_t nextOrSame(size_t size) const override {
-    return Impl::sameOrBigger(size);
+    return Impl::same_or_bigger(size);
   }
 
   sdsp_nodiscard bool is(size_t size) const override { return Impl::is(size); }
 
   sdsp_nodiscard bool minusOne(size_t size) const override {
-    return Impl::isMinusOne(size);
+    return Impl::is_minus_one(size);
   }
 
   sdsp_nodiscard size_t alignedWith(size_t value, size_t power) const override {
-    return Impl::alignedWith(value, power);
+    return Impl::is_aligned_with(value, power);
   }
 };
 
@@ -154,7 +154,7 @@ struct NextPowerTestCase : public Power2TestCase<size_t, size_t> {
       : Power2TestCase<size_t, size_t>(subject, value) {}
 
   sdsp_nodiscard const char *methodName() const override {
-    return "sameOrBigger";
+    return "same_or_bigger";
   }
 
   sdsp_nodiscard size_t
@@ -170,7 +170,7 @@ struct IsMinusOneTestCase : public Power2TestCase<bool, size_t> {
       : Power2TestCase<bool, size_t>(subject, value) {}
 
   sdsp_nodiscard const char *methodName() const override {
-    return "isMinusOne";
+    return "is_minus_one";
   }
 
   sdsp_nodiscard bool
@@ -186,7 +186,7 @@ struct AlignedWithTestCase : public Power2TestCase<size_t, size_t> {
       : Power2TestCase<size_t, size_t>(subject, offset, power) {}
 
   sdsp_nodiscard const char *methodName() const override {
-    return "alignedWith";
+    return "is_aligned_with";
   }
 
   sdsp_nodiscard size_t

@@ -2,31 +2,41 @@
 // Created by michel on 19-08-19.
 //
 
-#include <simple-dsp/circular.h>
+#include <simple-dsp/core/circular.h>
 
 #include <boost/test/unit_test.hpp>
 
 namespace {
 using Arithmic = simpledsp::CircularArithmic;
-using Metric = simpledsp::CircularMetricBase<size_t>;
+using Metric = simpledsp::base::CircularMetric<size_t>;
 
 constexpr size_t requestedSize = 13;
 constexpr size_t properSize = 16;
 constexpr size_t properMask = 15;
 
 Metric metric(requestedSize);
+
+template <typename T>
+static void checkExpectedAndActual(const char *description, T expected,
+                                   T actual) {
+  if (actual != expected) {
+    std::stringstream msg;
+    msg << description << ": expected " << expected << " got " << actual;
+    BOOST_FAIL(msg.str().c_str());
+  }
+}
 } // namespace
 
 BOOST_AUTO_TEST_SUITE(circularMetricTests)
 
 BOOST_AUTO_TEST_CASE(testProperSize) {
-  BOOST_CHECK_MESSAGE(Arithmic::properCircularSize(requestedSize) == properSize,
-                      "Proper circular size for 13 is 16");
+  checkExpectedAndActual("Proper circular size for 13", properSize,
+                         Arithmic::proper_circular_size(requestedSize));
 }
 
 BOOST_AUTO_TEST_CASE(testProperMask) {
-  BOOST_CHECK_MESSAGE(Arithmic::properCircularMask(requestedSize) == properMask,
-                      "Proper circular mask for 13 is 15");
+  checkExpectedAndActual("Proper circular mask for 13", properMask,
+                         Arithmic::proper_circular_mask(requestedSize));
 }
 
 BOOST_AUTO_TEST_CASE(testAddNoWrap) {
@@ -181,7 +191,7 @@ BOOST_AUTO_TEST_CASE(testRoundtripWithSetNext) {
   size_t actual = 0;
   for (size_t i = 0; i <= properSize; i++) {
     reference = (reference + 1) % properSize;
-    Arithmic::setNext(actual, properMask);
+    Arithmic::set_next(actual, properMask);
     BOOST_CHECK_EQUAL(reference, actual);
   }
 }
@@ -201,7 +211,7 @@ BOOST_AUTO_TEST_CASE(testRoundtripWithSetPrevious) {
   size_t actual = 0;
   for (size_t i = 0; i <= properSize; i++) {
     reference = (reference > 0) ? reference - 1 : properMask;
-    Arithmic::setPrevious(actual, properMask);
+    Arithmic::set_previous(actual, properMask);
     BOOST_CHECK_EQUAL(reference, actual);
   }
 }

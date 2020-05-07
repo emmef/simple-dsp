@@ -139,7 +139,11 @@ public:
  * visibility on scope boundaries, not about synchronising blocks of code.
  */
 class MemoryFence {
-  static std::atomic<bool> variable_;
+
+  static std::atomic<bool> & variable() {
+    static std::atomic<bool> variable_;
+    return variable_;
+  }
 
 public:
   MemoryFence() { acquire(); }
@@ -150,7 +154,7 @@ public:
    * of another thread that happen before that calls release().
    */
   static void acquire() noexcept {
-    variable_.load(std::memory_order_relaxed);
+    variable().load(std::memory_order_relaxed);
     std::atomic_thread_fence(std::memory_order_acquire);
   }
 
@@ -160,7 +164,7 @@ public:
    */
   static void release() noexcept {
     std::atomic_thread_fence(std::memory_order_release);
-    variable_.store(1, std::memory_order_relaxed);
+    variable().store(1, std::memory_order_relaxed);
   }
 };
 
@@ -171,19 +175,23 @@ public:
  * considerable burdens.
  */
 class NestedMemoryFence {
-  static thread_local int level_;
+
+  static int &level() {
+    static thread_local int level_ = 0;
+    return level_;
+  }
 
 public:
   NestedMemoryFence(const NestedMemoryFence &) = delete;
   NestedMemoryFence(NestedMemoryFence &&original) = delete;
   NestedMemoryFence() noexcept {
-    if (level_++ == 0) {
+    if (level()++ == 0) {
       MemoryFence::acquire();
     }
   }
 
   ~NestedMemoryFence() noexcept {
-    if (--level_ == 0) {
+    if (--level() == 0) {
       MemoryFence::release();
     }
   }

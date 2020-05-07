@@ -20,15 +20,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <simple-dsp/alignment.h>
 #include <simple-dsp/core/addressing.h>
+#include <simple-dsp/core/alignment.h>
 
 namespace simpledsp {
 
 template <typename T, size_t ALIGNMENT, class Data> struct AlignedData {
-  using Metric = AlignedMetric<T, ALIGNMENT>;
-  using ArrayIndex = Index::Array;
-  using MethodIndex = Index::Method;
+  using Metric = Aligned<T, ALIGNMENT>;
+  using UnsafeIndex = addr::Unsafe<size_t>;
+  using MethodIndex = addr::Safe<size_t>;
 
   using value_type = T;
   using pointer = T *;
@@ -43,42 +43,37 @@ template <typename T, size_t ALIGNMENT, class Data> struct AlignedData {
   }
 
   sdsp_nodiscard sdsp_force_inline const_pointer ptr() const {
-    return Metric::assumeAligned(
+    return Metric::aligned(
         reinterpret_cast<const Data *>(this)->trait_unsafe_ptr());
   }
 
   sdsp_nodiscard sdsp_force_inline pointer ptr() {
-    return Metric::assumeAligned(
-        reinterpret_cast<Data *>(this)->trait_unsafe_ptr());
+    return Metric::aligned(reinterpret_cast<Data *>(this)->trait_unsafe_ptr());
   }
 
   sdsp_nodiscard sdsp_force_inline pointer frame(size_type i) {
-    return Metric::assumeAligned(ptr() +
-                                 MethodIndex::index(i * ALIGNMENT, size()));
+    return Metric::aligned(ptr() + MethodIndex::index(i * ALIGNMENT, size()));
   }
 
   sdsp_nodiscard sdsp_force_inline const_pointer frame(size_type i) const {
-    return Metric::assumeAligned(ptr() +
-                                 MethodIndex::index(i * ALIGNMENT, size()));
+    return Metric::aligned(ptr() + MethodIndex::index(i * ALIGNMENT, size()));
   }
 
   sdsp_nodiscard sdsp_force_inline pointer operator()(size_type i) {
-    return Metric::assumeAligned(ptr() +
-                                 ArrayIndex::index(i * ALIGNMENT, size()));
+    return Metric::aligned(ptr() + UnsafeIndex::index(i * ALIGNMENT, size()));
   }
 
   sdsp_nodiscard sdsp_force_inline const_pointer operator()(size_type i) const {
-    return Metric::assumeAligned(ptr() +
-                                 ArrayIndex::index(i * ALIGNMENT, size()));
+    return Metric::aligned(ptr() + UnsafeIndex::index(i * ALIGNMENT, size()));
   }
 
   sdsp_nodiscard sdsp_force_inline const_reference
   operator[](size_type i) const {
-    return ptr()[ArrayIndex::index(i, size())];
+    return ptr()[UnsafeIndex::index(i, size())];
   }
 
   sdsp_nodiscard sdsp_force_inline reference operator[](size_type i) {
-    return ptr()[ArrayIndex::index(i, size())];
+    return ptr()[UnsafeIndex::index(i, size())];
   }
 
   sdsp_nodiscard sdsp_force_inline const_reference at(size_type i) const {
@@ -97,11 +92,16 @@ struct BaseAlignedData
     : public AlignedData<T, ALIGNMENT, BaseAlignedData<T, ALIGNMENT, Data>> {
   using Base = AlignedData<T, ALIGNMENT, BaseAlignedData<T, ALIGNMENT, Data>>;
   using Metric = typename Base::Metric;
-  using ArrayIndex = typename Base::ArrayIndex;
+  using ArrayIndex = typename Base::UnsafeIndex;
   using MethodIndex = typename Base::MethodIndex;
   using size_type = typename Base::size_type;
   using pointer = typename Base::pointer;
   using const_pointer = typename Base::const_pointer;
+
+  friend class AlignedData<T, ALIGNMENT, BaseAlignedData<T, ALIGNMENT, Data>>;
+
+protected:
+  Data data_;
 
   sdsp_nodiscard sdsp_force_inline constexpr size_type trait_size() const {
     return data_.trait_size();
@@ -109,21 +109,18 @@ struct BaseAlignedData
 
   sdsp_nodiscard sdsp_force_inline constexpr const pointer
   trait_unsafe_ptr() const {
-    return Metric::assumeAligned(data_.trait_unsafe_ptr());
+    return Metric::aligned(data_.trait_unsafe_ptr());
   }
 
   sdsp_nodiscard sdsp_force_inline constexpr const_pointer trait_unsafe_ptr() {
-    return Metric::assumeAligned(data_.trait_unsafe_ptr());
+    return Metric::aligned(data_.trait_unsafe_ptr());
   }
-
-protected:
-  Data data_;
 };
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
 struct alignas(ALIGNMENT) BaseAlignedArrayData {
   alignas(ALIGNMENT) T data_[SIZE];
-  using AlignedMetric = AlignedMetric<T, ALIGNMENT>;
+  using AlignedMetric = Aligned<T, ALIGNMENT>;
 
   sdsp_nodiscard sdsp_force_inline T *trait_unsafe_ptr() {
     return AlignedMetric::assumeAligned(&data_);
@@ -138,7 +135,7 @@ struct alignas(ALIGNMENT) BaseAlignedArrayData {
 
 template <typename T, size_t ALIGNMENT>
 struct alignas(ALIGNMENT) BaseAlignedAllocatedData {
-  using AlignedMetric = AlignedMetric<T, ALIGNMENT>;
+  using AlignedMetric = Aligned<T, ALIGNMENT>;
 
   BaseAlignedAllocatedData(size_t size)
       : data_(new T(sizeof(T) * size,
@@ -175,7 +172,7 @@ using AlignedBuffer =
 
 template <typename T, size_t ALIGNMENT>
 struct alignas(ALIGNMENT) AlignedPointer {
-  using AlignedMetric = AlignedMetric<T, ALIGNMENT>;
+  using AlignedMetric = Aligned<T, ALIGNMENT>;
 
   sdsp_nodiscard sdsp_force_inline T *ptr() {
     return AlignedMetric::assumeAligned(data_);

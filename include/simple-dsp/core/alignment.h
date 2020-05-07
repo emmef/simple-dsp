@@ -23,8 +23,8 @@
 
 #include <cstddef>
 #include <simple-dsp/core/addressing.h>
-#include <simple-dsp/core/attributes.h>
 #include <simple-dsp/core/algorithm.h>
+#include <simple-dsp/core/attributes.h>
 
 /**
  * The C++20 standard is going to include a template that makes the compiler
@@ -79,6 +79,7 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
                 "Alignment must be a multiple of the type's size.'");
 
   static constexpr size_t alignment = ALIGNMENT;
+  static constexpr size_t alignment_mask = alignment - 1;
   static constexpr size_t elementSize = sizeof(T);
   static constexpr size_t alignmentElements = ALIGNMENT / sizeof(T);
   static constexpr size_t maximumElements = addr::Elements<T>::Size::max;
@@ -86,11 +87,11 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
 
   using type = T;
 
-  sdsp_nodiscard sdsp_force_inline static T *assumeAligned(T *p) {
+  sdsp_nodiscard sdsp_force_inline static T *aligned(T *p) {
     return ::assume_aligned<ALIGNMENT, T>(p);
   }
 
-  sdsp_nodiscard sdsp_force_inline static const T *assumeAligned(const T *p) {
+  sdsp_nodiscard sdsp_force_inline static const T *aligned(const T *p) {
     return ::assume_aligned<ALIGNMENT, T>(p);
   }
 
@@ -99,8 +100,8 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
    * @param number The number to be tested, e.g. a count or offset.
    * @return {@code true} is the number is aligned
    */
-  sdsp_nodiscard static bool isAligned(size_t number) {
-    return (number & (ALIGNMENT - 1)) == 0;
+  sdsp_nodiscard static bool is(size_t number) {
+    return (number & (alignment_mask)) == 0;
   }
 
   /**
@@ -108,34 +109,22 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
    * @param number The pointer to be tested.
    * @return {@code true} is the number is a multiple.
    */
-  sdsp_nodiscard static bool isAlignedPtr(const T *ptr) {
-    return isAligned(reinterpret_cast<size_t>(ptr));
+  sdsp_nodiscard static bool is(const T *ptr) {
+    return is(reinterpret_cast<size_t>(ptr));
   }
 
-  /**
-   * Tests whether the indicated number is a multiple of the number of elements
-   * in an aligned block.
-   * @param number The number to be tested, e.g. a count or offset.
-   * @return {@code true} is the number is a multiple.
-   */
-  sdsp_nodiscard static bool isAlignedNumberOfElements(size_t number) {
-    return number % alignmentElements == 0;
-  }
-
-  sdsp_nodiscard static T *verifiedAligned(T *ptr) {
-    if (isAlignedPtr(ptr)) {
+  sdsp_nodiscard static T *verified(T *ptr) {
+    if (is(ptr)) {
       return ptr;
     }
-    throw std::invalid_argument(
-        "AlignedMetric: Pointer is not properly aligned");
+    throw std::invalid_argument("Aligned: Pointer is not properly aligned");
   }
 
-  sdsp_nodiscard static const T *verifiedAligned(const T *ptr) {
-    if (isAlignedPtr(ptr)) {
+  sdsp_nodiscard static const T *verified(const T *ptr) {
+    if (is(ptr)) {
       return ptr;
     }
-    throw std::invalid_argument(
-        "AlignedMetric: Pointer is not properly aligned");
+    throw std::invalid_argument("Aligned: Pointer is not properly aligned");
   }
 };
 
@@ -148,48 +137,37 @@ template <typename T> struct BaseAlignedMetric<T, 0> {
   static constexpr size_t maximumFrames = maximumElements;
   using type = T;
 
-  sdsp_nodiscard sdsp_force_inline static T *assumeAligned(T *p) { return p; }
+  sdsp_nodiscard sdsp_force_inline static T *aligned(T *p) { return p; }
 
-  sdsp_nodiscard sdsp_force_inline static const T *assumeAligned(const T *p) {
+  sdsp_nodiscard sdsp_force_inline static const T *aligned(const T *p) {
     return p;
   }
 
-  sdsp_nodiscard static bool isAligned(size_t) { return true; }
+  sdsp_nodiscard static bool is(size_t) { return true; }
 
-  sdsp_nodiscard static bool isAlignedPtr(const T *) { return true; }
+  sdsp_nodiscard static bool is(const T *) { return true; }
 
-  sdsp_nodiscard static bool isAlignedNumberOfElements(size_t) { return true; }
+  sdsp_nodiscard static T *verified(T *ptr) { return ptr; }
 
-  sdsp_nodiscard static T *verifiedAligned(T *ptr) { return ptr; }
-
-  sdsp_nodiscard static const T *verifiedAligned(const T *ptr) { return ptr; }
+  sdsp_nodiscard static const T *verified(const T *ptr) { return ptr; }
 };
 
-sdsp_nodiscard static constexpr size_t effectiveAlignment(size_t alignment) {
-  return alignment > 1 ? alignment : 0;
-}
-
-} // namespace
+} // anonymous namespace
 } // namespace base
 
-} // namespace simpledsp
-// simpledsp::align
-
-namespace simpledsp {
-
 template <typename T, size_t ALIGNMENT>
-using AlignedMetric =
-    base::BaseAlignedMetric<T, base::effectiveAlignment(ALIGNMENT)>;
+using Aligned = base::BaseAlignedMetric < T,
+      ALIGNMENT<2 ? 0 : ALIGNMENT>;
 
 template <std::size_t N, typename T>
-sdsp_nodiscard sdsp_force_inline constexpr T *assumeAligned(T *ptr) {
-  return AlignedMetric<T, N>::assumeAligned(ptr);
+sdsp_nodiscard sdsp_force_inline static constexpr T *assume_aligned(T *ptr) {
+  return Aligned<T, N>::aligned(ptr);
 }
 
 template <std::size_t N, typename T>
-sdsp_nodiscard sdsp_force_inline constexpr const T *
-assumeAligned(const T *ptr) {
-  return AlignedMetric<T, N>::assumeAligned(ptr);
+sdsp_nodiscard sdsp_force_inline static constexpr const T *
+assume_aligned(const T *ptr) {
+  return Aligned<T, N>::aligned(ptr);
 }
 
 } // namespace simpledsp

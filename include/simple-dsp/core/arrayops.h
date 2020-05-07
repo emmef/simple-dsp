@@ -21,8 +21,8 @@
  * limitations under the License.
  */
 #include <cstddef>
-#include <simple-dsp/aligneddata.h>
-#include <simple-dsp/denormal.h>
+#include <simple-dsp/core/aligneddata.h>
+#include <simple-dsp/core/denormal.h>
 
 namespace simpledsp::arrayops {
 
@@ -97,7 +97,7 @@ template <typename T>
 sdsp_force_inline static void inline_multiply_with_range(T *v1, T from, T to,
                                                          size_t size) {
   T factor = from;
-  T delta = Denormal::get_flushed((to - from) / (size - 1));
+  T delta = Denormal<T>::get_flushed((to - from) / (size - 1));
   if (delta != 0) {
     for (size_t i = 0; i < size; ++i, factor += delta) {
       v1[i] *= factor;
@@ -111,11 +111,11 @@ template <typename T>
 sdsp_force_inline static void
 inline_multiply_with_range_accurate(T *v1, T from, T to, size_t size) {
   T factor = from;
-  T delta = Denormal::get_flushed((to - from));
+  T delta = Denormal<T>::get_flushed((to - from));
   if (delta != 0) {
     size_t denominator = (size - 1);
     for (size_t i = 0; i < size; ++i) {
-      v1[i] *= factor + Denormal::get_flushed((i * delta) / denominator);
+      v1[i] *= factor + Denormal<T>::get_flushed((i * delta) / denominator);
     }
   } else {
     inline_multiply_with(v1, from, size);
@@ -185,7 +185,7 @@ static size_t verify_same_sizes(size_t size1, size_t size2) {
 
 template <typename T, size_t ALIGNMENT = 0>
 sdsp_nodiscard static T sum(const T *data, size_t size) {
-  return inline_sum(assumeAligned<ALIGNMENT>(data), size);
+  return inline_sum(assume_aligned<ALIGNMENT>(data), size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -204,7 +204,7 @@ sdsp_nodiscard static T sum(const AlignedData<T, ALIGNMENT, C> &array) {
 
 template <typename T, size_t ALIGNMENT = 0>
 sdsp_nodiscard static T average(const T *data, size_t size) {
-  return inline_average(assumeAligned<ALIGNMENT>(data), size);
+  return inline_average(assume_aligned<ALIGNMENT>(data), size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -224,7 +224,7 @@ sdsp_nodiscard static T average(const AlignedData<T, ALIGNMENT, C> &array) {
 
 template <typename T, size_t ALIGNMENT = 0>
 sdsp_nodiscard static T self_product(const T *data, size_t size) {
-  return inline_self_product(assumeAligned<ALIGNMENT>(data), size);
+  return inline_self_product(assume_aligned<ALIGNMENT>(data), size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -245,7 +245,7 @@ self_product(const AlignedData<T, ALIGNMENT, C> &array) {
 
 template <typename T, size_t ALIGNMENT>
 sdsp_nodiscard static T sum_of_squared_errors(const T *data, size_t size) {
-  return inline_sum_of_squared_errors(assumeAligned<ALIGNMENT>(data), size);
+  return inline_sum_of_squared_errors(assume_aligned<ALIGNMENT>(data), size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -266,8 +266,8 @@ sum_of_squared_errors(const AlignedData<T, ALIGNMENT, C> &array) {
 
 template <typename T, size_t ALIGNMENT = 0>
 sdsp_nodiscard static T inner_product(const T *v1, const T *v2, size_t size) {
-  return inline_inner_product(assumeAligned<ALIGNMENT>(v1),
-                              assumeAligned<ALIGNMENT>(v2), size);
+  return inline_inner_product(assume_aligned<ALIGNMENT>(v1),
+                              assume_aligned<ALIGNMENT>(v2), size);
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
@@ -305,7 +305,7 @@ operator*(const AlignedArray<T, SIZE, ALIGNMENT> &array1,
 
 template <typename T, size_t ALIGNMENT = 0>
 static void multiply_with(T *array, T factor, size_t size) {
-  inline_multiply_with(assumeAligned<ALIGNMENT>(array), factor, size);
+  inline_multiply_with(assume_aligned<ALIGNMENT>(array), factor, size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -334,7 +334,7 @@ static void operator*=(AlignedData<T, ALIGNMENT, C> &array, T factor) {
 
 template <typename T, size_t ALIGNMENT = 0>
 static void multiply_with_range(T *array, T from, T to, size_t size) {
-  inline_multiply_with_range(assumeAligned<ALIGNMENT>(array), from, to, size);
+  inline_multiply_with_range(assume_aligned<ALIGNMENT>(array), from, to, size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -356,7 +356,7 @@ static void multiply_with_range(AlignedData<T, ALIGNMENT, C> &array, T from,
 
 template <typename T, size_t ALIGNMENT = 0>
 static void multiply_with_range_accurate(T *array, T from, T to, size_t size) {
-  inline_multiply_with_range_accurate(assumeAligned<ALIGNMENT>(array), from, to,
+  inline_multiply_with_range_accurate(assume_aligned<ALIGNMENT>(array), from, to,
                                       size);
 }
 
@@ -379,8 +379,8 @@ static void multiply_with_range_accurate(AlignedData<T, ALIGNMENT, C> &array,
 
 template <typename T, size_t ALIGNMENT>
 static void add_to(T *destination, const T *source, size_t size) {
-  inline_add_to(assumeAligned<ALIGNMENT>(destination),
-                assumeAligned<ALIGNMENT>(source), size);
+  inline_add_to(assume_aligned<ALIGNMENT>(destination),
+                assume_aligned<ALIGNMENT>(source), size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -424,8 +424,8 @@ static void add_to_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
 template <typename T, size_t ALIGNMENT>
 static void add_to_with_factor(T *destination, const T *source, T factor,
                                size_t size) {
-  inline_add_to_with_factor(assumeAligned<ALIGNMENT>(destination),
-                            assumeAligned<ALIGNMENT>(source), factor, size);
+  inline_add_to_with_factor(assume_aligned<ALIGNMENT>(destination),
+                            assume_aligned<ALIGNMENT>(source), factor, size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -466,7 +466,7 @@ add_to_with_factor_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
 
 template <typename T, size_t ALIGNMENT>
 static void add_to(T *array, T delta, size_t size) {
-  inline_add_to(assumeAligned<ALIGNMENT>(array), delta, size);
+  inline_add_to(assume_aligned<ALIGNMENT>(array), delta, size);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
@@ -495,8 +495,8 @@ static void operator+=(AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
 
 template <typename T, size_t ALIGNMENT>
 static void subtract_from(T *destination, const T *source, size_t size) {
-  inline_subtract_from(assumeAligned<ALIGNMENT>(destination),
-                       assumeAligned<ALIGNMENT>(source), size);
+  inline_subtract_from(assume_aligned<ALIGNMENT>(destination),
+                       assume_aligned<ALIGNMENT>(source), size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -540,8 +540,8 @@ static void subtract_from_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
 template <typename T, size_t ALIGNMENT>
 static void subtract_from_with_factor(T *destination, const T *source, T factor,
                                       size_t size) {
-  inline_subtract_from_with_factor(assumeAligned<ALIGNMENT>(destination),
-                                   assumeAligned<ALIGNMENT>(source), factor,
+  inline_subtract_from_with_factor(assume_aligned<ALIGNMENT>(destination),
+                                   assume_aligned<ALIGNMENT>(source), factor,
                                    size);
 }
 
@@ -586,7 +586,7 @@ subtract_from_with_factor_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
 
 template <typename T, size_t ALIGNMENT = 0>
 static void subtract_from(T *array, T delta, size_t size) {
-  inline_subtract_from(assumeAligned<ALIGNMENT>(array), delta, size);
+  inline_subtract_from(assume_aligned<ALIGNMENT>(array), delta, size);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
