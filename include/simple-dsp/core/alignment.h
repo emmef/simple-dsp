@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_ALIGNMENT_H
-#define SIMPLE_DSP_ALIGNMENT_H
+#ifndef SIMPLE_DSP_CORE_ALIGNMENT_H
+#define SIMPLE_DSP_CORE_ALIGNMENT_H
 /*
- * simple-dsp/alignment.h
+ * simple-dsp/core/alignment.h
  *
  * Added by michel on 2019-09-10
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -22,9 +22,9 @@
  */
 
 #include <cstddef>
-#include <simple-dsp/core/addressing.h>
-#include <simple-dsp/core/algorithm.h>
 #include <simple-dsp/core/attributes.h>
+#include <simple-dsp/core/bounds.h>
+#include <simple-dsp/core/size.h>
 
 /**
  * The C++20 standard is going to include a template that makes the compiler
@@ -64,6 +64,29 @@ sdsp_nodiscard sdsp_force_inline constexpr T *assume_aligned(T *ptr) {
 
 namespace simpledsp {
 
+
+/**
+ * Returns the value if it is already a multiple of power_of_two or the
+ * next multiple of power_of_two otherwise. If power_of_two is not a power
+ * of two, the alignment is done with the next higher power of two.
+ *
+ * @param value Value to be aligned
+ * @param power_of_two The power of two to align to, or the next bigger power
+ * of two.
+ * @return the aligned value
+ */
+template<typename size_type>
+static constexpr size_type get_aligned_with(size_type value, size_type alignment) {
+  size_type filled = Bits<size_type>::fill(alignment >> 1);
+  return (value + filled) & ~filled;
+}
+
+template<typename size_type>
+static constexpr bool is_aligned_with(const size_type value,
+                                      const size_type power_of_two) {
+  return value == get_aligned_with(value, power_of_two);
+}
+
 namespace base {
 namespace {
 
@@ -72,17 +95,18 @@ constexpr size_t MAX_ALIGNMENT = 16384;
 template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
 
   static_assert(
-      Power2Const::is(ALIGNMENT) && ALIGNMENT <= MAX_ALIGNMENT,
+      PowerTwo<size_t>::is(ALIGNMENT) && ALIGNMENT <= MAX_ALIGNMENT,
       "Alignment must be a power of 2 that is not larger than 16384.");
 
   static_assert((ALIGNMENT >= sizeof(T)) && (ALIGNMENT % sizeof(T) == 0),
                 "Alignment must be a multiple of the type's size.'");
 
+
   static constexpr size_t alignment = ALIGNMENT;
   static constexpr size_t alignment_mask = alignment - 1;
   static constexpr size_t elementSize = sizeof(T);
   static constexpr size_t alignmentElements = ALIGNMENT / sizeof(T);
-  static constexpr size_t maximumElements = addr::Elements<T>::Size::max;
+  static constexpr size_t maximumElements = Size<T>::max;
   static constexpr size_t maximumFrames = maximumElements / alignmentElements;
 
   using type = T;
@@ -133,7 +157,7 @@ template <typename T> struct BaseAlignedMetric<T, 0> {
   static constexpr size_t alignment = 0;
   static constexpr size_t elementSize = sizeof(T);
   static constexpr size_t alignmentElements = 1;
-  static constexpr size_t maximumElements = addr::Elements<T>::Size::max;
+  static constexpr size_t maximumElements = Size<T>::max;
   static constexpr size_t maximumFrames = maximumElements;
   using type = T;
 
@@ -172,4 +196,4 @@ assume_aligned(const T *ptr) {
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_ALIGNMENT_H
+#endif // SIMPLE_DSP_CORE_ALIGNMENT_H

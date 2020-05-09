@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_ATTRIBUTES_H
-#define SIMPLE_DSP_ATTRIBUTES_H
+#ifndef SIMPLE_DSP_CORE_ATTRIBUTES_H
+#define SIMPLE_DSP_CORE_ATTRIBUTES_H
 /*
- * simple-dsp/attributes.h
+ * simple-dsp/core/attributes.h
  *
  * Added by michel on 2019-08-18
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -33,4 +33,4 @@
 #define sdsp_force_inline inline
 #endif
 
-#endif // SIMPLE_DSP_ATTRIBUTES_H
+#endif // SIMPLE_DSP_CORE_ATTRIBUTES_H

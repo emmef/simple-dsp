@@ -22,8 +22,8 @@
  */
 
 #include <cstddef>
-#include <simple-dsp/core/addressing.h>
 #include <simple-dsp/core/attributes.h>
+#include <simple-dsp/core/index.h>
 
 namespace simpledsp {
 
@@ -47,7 +47,7 @@ static size_t iir_get_valid_order(size_t order) {
  * @tparam T type of coefficent values
  */
 struct IIRCoefficientsSetter {
-  using Check = addr::Throw<size_t>;
+  using Check = Index::Throw<size_t>;
 
   sdsp_nodiscard virtual unsigned getOrder() const = 0;
   sdsp_nodiscard virtual unsigned getMaxOrder() const = 0;

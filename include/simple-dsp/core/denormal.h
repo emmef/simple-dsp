@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_DENORMAL_H
-#define SIMPLE_DSP_DENORMAL_H
+#ifndef SIMPLE_DSP_CORE_DENORMAL_H
+#define SIMPLE_DSP_CORE_DENORMAL_H
 /*
- * simple-dsp/denormal.h
+ * simple-dsp/core/denormal.h
  *
  * Added by michel on 2019-09-10
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -226,4 +226,4 @@ public:
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_DENORMAL_H
+#endif // SIMPLE_DSP_CORE_DENORMAL_H

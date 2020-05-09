@@ -2,10 +2,11 @@
 // Created by michel on 18-08-19.
 //
 
-#include <simple-dsp/core/addressing.h>
-#include <simple-dsp/core/algorithm.h>
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
+#include <simple-dsp/core/alignment.h>
+#include <simple-dsp/core/bounds.h>
+#include <simple-dsp/core/size.h>
 
 #include "test-helper.h"
 
@@ -34,7 +35,7 @@ struct PowerOfTwoImplementation {
 
 template <bool USE_CONSTEXPR>
 struct SubjectImpl : public PowerOfTwoImplementation {
-  using Impl = simpledsp::Power2Const;
+  using Impl = simpledsp::Power2;
 
   sdsp_nodiscard const char *name() const override {
     return USE_CONSTEXPR ? "Power2::constant" : "Power2";
@@ -51,7 +52,7 @@ struct SubjectImpl : public PowerOfTwoImplementation {
   }
 
   sdsp_nodiscard size_t alignedWith(size_t value, size_t power) const override {
-    return Impl::is_aligned_with(value, power);
+    return simpledsp::get_aligned_with(value, power);
   }
 };
 
@@ -113,21 +114,23 @@ struct ReferenceImpl : public PowerOfTwoImplementation {
 } referenceImplementation;
 
 template <typename T, typename A, class P>
-using AbstractPower2TestCase = simpledsp::testhelper::CompareWithReferenceTestCase<T, A, P>;
+using AbstractPower2TestCase =
+    simpledsp::testhelper::CompareWithReferenceTestCase<T, A, P>;
 
 template <typename T, typename A>
-class Power2TestCase : public AbstractPower2TestCase<T, A, PowerOfTwoImplementation> {
+class Power2TestCase
+    : public AbstractPower2TestCase<T, A, PowerOfTwoImplementation> {
   const std::string name;
 
 public:
   Power2TestCase(const PowerOfTwoImplementation &subject, A arg)
-      : AbstractPower2TestCase<T, A, PowerOfTwoImplementation>(referenceImplementation,
-                                                      subject, arg),
+      : AbstractPower2TestCase<T, A, PowerOfTwoImplementation>(
+            referenceImplementation, subject, arg),
         name(subject.name()) {}
 
   Power2TestCase(const PowerOfTwoImplementation &subject, A arg1, A arg2)
-      : AbstractPower2TestCase<T, A, PowerOfTwoImplementation>(referenceImplementation,
-                                                      subject, arg1, arg2),
+      : AbstractPower2TestCase<T, A, PowerOfTwoImplementation>(
+            referenceImplementation, subject, arg1, arg2),
         name(subject.name()) {}
 
   sdsp_nodiscard const char *typeOfTestName() const override {
@@ -262,10 +265,91 @@ private:
     return false;
   }
 } TEST_SET;
+
+struct MsbTestScenario {
+  size_t input;
+  int expected;
+  int (*function)(size_t);
+  const char *name;
+
+  static MsbTestScenario most_significant_bit(size_t value, int expected) {
+    return {value, expected, simpledsp::Bits<size_t>::most_significant,
+            "PowerTwo::most_significant_bit"};
+  }
+
+  static MsbTestScenario most_significant_single_bit(size_t value,
+                                                     int expected) {
+    return {value, expected,
+            simpledsp::Bits<size_t>::most_significant_single,
+            "PowerTwo::most_significant_single_bit"};
+  }
+
+  bool success() const { return expected == function(input); }
+
+  void print(std::ostream &out) const {
+    out << name << "(" << input << ")";
+    if (success()) {
+      out << " = " << expected;
+    } else {
+      out << " = " << function(input) << ", but expected " << expected;
+    }
+  }
+};
+
+std::ostream &operator<<(std::ostream &stream, const MsbTestScenario &s) {
+  s.print(stream);
+  return stream;
+}
+
+class MsbTestCases {
+  std::vector<MsbTestScenario> testCases;
+
+public:
+  MsbTestCases() {
+
+    testCases.push_back(MsbTestScenario::most_significant_bit(0, -1));
+    testCases.push_back(MsbTestScenario::most_significant_single_bit(0, -1));
+
+    testCases.push_back(MsbTestScenario::most_significant_bit(1, 0));
+    testCases.push_back(MsbTestScenario::most_significant_single_bit(1, 0));
+
+    testCases.push_back(MsbTestScenario::most_significant_bit(2, 1));
+    testCases.push_back(MsbTestScenario::most_significant_single_bit(2, 1));
+
+    testCases.push_back(MsbTestScenario::most_significant_bit(4, 2));
+    testCases.push_back(MsbTestScenario::most_significant_single_bit(4, 2));
+
+    int maxbit = sizeof(size_t) * 8 - 1;
+    size_t max = size_t(1) << maxbit;
+
+    testCases.push_back(MsbTestScenario::most_significant_bit(max, maxbit));
+    testCases.push_back(
+        MsbTestScenario::most_significant_single_bit(max, maxbit));
+
+    testCases.push_back(MsbTestScenario::most_significant_bit(0x10, 4));
+    testCases.push_back(MsbTestScenario::most_significant_single_bit(0x10, 4));
+
+    testCases.push_back(MsbTestScenario::most_significant_bit(0x11, 4));
+    testCases.push_back(MsbTestScenario::most_significant_single_bit(0x11, -1));
+
+    testCases.push_back(MsbTestScenario::most_significant_bit(0x12, 4));
+    testCases.push_back(MsbTestScenario::most_significant_single_bit(0x12, -2));
+  }
+
+  const std::vector<MsbTestScenario> getTestCases() { return testCases; }
+
+} MSB_TESTCASES;
+
 } // namespace
 
-BOOST_AUTO_TEST_SUITE(SizeAndOffsetLimits)
+BOOST_AUTO_TEST_SUITE(PowerOfTwo)
 
-BOOST_DATA_TEST_CASE(sample, TEST_SET.getTestCases()) { sample->test(); }
+BOOST_DATA_TEST_CASE(powerTwoScenarios, TEST_SET.getTestCases()) {
+  sample->test();
+}
+
+BOOST_DATA_TEST_CASE(msbScenarios, MSB_TESTCASES.getTestCases()) {
+  BOOST_CHECK(sample.success());
+}
 
 BOOST_AUTO_TEST_SUITE_END()

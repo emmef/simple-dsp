@@ -22,8 +22,8 @@
  */
 
 #include "guards.h"
-#include "queue.h"
 #include "simple-dsp/core/attributes.h"
+#include "simple-dsp/core/queue.h"
 #include <algorithm>
 #include <cstddef>
 #include <limits>

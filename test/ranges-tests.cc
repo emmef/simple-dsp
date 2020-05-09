@@ -5,8 +5,8 @@
 #include <cstring>
 #include <iostream>
 
-#include <simple-dsp/core/addressing.h>
-#include <simple-dsp/core/algorithm.h>
+#include <simple-dsp/core/bounds.h>
+#include <simple-dsp/core/index.h>
 
 #include "test-helper.h"
 
@@ -14,8 +14,10 @@ using namespace std;
 
 namespace {
 
-static constexpr size_t SIZE_LIMIT = 1024;
-using FixedRange = simpledsp::addr::Size<char, size_t, SIZE_LIMIT>;
+static constexpr int SIZE_BITS = 10;
+static constexpr size_t SIZE_LIMIT = size_t(1) << SIZE_BITS;
+using FixedRange = simpledsp::Size<char, size_t, SIZE_BITS>;
+
 using Functions = simpledsp::testhelper::FunctionTestCases;
 
 using TestCase = simpledsp::testhelper::AbstractValueTestCase;
@@ -126,12 +128,12 @@ generateTestCases() {
     if (isValidSizeProduct) {
       testCases->push_back(Functions::create(
           "FixedRange::get_valid_product",
-          FixedRange::Size::get_valid_product, product, i.v1, i.v2));
+          FixedRange::get_valid_product, product, i.v1, i.v2));
     }
     else {
       testCases->push_back(Functions::create(
           "FixedRange::get_valid_product",
-          FixedRange::Size::get_valid_product, i.v1, i.v2));
+          FixedRange::get_valid_product, i.v1, i.v2));
     }
   }
 
@@ -140,7 +142,7 @@ generateTestCases() {
     bool isValidSizeSum = sum > 0 && sum <= MAX_LIMIT;
 
     testCases->push_back(Functions::create("FixedRange::is_valid_sum",
-                                           FixedRange::Size::is_valid_sum,
+                                           FixedRange::is_valid_sum,
                                            isValidSizeSum, i.v1, i.v2));
     if (isValidSizeSum) {
       testCases->push_back(Functions::create("FixedRange::get_valid_sum",
@@ -191,7 +193,7 @@ BOOST_AUTO_TEST_CASE(testConstructorExactMaxSize) {
 }
 
 BOOST_AUTO_TEST_CASE(testConstructorValidSize) {
-  BOOST_CHECK_EQUAL(FixedRange(3).value, 3);
+  BOOST_CHECK_EQUAL((size_t)FixedRange(3), 3);
 }
 
 BOOST_AUTO_TEST_CASE(testConstructorTooLargeSize) {
@@ -200,21 +202,6 @@ BOOST_AUTO_TEST_CASE(testConstructorTooLargeSize) {
 
 BOOST_AUTO_TEST_CASE(testConstructorZeroSize) {
   BOOST_CHECK_THROW(FixedRange(0), std::invalid_argument);
-}
-
-BOOST_AUTO_TEST_CASE(testConstructorValidSum) {
-  size_t v1 = 13;
-  size_t v2 = 16;
-  size_t sum = v1 + v2;
-  FixedRange size = {FixedRange::ADD, v1, v2};
-  BOOST_CHECK_EQUAL(size, sum);
-}
-
-BOOST_AUTO_TEST_CASE(testConstructorLargeSum) {
-  size_t v1 = 900;
-  size_t v2 = 128;
-
-  BOOST_CHECK_THROW(FixedRange(FixedRange::ADD, v1, v2), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(testAdditionValid) {
@@ -230,8 +217,9 @@ BOOST_AUTO_TEST_CASE(testAdditionTooLarge) {
   size_t v1 = 900;
   size_t v2 = 128;
   FixedRange size = v1;
+  FixedRange result = 1;
 
-  BOOST_CHECK_THROW(size + v2, std::invalid_argument);
+  BOOST_CHECK_THROW(result = size + v2, std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(testProductValid) {
@@ -247,8 +235,9 @@ BOOST_AUTO_TEST_CASE(testProductTooLarge) {
   size_t v1 = 900;
   size_t v2 = 128;
   FixedRange size = v1;
+  FixedRange result = 1;
 
-  BOOST_CHECK_THROW(size * v2, std::invalid_argument);
+  BOOST_CHECK_THROW(result = size * v2, std::invalid_argument);
 }
 
 BOOST_DATA_TEST_CASE(sample, TEST_GENERATOR.getTestCases()) {

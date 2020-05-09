@@ -22,8 +22,8 @@
  */
 
 #include <cstddef>
-#include <simple-dsp/core/addressing.h>
 #include <simple-dsp/core/attributes.h>
+#include <simple-dsp/core/index.h>
 #include <simple-dsp/samplerate.h>
 
 namespace simpledsp {

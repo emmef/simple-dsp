@@ -10,7 +10,7 @@
 
 namespace {
 constexpr const size_t SIZE = 16;
-simpledsp::CircularMetric metric((size_t)SIZE);
+simpledsp::CircularMetric metric({SIZE});
 using ReadFirstDelay =
     simpledsp::DelayBasics<simpledsp::DelayAccessType::READ_THEN_WRITE>;
 using WriteFirstDelay =

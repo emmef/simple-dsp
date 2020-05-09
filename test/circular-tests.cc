@@ -7,8 +7,8 @@
 #include <boost/test/unit_test.hpp>
 
 namespace {
-using Arithmic = simpledsp::CircularArithmic;
-using Metric = simpledsp::base::CircularMetric<size_t>;
+using Arithmic = simpledsp::CircularArithmic<size_t >;
+using Metric = simpledsp::CircularMetric<size_t>;
 
 constexpr size_t requestedSize = 13;
 constexpr size_t properSize = 16;

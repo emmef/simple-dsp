@@ -22,7 +22,7 @@
  */
 
 #include <cstddef>
-#include <simple-dsp/core/addressing.h>
+#include <simple-dsp/core/index.h>
 
 namespace simpledsp {
 
@@ -50,7 +50,7 @@ public:
 
   void assignFrame(const SampleFrame &source) const { this->operator=(source); }
 
-  T &operator[](size_t i) { return x_[Index::Array::index(i, N)]; }
+  T &operator[](size_t i) { return x_[Index::unsafe(i, N)]; }
 
   const T &operator[](size_t i) const { return x_[Index::Array::index(i, N)]; }
 

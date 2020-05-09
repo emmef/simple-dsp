@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_ARRAYOPS_H
-#define SIMPLE_DSP_ARRAYOPS_H
+#ifndef SIMPLE_DSP_CORE_ARRAYOPS_H
+#define SIMPLE_DSP_CORE_ARRAYOPS_H
 /*
- * simple-dsp/arraycalculus.h
+ * simple-dsp/core/arrayops.h
  *
  * Added by michel on 2019-09-11
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -611,4 +611,4 @@ static void operator-=(AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
 
 } // namespace simpledsp::arrayops
 
-#endif // SIMPLE_DSP_ARRAYOPS_H
+#endif // SIMPLE_DSP_CORE_ARRAYOPS_H

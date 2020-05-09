@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_QUEUE_H
-#define SIMPLE_DSP_QUEUE_H
+#ifndef SIMPLE_DSP_CORE_QUEUE_H
+#define SIMPLE_DSP_CORE_QUEUE_H
 /*
- * simple-dsp/queue.h
+ * simple-dsp/core/queue.h
  *
  * Added by michel on 2019-11-21
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -22,7 +22,7 @@
  */
 
 #include <limits>
-#include <simple-dsp/core/addressing.h>
+#include <simple-dsp/core/index.h>
 #include <simple-dsp/guards.h>
 #include <stdexcept>
 #include <type_traits>
@@ -243,22 +243,22 @@ class DefaultData : public DataTraits<Value, DefaultData<Value>> {
         "BaseQueue<V>: Given capacity zero or too large for value type.");
   }
 
-  size_t capacity_;
+  Size<Value> capacity_;
   Value *data_;
 
 public:
   DefaultData(size_t capacity)
-      : capacity_(validCapacity(capacity)), data_(new Value[capacity_ + 1]) {}
-  static constexpr size_t maxCapacity = addr::Size<Value>::max_index;
+      : capacity_(validCapacity(capacity)), data_(new Value[capacity_ + 1lu]) {}
+  static constexpr size_t maxCapacity = Size<Value>::max_index;
 
   sdsp_nodiscard size_t capacityTrait() const noexcept { return capacity_; }
 
   sdsp_nodiscard Value &refTrait(size_t index) noexcept {
-    return data_[addr::unsafe_index(index, capacity_)];
+    return data_[Index::unsafe(index, capacity_())];
   }
 
   sdsp_nodiscard const Value &refTrait(size_t index) const noexcept {
-    return data_[addr::unsafe_index(index, capacity_)];
+    return data_[Index::unsafe(index, capacity_())];
   }
 
   ~DefaultData() { delete[] data_; }
@@ -473,4 +473,4 @@ using Queue = BaseQueue<Value, queue_position::Consistent,
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_QUEUE_H
+#endif // SIMPLE_DSP_CORE_QUEUE_H
