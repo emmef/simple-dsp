@@ -23,7 +23,7 @@
 #include <simple-dsp/core/alignment.h>
 #include <simple-dsp/core/index.h>
 
-namespace simpledsp {
+namespace simpledsp::util {
 
 template <typename T, size_t ALIGNMENT, class Data> struct AlignedData {
   using Metric = Aligned<T, ALIGNMENT>;

@@ -74,7 +74,7 @@ public:
     if (throws) {
       try {
         Value actual = actualValue();
-        // Expected an R thrown
+        // Expected an Result thrown
         print(out);
         out << " expected exception, but instead got value " << actual << ".";
         BOOST_TEST_FAIL(out.str());

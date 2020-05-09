@@ -26,7 +26,7 @@
 #include <simple-dsp/core/attributes.h>
 #include <thread>
 
-namespace simpledsp {
+namespace simpledsp::util {
 
 class TimeOut {
 public:

@@ -6,8 +6,15 @@
 #include <simple-dsp/util/queue.h>
 #include <typeinfo>
 
-using Q = simpledsp::Queue<int>;
-using R = simpledsp::QueueResult;
+using IntQueue = simpledsp::util::Queue<int>;
+using Result = simpledsp::util::QueueResult;
+
+template<typename T>
+using Queue = simpledsp::util::Queue<T>;
+template<typename T>
+using QueueUnsafe = simpledsp::util::QueueUnsafe<T>;
+template<typename T>
+using QueueProducerConsumer = simpledsp::util::QueueProducerConsumer<T>;
 
 namespace {
 constexpr int QUEUESIZE = 9;
@@ -36,12 +43,12 @@ void fillThenEmptyBufferSize(Q &queue, Generator &generator) {
   message +=
       " of size " + std::to_string(size) + ":\n\t fillThenEmptyBufferSize: ";
   for (int i = 0; i < size; i++) {
-    BOOST_CHECK_MESSAGE(queue.put(generator.nextWrite()) == R::SUCCESS,
+    BOOST_CHECK_MESSAGE(queue.put(generator.nextWrite()) == Result::SUCCESS,
                         message + "Should be able to put value.");
   }
   for (int i = 0; i < size; i++) {
     int result;
-    BOOST_CHECK_MESSAGE(queue.get(result) == R::SUCCESS,
+    BOOST_CHECK_MESSAGE(queue.get(result) == Result::SUCCESS,
                         message + "Should be able to get value.");
     BOOST_CHECK_MESSAGE(result == generator.nextRead(),
                         message +
@@ -57,16 +64,16 @@ template <class Q> void fillMoreThanBufferSize(Q &queue, Generator &generator) {
   message +=
       " of size " + std::to_string(size) + ":\n\tfillMoreThanBufferSize: ";
   for (int i = 0; i < size; i++) {
-    BOOST_CHECK_MESSAGE(queue.put(generator.nextWrite()) == R::SUCCESS,
+    BOOST_CHECK_MESSAGE(queue.put(generator.nextWrite()) == Result::SUCCESS,
                         message + "Should be able to put value.");
   }
 
-  BOOST_CHECK_MESSAGE(queue.put(generator.nextWrite()) == R::FULL,
+  BOOST_CHECK_MESSAGE(queue.put(generator.nextWrite()) == Result::FULL,
                       message + "Should not be able to put value.");
 
   for (int i = 0; i < size; i++) {
     int result;
-    BOOST_CHECK_MESSAGE(queue.get(result) == R::SUCCESS,
+    BOOST_CHECK_MESSAGE(queue.get(result) == Result::SUCCESS,
                         message + "Should be able to get value.");
     BOOST_CHECK_MESSAGE(result == generator.nextRead(),
                         message +
@@ -81,10 +88,10 @@ void synchronousPutAndGet(Q &queue, Generator &generator, int size) {
   message += " of size " + std::to_string(queue.capacity()) +
              ":\n\tsynchronousPutAndGet: ";
   for (int i = 0; i < size; i++) {
-    BOOST_CHECK_MESSAGE(queue.put(generator.nextWrite()) == R::SUCCESS,
+    BOOST_CHECK_MESSAGE(queue.put(generator.nextWrite()) == Result::SUCCESS,
                         message + "Should be able to put value.");
     int result;
-    BOOST_CHECK_MESSAGE(queue.get(result) == R::SUCCESS,
+    BOOST_CHECK_MESSAGE(queue.get(result) == Result::SUCCESS,
                         message + "Should be able to get value.");
     BOOST_CHECK_MESSAGE(result == generator.nextRead(),
                         message +
@@ -143,103 +150,103 @@ void writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize(size_t queueSize) {
 BOOST_AUTO_TEST_SUITE(QueueTests)
 
 BOOST_AUTO_TEST_CASE(initQueueSize0Throws) {
-  std::unique_ptr<Q> x;
-  BOOST_CHECK_THROW(x = std::make_unique<Q>(0), std::invalid_argument);
+  std::unique_ptr<IntQueue> x;
+  BOOST_CHECK_THROW(x = std::make_unique<IntQueue>(0), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(initQueueTooLargeSizeThrows) {
-  size_t size = 1 + simpledsp::queue_data::DefaultData<int>::maxCapacity;
-  std::unique_ptr<Q> x;
-  BOOST_CHECK_THROW(x = std::make_unique<Q>(size), std::invalid_argument);
+  size_t size = 1 + simpledsp::util::queue_data::DefaultData<int>::maxCapacity;
+  std::unique_ptr<IntQueue> x;
+  BOOST_CHECK_THROW(x = std::make_unique<IntQueue>(size), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(writeUntilFullThenReadNormalSize) {
-  writeUntilFullThenRead<simpledsp::Queue<int>>(QUEUESIZE);
-  writeUntilFullThenRead<simpledsp::QueueUnsafe<int>>(QUEUESIZE);
-  writeUntilFullThenRead<simpledsp::QueueProducerConsumer<int>>(QUEUESIZE);
+  writeUntilFullThenRead<Queue<int>>(QUEUESIZE);
+  writeUntilFullThenRead<QueueUnsafe<int>>(QUEUESIZE);
+  writeUntilFullThenRead<QueueProducerConsumer<int>>(QUEUESIZE);
 }
 
 BOOST_AUTO_TEST_CASE(writeUntilFullThenReadSizeOne) {
-  writeUntilFullThenRead<simpledsp::Queue<int>>(1);
-  writeUntilFullThenRead<simpledsp::QueueUnsafe<int>>(1);
-  writeUntilFullThenRead<simpledsp::QueueProducerConsumer<int>>(1);
+  writeUntilFullThenRead<Queue<int>>(1);
+  writeUntilFullThenRead<QueueUnsafe<int>>(1);
+  writeUntilFullThenRead<QueueProducerConsumer<int>>(1);
 }
 
 BOOST_AUTO_TEST_CASE(putAndGetSyncedMoreThanFullSizeNormalSize) {
-  putAndGetSyncedMoreThanFullSize<simpledsp::Queue<int>>(QUEUESIZE);
-  putAndGetSyncedMoreThanFullSize<simpledsp::QueueUnsafe<int>>(QUEUESIZE);
-  putAndGetSyncedMoreThanFullSize<simpledsp::QueueProducerConsumer<int>>(
+  putAndGetSyncedMoreThanFullSize<Queue<int>>(QUEUESIZE);
+  putAndGetSyncedMoreThanFullSize<QueueUnsafe<int>>(QUEUESIZE);
+  putAndGetSyncedMoreThanFullSize<QueueProducerConsumer<int>>(
       QUEUESIZE);
 }
 
 BOOST_AUTO_TEST_CASE(putAndGetSyncedMoreThanFullSizeSizeOne) {
-  putAndGetSyncedMoreThanFullSize<simpledsp::Queue<int>>(QUEUESIZE);
-  putAndGetSyncedMoreThanFullSize<simpledsp::QueueUnsafe<int>>(QUEUESIZE);
-  putAndGetSyncedMoreThanFullSize<simpledsp::QueueProducerConsumer<int>>(
+  putAndGetSyncedMoreThanFullSize<Queue<int>>(QUEUESIZE);
+  putAndGetSyncedMoreThanFullSize<QueueUnsafe<int>>(QUEUESIZE);
+  putAndGetSyncedMoreThanFullSize<QueueProducerConsumer<int>>(
       QUEUESIZE);
 }
 
 BOOST_AUTO_TEST_CASE(writeSomeEmptyThenwriteUntilFullThenReadNormalSize) {
-  writeSomeEmptyThenwriteUntilFullThenRead<simpledsp::Queue<int>>(QUEUESIZE);
-  writeSomeEmptyThenwriteUntilFullThenRead<simpledsp::QueueUnsafe<int>>(
+  writeSomeEmptyThenwriteUntilFullThenRead<Queue<int>>(QUEUESIZE);
+  writeSomeEmptyThenwriteUntilFullThenRead<QueueUnsafe<int>>(
       QUEUESIZE);
   writeSomeEmptyThenwriteUntilFullThenRead<
-      simpledsp::QueueProducerConsumer<int>>(QUEUESIZE);
+      QueueProducerConsumer<int>>(QUEUESIZE);
 }
 
 BOOST_AUTO_TEST_CASE(writeSomeEmptyThenwriteUntilFullThenReadSizeOne) {
-  writeSomeEmptyThenwriteUntilFullThenRead<simpledsp::Queue<int>>(1);
-  writeSomeEmptyThenwriteUntilFullThenRead<simpledsp::QueueUnsafe<int>>(1);
+  writeSomeEmptyThenwriteUntilFullThenRead<Queue<int>>(1);
+  writeSomeEmptyThenwriteUntilFullThenRead<QueueUnsafe<int>>(1);
   writeSomeEmptyThenwriteUntilFullThenRead<
-      simpledsp::QueueProducerConsumer<int>>(1);
+      QueueProducerConsumer<int>>(1);
 }
 
 BOOST_AUTO_TEST_CASE(writeMoreThanBufferSizeInitialNormalSize) {
-  writeMoreThanBufferSizeInitial<simpledsp::Queue<int>>(QUEUESIZE);
-  writeMoreThanBufferSizeInitial<simpledsp::QueueUnsafe<int>>(QUEUESIZE);
-  writeMoreThanBufferSizeInitial<simpledsp::QueueProducerConsumer<int>>(
+  writeMoreThanBufferSizeInitial<Queue<int>>(QUEUESIZE);
+  writeMoreThanBufferSizeInitial<QueueUnsafe<int>>(QUEUESIZE);
+  writeMoreThanBufferSizeInitial<QueueProducerConsumer<int>>(
       QUEUESIZE);
 }
 
 BOOST_AUTO_TEST_CASE(writeMoreThanBufferSizeInitialSizeOne) {
-  writeMoreThanBufferSizeInitial<simpledsp::Queue<int>>(1);
-  writeMoreThanBufferSizeInitial<simpledsp::QueueUnsafe<int>>(1);
-  writeMoreThanBufferSizeInitial<simpledsp::QueueProducerConsumer<int>>(1);
+  writeMoreThanBufferSizeInitial<Queue<int>>(1);
+  writeMoreThanBufferSizeInitial<QueueUnsafe<int>>(1);
+  writeMoreThanBufferSizeInitial<QueueProducerConsumer<int>>(1);
 }
 
 BOOST_AUTO_TEST_CASE(writeMoreThanBufferSizeAlreadyUsedSomewhatNormalSize) {
-  writeMoreThanBufferSizeAlreadyUsedSomewhat<simpledsp::Queue<int>>(QUEUESIZE);
-  writeMoreThanBufferSizeAlreadyUsedSomewhat<simpledsp::QueueUnsafe<int>>(
+  writeMoreThanBufferSizeAlreadyUsedSomewhat<Queue<int>>(QUEUESIZE);
+  writeMoreThanBufferSizeAlreadyUsedSomewhat<QueueUnsafe<int>>(
       QUEUESIZE);
   writeMoreThanBufferSizeAlreadyUsedSomewhat<
-      simpledsp::QueueProducerConsumer<int>>(QUEUESIZE);
+      QueueProducerConsumer<int>>(QUEUESIZE);
 }
 
 BOOST_AUTO_TEST_CASE(writeMoreThanBufferSizeAlreadyUsedSomewhatSizeOne) {
-  writeMoreThanBufferSizeAlreadyUsedSomewhat<simpledsp::Queue<int>>(1);
-  writeMoreThanBufferSizeAlreadyUsedSomewhat<simpledsp::QueueUnsafe<int>>(1);
+  writeMoreThanBufferSizeAlreadyUsedSomewhat<Queue<int>>(1);
+  writeMoreThanBufferSizeAlreadyUsedSomewhat<QueueUnsafe<int>>(1);
   writeMoreThanBufferSizeAlreadyUsedSomewhat<
-      simpledsp::QueueProducerConsumer<int>>(1);
+      QueueProducerConsumer<int>>(1);
 }
 
 BOOST_AUTO_TEST_CASE(
     writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSizeNormalSize) {
-  writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize<simpledsp::Queue<int>>(
+  writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize<Queue<int>>(
       QUEUESIZE);
   writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize<
-      simpledsp::QueueUnsafe<int>>(QUEUESIZE);
+      QueueUnsafe<int>>(QUEUESIZE);
   writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize<
-      simpledsp::QueueProducerConsumer<int>>(QUEUESIZE);
+      QueueProducerConsumer<int>>(QUEUESIZE);
 }
 
 BOOST_AUTO_TEST_CASE(
     writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSizeSizeOne) {
-  writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize<simpledsp::Queue<int>>(
+  writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize<Queue<int>>(
       1);
   writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize<
-      simpledsp::QueueUnsafe<int>>(1);
+      QueueUnsafe<int>>(1);
   writeMoreThanBufferSizeAlreadyUsedMoreThanBufferSize<
-      simpledsp::QueueProducerConsumer<int>>(1);
+      QueueProducerConsumer<int>>(1);
 }
 
 BOOST_AUTO_TEST_CASE(testAtomicBehaviourToSeeIfIAmMad) {

@@ -6,10 +6,10 @@
 #include <iostream>
 #include <simple-dsp/util/lock-fee-owner.hpp>
 
-using IntOwner = simpledsp::LockfreeOwner<int>;
-using Result = simpledsp::LockFeeOwnerResult;
-using IntQueue = simpledsp::QueueProducerConsumer<int>;
-using TO = simpledsp::TimeOutMicrosSliced;
+using IntOwner = simpledsp::util::LockfreeOwner<int>;
+using Result = simpledsp::util::LockFeeOwnerResult;
+using IntQueue = simpledsp::util::QueueProducerConsumer<int>;
+using TO = simpledsp::util::TimeOutMicrosSliced;
 
 class TestObject {
   int uniqueValue_;
@@ -27,13 +27,13 @@ public:
 BOOST_AUTO_TEST_SUITE(LockFreeOwnerTest)
 
 BOOST_AUTO_TEST_CASE(testNotSetReturnsNull) {
-  simpledsp::LockfreeOwner<int> owner;
+  IntOwner owner;
 
   BOOST_CHECK(owner.get() == nullptr);
 }
 
 BOOST_AUTO_TEST_CASE(testGetReturnsSetSameThread) {
-  simpledsp::LockfreeOwner<int> owner;
+  IntOwner  owner;
   int *value = new int;
   *value = 15;
   TO t(1000000, 100);
@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(testGetReturnsSetSameThread) {
 }
 
 BOOST_AUTO_TEST_CASE(testGetTheGetCurrentReturnsSetSameThread) {
-  simpledsp::LockfreeOwner<int> owner;
+  IntOwner owner;
   int *value = new int;
   *value = 15;
   TO t(1000000, 100);
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(testGetTheGetCurrentReturnsSetSameThread) {
 }
 
 BOOST_AUTO_TEST_CASE(testSetWithoutGetFailsSameThread) {
-  simpledsp::LockfreeOwner<int> owner;
+  IntOwner owner;
   int *value = new int;
   *value = 15;
   TO t(1000000, 100);
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(testAllDestroyed) {
   IntQueue d(10);
   TestObject *obj;
   {
-    simpledsp::LockfreeOwner<TestObject> owner;
+    simpledsp::util::LockfreeOwner<TestObject> owner;
     TO t(1000000, 100);
     obj = new TestObject(c, d);
     owner.set(t, obj);
@@ -88,11 +88,11 @@ BOOST_AUTO_TEST_CASE(testAllDestroyed) {
 
   int value;
   std::string destructed = "|";
-  while (d.get(value) == simpledsp::QueueResult::SUCCESS) {
+  while (d.get(value) == simpledsp::util::QueueResult::SUCCESS) {
     destructed += std::to_string(value);
     destructed += "|";
   }
-  while (c.get(value) == simpledsp::QueueResult::SUCCESS) {
+  while (c.get(value) == simpledsp::util::QueueResult::SUCCESS) {
     std::string vstr = std::to_string(value);
     if (destructed.find(vstr) <= 0) {
       vstr += " constructed but not destructed: " + destructed;

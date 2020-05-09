@@ -29,7 +29,7 @@
 #include <simple-dsp/util/timeout.h>
 #include <thread>
 
-namespace simpledsp {
+namespace simpledsp::util {
 enum class LockFeeOwnerResult { SUCCESS, INVALID, TIMEOUT };
 
 /**
@@ -44,7 +44,7 @@ enum class LockFeeOwnerResult { SUCCESS, INVALID, TIMEOUT };
  * @tparam Object The type of object to manage
  */
 template <typename Object> class LockfreeOwner {
-  GuardedFlag flag_;
+  util::GuardedFlag flag_;
   std::atomic<Object *> current_ = nullptr;
   std::atomic<Object *> next_ = nullptr;
   QueueProducerConsumer<Object *> queue_;
@@ -80,7 +80,7 @@ public:
       }
     }
     // Make sure this thread "sees" all constructed data.
-    MemoryFence::acquire();
+    util::MemoryFence::acquire();
     current_ = next;
     return next;
   }
@@ -95,7 +95,7 @@ public:
    * @return The current object or nullptr if it was not set.
    */
   sdsp_nodiscard const Object *getCurrent() noexcept {
-    MemoryFence::acquire();
+    util::MemoryFence::acquire();
     return current_;
   }
 
@@ -142,7 +142,7 @@ public:
         Object *object = nullptr;
         if (queue_.get(object) == QueueResult::SUCCESS) {
           if (object) {
-            MemoryFence::acquire();
+            util::MemoryFence::acquire();
             delete object;
           }
         } else {
@@ -153,10 +153,10 @@ public:
   }
 
   ~LockfreeOwner() {
-    MemoryFence fence;
+    util::MemoryFence fence;
     cleanup();
-    deleteOnceNotNull(current_);
-    deleteOnceNotNull(next_);
+    util::deleteOnceNotNull(current_);
+    util::deleteOnceNotNull(next_);
   }
 
 private:
@@ -184,7 +184,7 @@ private:
           if (next_.compare_exchange_strong(expected, object)) {
             // ensure that produced object is visible to all threads that use
             // acquire fence.
-            MemoryFence fence;
+            util::MemoryFence fence;
             cleanupUnsafe();
             return LockFeeOwnerResult::SUCCESS;
           }
@@ -210,7 +210,7 @@ private:
       // queue fetch was successful.
       if (queue_.get(object) == QueueResult::SUCCESS) {
         if (object) {
-          MemoryFence::acquire();
+          util::MemoryFence::acquire();
           delete object;
         }
       } else {

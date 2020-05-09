@@ -24,7 +24,8 @@
 #include <atomic>
 #include <simple-dsp/core/attributes.h>
 
-namespace simpledsp {
+namespace simpledsp::util {
+
 template <typename Object>
 static void deleteOnceNotNull(std::atomic<Object *> &atomic) {
   Object *value = atomic;

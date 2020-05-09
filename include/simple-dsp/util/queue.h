@@ -27,7 +27,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-namespace simpledsp {
+namespace simpledsp::util {
 
 namespace queue_position {
 
@@ -153,7 +153,7 @@ public:
     wr_.store(value, std::memory_order_relaxed);
   }
 
-  sdsp_force_inline void leaveTrait() noexcept { MemoryFence::release(); }
+  sdsp_force_inline void leaveTrait() noexcept { util::MemoryFence::release(); }
 };
 
 /**

@@ -27,7 +27,7 @@
 #include <simple-dsp/core/index.h>
 #include <vector>
 
-namespace simpledsp {
+namespace simpledsp::util {
 
 /**
  * Define how a delay is used, which also affects the possible delays, given a

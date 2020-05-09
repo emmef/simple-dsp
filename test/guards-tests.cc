@@ -6,8 +6,10 @@
 #include <iostream>
 #include <simple-dsp/util/guards.h>
 
-static simpledsp::FlagGuard getGuard(std::atomic_flag &flag) {
-  return simpledsp::FlagGuard(flag);
+using FlagGuard = simpledsp::util::FlagGuard;
+
+static simpledsp::util::FlagGuard getGuard(std::atomic_flag &flag) {
+  return simpledsp::util::FlagGuard(flag);
 }
 
 BOOST_AUTO_TEST_SUITE(SpinGuardTests)
@@ -15,7 +17,7 @@ BOOST_AUTO_TEST_SUITE(SpinGuardTests)
 BOOST_AUTO_TEST_CASE(testFirstAndOnlyIsSet) {
   std::atomic_flag flag = ATOMIC_FLAG_INIT;
   {
-    simpledsp::FlagGuard guard(flag);
+    FlagGuard guard(flag);
 
     BOOST_CHECK(guard.isSet());
     BOOST_CHECK(flag.test_and_set());
@@ -26,7 +28,7 @@ BOOST_AUTO_TEST_CASE(testFirstAndOnlyIsSet) {
 BOOST_AUTO_TEST_CASE(testFirstAndOnlyOutOfScopeIsNotSet) {
   std::atomic_flag flag = ATOMIC_FLAG_INIT;
   {
-    simpledsp::FlagGuard guard(flag);
+    FlagGuard guard(flag);
     BOOST_CHECK(guard.isSet());
   }
   BOOST_CHECK(!flag.test_and_set());
@@ -35,8 +37,8 @@ BOOST_AUTO_TEST_CASE(testFirstAndOnlyOutOfScopeIsNotSet) {
 BOOST_AUTO_TEST_CASE(testSecondNotSet) {
   std::atomic_flag flag = ATOMIC_FLAG_INIT;
   {
-    simpledsp::FlagGuard first(flag);
-    simpledsp::FlagGuard second(flag);
+    FlagGuard first(flag);
+    FlagGuard second(flag);
 
     BOOST_CHECK(!second.isSet());
     BOOST_CHECK(flag.test_and_set());
@@ -46,8 +48,8 @@ BOOST_AUTO_TEST_CASE(testSecondNotSet) {
 
 BOOST_AUTO_TEST_CASE(testSecondNotSetThenClearedAndSetAgainIsSet) {
   std::atomic_flag flag = ATOMIC_FLAG_INIT;
-  simpledsp::FlagGuard first(flag);
-  simpledsp::FlagGuard second(flag); // flag still set by first guard
+  FlagGuard first(flag);
+  FlagGuard second(flag); // flag still set by first guard
 
   flag.clear();
 
@@ -57,8 +59,8 @@ BOOST_AUTO_TEST_CASE(testSecondNotSetThenClearedAndSetAgainIsSet) {
 BOOST_AUTO_TEST_CASE(testMoveTargetSetSourceNotSet) {
   std::atomic_flag flag = ATOMIC_FLAG_INIT;
   {
-    simpledsp::FlagGuard first(flag);
-    simpledsp::FlagGuard second = std::move(first);
+    FlagGuard first(flag);
+    FlagGuard second = std::move(first);
 
     BOOST_CHECK(second.isSet());
     BOOST_CHECK(!first.isSet());
@@ -70,7 +72,7 @@ BOOST_AUTO_TEST_CASE(testMoveTargetSetSourceNotSet) {
 BOOST_AUTO_TEST_CASE(testFirstGuardFromFunctionIsSet) {
   std::atomic_flag flag = ATOMIC_FLAG_INIT;
   {
-    simpledsp::FlagGuard first = getGuard(flag);
+    FlagGuard first = getGuard(flag);
 
     BOOST_CHECK(first.isSet());
     BOOST_CHECK(flag.test_and_set());

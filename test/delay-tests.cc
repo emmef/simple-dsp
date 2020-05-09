@@ -12,9 +12,9 @@ namespace {
 constexpr const size_t SIZE = 16;
 simpledsp::CircularMetric metric({SIZE});
 using ReadFirstDelay =
-    simpledsp::DelayBasics<simpledsp::DelayAccessType::READ_THEN_WRITE>;
+    simpledsp::util::DelayBasics<simpledsp::util::DelayAccessType::READ_THEN_WRITE>;
 using WriteFirstDelay =
-    simpledsp::DelayBasics<simpledsp::DelayAccessType::WRITE_THEN_READ>;
+    simpledsp::util::DelayBasics<simpledsp::util::DelayAccessType::WRITE_THEN_READ>;
 
 enum class Configuration { WRITE_THEN_DELTA_READ, READ_THEN_DELTA_WRITE };
 
@@ -51,7 +51,7 @@ struct Delay {
                   std::cout << "  W";
                 }
               } else if (i == readPtr) {
-                std::cout << "  R";
+                std::cout << "  Result";
               } else {
                 std::cout << "   ";
               }
@@ -113,11 +113,11 @@ protected:
 struct DelayTestParameters {
   size_t firstValue;
   size_t delay;
-  simpledsp::DelayAccessType type;
+  simpledsp::util::DelayAccessType type;
   Configuration config;
 
   std::ostream &print(std::ostream &out) const {
-    out << (type == simpledsp::DelayAccessType::READ_THEN_WRITE
+    out << (type == simpledsp::util::DelayAccessType::READ_THEN_WRITE
                 ? "ReadFirstDelay"
                 : "WriteFirstDelay");
     out << "(";
@@ -133,7 +133,7 @@ struct DelayTestParameters {
   void test() const {
     ReadThenWriteDelay rtwDelay;
     WriteThenReadDelay wtrDelay;
-    Delay &delayImpl = (type == simpledsp::DelayAccessType::READ_THEN_WRITE)
+    Delay &delayImpl = (type == simpledsp::util::DelayAccessType::READ_THEN_WRITE)
                            ? *static_cast<Delay *>(&rtwDelay)
                            : *static_cast<Delay *>(&wtrDelay);
     delayImpl.configure(firstValue, delay);
@@ -151,12 +151,12 @@ public:
                                    Configuration::WRITE_THEN_DELTA_READ}) {
         for (size_t delay = 1; delay <= metric.getSize(); delay++) {
           parameters.push_back({start, delay,
-                                simpledsp::DelayAccessType::READ_THEN_WRITE,
+                                simpledsp::util::DelayAccessType::READ_THEN_WRITE,
                                 config});
         }
         for (size_t delay = 0; delay < metric.getSize(); delay++) {
           parameters.push_back({start, delay,
-                                simpledsp::DelayAccessType::WRITE_THEN_READ,
+                                simpledsp::util::DelayAccessType::WRITE_THEN_READ,
                                 config});
         }
       }
