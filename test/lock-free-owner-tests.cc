@@ -4,7 +4,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <iostream>
-#include <simple-dsp/lock-fee-owner.hpp>
+#include <simple-dsp/util/lock-fee-owner.hpp>
 
 using IntOwner = simpledsp::LockfreeOwner<int>;
 using Result = simpledsp::LockFeeOwnerResult;

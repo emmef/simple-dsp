@@ -6,8 +6,8 @@
 #include <boost/test/unit_test.hpp>
 #include <chrono>
 #include <iostream>
-#include <simple-dsp/delay.h>
 #include <simple-dsp/integration.h>
+#include <simple-dsp/util/delay.h>
 
 using FloatMultipliers = simpledsp::IntegrationMulipliers<float>;
 using DoubleMultipliers = simpledsp::IntegrationMulipliers<double>;

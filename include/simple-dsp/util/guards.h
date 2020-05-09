@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_SPINGUARD_HPP
-#define SIMPLE_DSP_SPINGUARD_HPP
+#ifndef SIMPLE_DSP_UTIL_GUARDS_HPP
+#define SIMPLE_DSP_UTIL_GUARDS_HPP
 /*
- * simple-dsp/spinguard.h
+ * simple-dsp/util/guards.h
  *
  * Added by michel on 2019-11-21
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -199,4 +199,4 @@ public:
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_SPINGUARD_HPP
+#endif // SIMPLE_DSP_UTIL_GUARDS_HPP

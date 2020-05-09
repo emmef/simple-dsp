@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_DELAY_H
-#define SIMPLE_DSP_DELAY_H
+#ifndef SIMPLE_DSP_UTIL_DELAY_H
+#define SIMPLE_DSP_UTIL_DELAY_H
 /*
- * simple-dsp/delay.h
+ * simple-dsp/util/delay.h
  *
  * Added by michel on 2019-08-20
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -298,4 +298,4 @@ private:
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_DELAY_H
+#endif // SIMPLE_DSP_UTIL_DELAY_H

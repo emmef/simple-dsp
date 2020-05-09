@@ -2,7 +2,7 @@
 // Created by michel on 21-08-19.
 //
 
-#include <simple-dsp/delay.h>
+#include <simple-dsp/util/delay.h>
 
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>

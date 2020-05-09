@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_TIMEOUT_H
-#define SIMPLE_DSP_TIMEOUT_H
+#ifndef SIMPLE_DSP_UTIL_TIMEOUT_H
+#define SIMPLE_DSP_UTIL_TIMEOUT_H
 /*
- * simple-dsp/timeout.h
+ * simple-dsp/util/timeout.h
  *
  * Added by michel on 2019-11-28
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -131,4 +131,4 @@ using TimeOutSecondsSliced = SlicedTimeout<std::chrono::seconds>;
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_TIMEOUT_H
+#endif // SIMPLE_DSP_UTIL_TIMEOUT_H

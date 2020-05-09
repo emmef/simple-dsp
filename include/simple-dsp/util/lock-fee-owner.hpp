@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_LOCK_FEE_OWNER_HPP
-#define SIMPLE_DSP_LOCK_FEE_OWNER_HPP
+#ifndef SIMPLE_DSP_UTIL_LOCK_FEE_OWNER_HPP
+#define SIMPLE_DSP_UTIL_LOCK_FEE_OWNER_HPP
 /*
- * simple-dsp/lock-free-owner.hpp
+ * simple-dsp/util/lock-free-owner.hpp
  *
  * Added by michel on 2019-11-27
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -24,9 +24,9 @@
 #include <chrono>
 #include <cstddef>
 #include <random>
-#include <simple-dsp/guards.h>
-#include <simple-dsp/timeout.h>
+#include <simple-dsp/util/guards.h>
 #include <simple-dsp/util/queue.h>
+#include <simple-dsp/util/timeout.h>
 #include <thread>
 
 namespace simpledsp {
@@ -222,4 +222,4 @@ private:
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_LOCK_FEE_OWNER_HPP
+#endif // SIMPLE_DSP_UTIL_LOCK_FEE_OWNER_HPP

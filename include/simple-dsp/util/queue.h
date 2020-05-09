@@ -23,7 +23,7 @@
 
 #include <limits>
 #include <simple-dsp/core/index.h>
-#include <simple-dsp/guards.h>
+#include <simple-dsp/util/guards.h>
 #include <stdexcept>
 #include <type_traits>
 

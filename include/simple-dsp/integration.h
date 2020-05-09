@@ -68,24 +68,27 @@ template <typename T> struct IntegrationMulipliers {
         uncheckedSamplesFromHistoryMultiplier(maxMultiplier);
     return result;
   }
+
   static const T minSamples() {
     static const T result = 1.0 / maxSamples();
     return result;
   }
 
-  static T historyMultiplier(T samples) {
+  static inline T historyMultiplier(T samples) noexcept {
     return samples < minSamples()
                ? 0
                : std::exp(-1.0 / (std::min(samples, maxSamples())));
   }
 
-  static constexpr T inputMultiplier(T samples) {
+  static inline T inputMultiplier(T samples) noexcept {
     return uncheckedOtherMultiplier(historyMultiplier(samples));
   }
 
-  static T uncheckedOtherMultiplier(T multiplier) { return 1.0 - multiplier; }
+  static constexpr T uncheckedOtherMultiplier(T multiplier) noexcept {
+    return 1.0 - multiplier;
+  }
 
-  static T samplesFromHistoryMultiplier(T historyMultiplier) {
+  static inline T samplesFromHistoryMultiplier(T historyMultiplier) noexcept {
     return historyMultiplier < minMultipier
                ? 0
                : historyMultiplier > maxMultiplier
@@ -93,7 +96,7 @@ template <typename T> struct IntegrationMulipliers {
                      : -1.0 / log(historyMultiplier);
   }
 
-  static T samplesFromInputMultiplier(T inputMultiplier) {
+  static inline T samplesFromInputMultiplier(T inputMultiplier) noexcept {
     return inputMultiplier > maxMultiplier
                ? 0
                : inputMultiplier < minMultipier
@@ -101,22 +104,24 @@ template <typename T> struct IntegrationMulipliers {
                      : -1.0 / log(uncheckedOtherMultiplier(inputMultiplier));
   }
 
-  static T getIntgrated(T input, T inputMultiplier, T previousOutput,
-                        T outputMultiplier) {
+  static constexpr T getIntegrated(T input, T inputMultiplier, T previousOutput,
+                                   T outputMultiplier) noexcept {
     return input * inputMultiplier + previousOutput * outputMultiplier;
   }
 
   static void integrate(T input, T inputMultiplier, T &output,
-                        T outputMultiplier) {
+                        T outputMultiplier) noexcept {
     output *= outputMultiplier;
     output += input * inputMultiplier;
   }
 
-  static T uncheckedSamplesFromHistoryMultiplier(T historyMultiplier) {
+  static inline T
+  uncheckedSamplesFromHistoryMultiplier(T historyMultiplier) noexcept {
     return -1.0 / log(historyMultiplier);
   }
 
-  static T uncheckedSamplesFromInputMultiplier(T inputMultiplier) {
+  static inline T
+  uncheckedSamplesFromInputMultiplier(T inputMultiplier) noexcept {
     return -1.0 / log(uncheckedOtherMultiplier(inputMultiplier));
   }
 };
@@ -134,27 +139,27 @@ public:
         inputMultiplier(
             Multipliers::uncheckedOtherMultiplier(historyMultiplier)) {}
 
-  T history() const { return historyMultiplier; }
-  T input() const { return inputMultiplier; }
-  T samples() const {
+  T history() const noexcept { return historyMultiplier; }
+  T input() const noexcept { return inputMultiplier; }
+  T samples() const noexcept {
     return Multipliers::samplesFromHistoryMultiplier(historyMultiplier);
   }
 
-  void setSamples(T samples) {
+  void setSamples(T samples) noexcept {
     historyMultiplier = Multipliers::historyMultiplier(samples);
     inputMultiplier = Multipliers::uncheckedOtherMultiplier(historyMultiplier);
   }
 
-  void setSecondsWithRate(T sampleRate, T seconds) {
+  void setSecondsWithRate(T sampleRate, T seconds) noexcept {
     return setSamples(sampleRate * seconds);
   }
 
-  T getIntegrated(T input, T previousOutput) {
-    return Multipliers::getIntgrated(input, inputMultiplier, previousOutput,
-                                     historyMultiplier);
+  T getIntegrated(T input, T previousOutput) noexcept {
+    return Multipliers::getIntegrated(input, inputMultiplier, previousOutput,
+                                      historyMultiplier);
   }
 
-  void integrate(T input, T &output) {
+  void integrate(T input, T &output) noexcept {
     Multipliers::integrate(input, inputMultiplier, output, historyMultiplier);
   }
 };

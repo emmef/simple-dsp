@@ -4,7 +4,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <iostream>
-#include <simple-dsp/guards.h>
+#include <simple-dsp/util/guards.h>
 
 static simpledsp::FlagGuard getGuard(std::atomic_flag &flag) {
   return simpledsp::FlagGuard(flag);
