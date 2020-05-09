@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_CORE_ARRAYOPS_H
-#define SIMPLE_DSP_CORE_ARRAYOPS_H
+#ifndef SIMPLE_DSP_UTIL_ARRAYOPS_H
+#define SIMPLE_DSP_UTIL_ARRAYOPS_H
 /*
- * simple-dsp/core/arrayops.h
+ * simple-dsp/util/arrayops.h
  *
  * Added by michel on 2019-09-11
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -24,7 +24,7 @@
 #include <simple-dsp/core/denormal.h>
 #include <simple-dsp/util/aligneddata.h>
 
-namespace simpledsp::arrayops {
+namespace simpledsp::util::arrayops {
 
 /*
  * Following functions are forced to be inline if the compiler supports it, so
@@ -189,12 +189,12 @@ sdsp_nodiscard static T sum(const T *data, size_t size) {
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-sdsp_nodiscard static T sum(const AlignedArray<T, SIZE, ALIGNMENT> &array) {
+sdsp_nodiscard static T sum(const util::AlignedArray<T, SIZE, ALIGNMENT> &array) {
   return inline_sum(array.ptr()(), SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-sdsp_nodiscard static T sum(const AlignedData<T, ALIGNMENT, C> &array) {
+sdsp_nodiscard static T sum(const util::AlignedData<T, ALIGNMENT, C> &array) {
   return inline_sum(array.ptr()(), array.size());
 }
 
@@ -208,12 +208,12 @@ sdsp_nodiscard static T average(const T *data, size_t size) {
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-sdsp_nodiscard static T average(const AlignedArray<T, SIZE, ALIGNMENT> &array) {
+sdsp_nodiscard static T average(const util::AlignedArray<T, SIZE, ALIGNMENT> &array) {
   return inline_average(array.ptr()(), SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-sdsp_nodiscard static T average(const AlignedData<T, ALIGNMENT, C> &array) {
+sdsp_nodiscard static T average(const util::AlignedData<T, ALIGNMENT, C> &array) {
   return inline_average(array.ptr()(), array.size());
 }
 
@@ -229,13 +229,13 @@ sdsp_nodiscard static T self_product(const T *data, size_t size) {
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
 sdsp_nodiscard static T
-self_product(const AlignedArray<T, SIZE, ALIGNMENT> &array) {
+self_product(const util::AlignedArray<T, SIZE, ALIGNMENT> &array) {
   return inline_self_product(array.ptr()(), SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
 sdsp_nodiscard static T
-self_product(const AlignedData<T, ALIGNMENT, C> &array) {
+self_product(const util::AlignedData<T, ALIGNMENT, C> &array) {
   return inline_self_product(array.ptr()(), array.size());
 }
 
@@ -250,13 +250,13 @@ sdsp_nodiscard static T sum_of_squared_errors(const T *data, size_t size) {
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
 sdsp_nodiscard static T
-sum_of_squared_errors(const AlignedArray<T, SIZE, ALIGNMENT> &array) {
+sum_of_squared_errors(const util::AlignedArray<T, SIZE, ALIGNMENT> &array) {
   return inline_sum_of_squared_errors(array.ptr()(), SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
 sdsp_nodiscard static T
-sum_of_squared_errors(const AlignedData<T, ALIGNMENT, C> &array) {
+sum_of_squared_errors(const util::AlignedData<T, ALIGNMENT, C> &array) {
   return inline_sum_of_squared_errors(array.ptr()(), array.size());
 }
 
@@ -272,30 +272,30 @@ sdsp_nodiscard static T inner_product(const T *v1, const T *v2, size_t size) {
 
 template <typename T, size_t ALIGNMENT, class C, class D>
 sdsp_nodiscard static T
-inner_product(const AlignedData<T, ALIGNMENT, C> &array1,
-              const AlignedData<T, ALIGNMENT, D> &array2) {
+inner_product(const util::AlignedData<T, ALIGNMENT, C> &array1,
+              const util::AlignedData<T, ALIGNMENT, D> &array2) {
   return inline_inner_product(array1.ptr(), array2.ptr(),
                               ::std::min(array1.size(), array2.size()));
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
-sdsp_nodiscard static T operator*(const AlignedData<T, ALIGNMENT, C> &array1,
-                                  const AlignedData<T, ALIGNMENT, D> &array2) {
+sdsp_nodiscard static T operator*(const util::AlignedData<T, ALIGNMENT, C> &array1,
+                                  const util::AlignedData<T, ALIGNMENT, D> &array2) {
   return inline_inner_product(array1.ptr(), array2.ptr(),
                               ::std::min(array1.size(), array2.size()));
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
 sdsp_nodiscard static T
-inner_product(const AlignedArray<T, SIZE, ALIGNMENT> &array1,
-              const AlignedArray<T, SIZE, ALIGNMENT> &array2) {
+inner_product(const util::AlignedArray<T, SIZE, ALIGNMENT> &array1,
+              const util::AlignedArray<T, SIZE, ALIGNMENT> &array2) {
   return inline_inner_product(array1.ptr(), array2.ptr(), SIZE);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
 sdsp_nodiscard static T
-operator*(const AlignedArray<T, SIZE, ALIGNMENT> &array1,
-          const AlignedArray<T, SIZE, ALIGNMENT> &array2) {
+operator*(const util::AlignedArray<T, SIZE, ALIGNMENT> &array1,
+          const util::AlignedArray<T, SIZE, ALIGNMENT> &array2) {
   return inline_inner_product(array1.ptr(), array2.ptr(), SIZE);
 }
 
@@ -309,22 +309,22 @@ static void multiply_with(T *array, T factor, size_t size) {
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void multiply_with(AlignedArray<T, SIZE, ALIGNMENT> &array, T factor) {
+static void multiply_with(util::AlignedArray<T, SIZE, ALIGNMENT> &array, T factor) {
   inline_multiply_with(array.ptr()(), factor, SIZE);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void operator*=(AlignedArray<T, SIZE, ALIGNMENT> &array, T factor) {
+static void operator*=(util::AlignedArray<T, SIZE, ALIGNMENT> &array, T factor) {
   inline_multiply_with(array.ptr()(), factor, SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-static void multiply_with(AlignedData<T, ALIGNMENT, C> &array, T factor) {
+static void multiply_with(util::AlignedData<T, ALIGNMENT, C> &array, T factor) {
   inline_multiply_with(array.ptr()(), factor, array.size());
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-static void operator*=(AlignedData<T, ALIGNMENT, C> &array, T factor) {
+static void operator*=(util::AlignedData<T, ALIGNMENT, C> &array, T factor) {
   inline_multiply_with(array.ptr()(), factor, array.size());
 }
 
@@ -338,13 +338,13 @@ static void multiply_with_range(T *array, T from, T to, size_t size) {
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void multiply_with_range(AlignedArray<T, SIZE, ALIGNMENT> &array, T from,
+static void multiply_with_range(util::AlignedArray<T, SIZE, ALIGNMENT> &array, T from,
                                 T to) {
   inline_multiply_with_range(array.ptr()(), from, to, SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-static void multiply_with_range(AlignedData<T, ALIGNMENT, C> &array, T from,
+static void multiply_with_range(util::AlignedData<T, ALIGNMENT, C> &array, T from,
                                 T to) {
   inline_multiply_with_range(array.ptr()(), from, to, array.size());
 }
@@ -362,13 +362,13 @@ static void multiply_with_range_accurate(T *array, T from, T to, size_t size) {
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
 static void
-multiply_with_range_accurate(AlignedArray<T, SIZE, ALIGNMENT> &array, T from,
+multiply_with_range_accurate(util::AlignedArray<T, SIZE, ALIGNMENT> &array, T from,
                              T to) {
   inline_multiply_with_range_accurate(array.ptr()(), from, to, SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-static void multiply_with_range_accurate(AlignedData<T, ALIGNMENT, C> &array,
+static void multiply_with_range_accurate(util::AlignedData<T, ALIGNMENT, C> &array,
                                          T from, T to) {
   inline_multiply_with_range_accurate(array.ptr()(), from, to, array.size());
 }
@@ -384,27 +384,27 @@ static void add_to(T *destination, const T *source, size_t size) {
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void add_to(AlignedArray<T, SIZE, ALIGNMENT> &destination,
-                   const AlignedArray<T, SIZE, ALIGNMENT> &source) {
+static void add_to(util::AlignedArray<T, SIZE, ALIGNMENT> &destination,
+                   const util::AlignedArray<T, SIZE, ALIGNMENT> &source) {
   inline_add_to(destination.ptr()(), source.ptr()(), SIZE);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void operator+=(AlignedArray<T, SIZE, ALIGNMENT> &destination,
-                       const AlignedArray<T, SIZE, ALIGNMENT> &source) {
+static void operator+=(util::AlignedArray<T, SIZE, ALIGNMENT> &destination,
+                       const util::AlignedArray<T, SIZE, ALIGNMENT> &source) {
   inline_add_to(destination.ptr()(), source.ptr()(), SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
-static void add_to(AlignedData<T, ALIGNMENT, C> &destination,
-                   const AlignedData<T, ALIGNMENT, D> &source) {
+static void add_to(util::AlignedData<T, ALIGNMENT, C> &destination,
+                   const util::AlignedData<T, ALIGNMENT, D> &source) {
   inline_add_to(destination.ptr()(), source.ptr()(),
                 ::std::min(destination.size(), source.size()));
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
-static void add_to_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
-                             const AlignedData<T, ALIGNMENT, D> &source,
+static void add_to_frames_up(util::AlignedData<T, ALIGNMENT, C> &destination,
+                             const util::AlignedData<T, ALIGNMENT, D> &source,
                              size_t framesUp) {
   inline_add_to(
       destination.frame(framesUp), source.ptr()(),
@@ -413,7 +413,7 @@ static void add_to_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
               0,
               static_cast<ssize_t>(destination.size()) -
                   framesUp *
-                      AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
+                      util::AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
           source.size()));
 }
 
@@ -429,15 +429,15 @@ static void add_to_with_factor(T *destination, const T *source, T factor,
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void add_to_with_factor(AlignedArray<T, SIZE, ALIGNMENT> &destination,
-                               const AlignedArray<T, SIZE, ALIGNMENT> &source,
+static void add_to_with_factor(util::AlignedArray<T, SIZE, ALIGNMENT> &destination,
+                               const util::AlignedArray<T, SIZE, ALIGNMENT> &source,
                                T factor) {
   inline_add_to_with_factor(destination.ptr()(), source.ptr()(), factor, SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
-static void add_to_with_factor(AlignedData<T, ALIGNMENT, C> &destination,
-                               const AlignedData<T, ALIGNMENT, D> &source,
+static void add_to_with_factor(util::AlignedData<T, ALIGNMENT, C> &destination,
+                               const util::AlignedData<T, ALIGNMENT, D> &source,
                                T factor) {
   inline_add_to_with_factor(
       destination.ptr()(), source.ptr()(),
@@ -446,8 +446,8 @@ static void add_to_with_factor(AlignedData<T, ALIGNMENT, C> &destination,
 
 template <typename T, size_t ALIGNMENT, class C, class D>
 static void
-add_to_with_factor_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
-                             const AlignedData<T, ALIGNMENT, D> &source,
+add_to_with_factor_frames_up(util::AlignedData<T, ALIGNMENT, C> &destination,
+                             const util::AlignedData<T, ALIGNMENT, D> &source,
                              T factor, size_t framesUp) {
   inline_add_to_with_factor(
       destination.frame(framesUp), source.ptr()(), factor,
@@ -456,7 +456,7 @@ add_to_with_factor_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
               0,
               static_cast<ssize_t>(destination.size()) -
                   framesUp *
-                      AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
+                      util::AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
           source.size()));
 }
 
@@ -470,22 +470,22 @@ static void add_to(T *array, T delta, size_t size) {
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-static void add_to(AlignedData<T, ALIGNMENT, C> &array, T delta) {
+static void add_to(util::AlignedData<T, ALIGNMENT, C> &array, T delta) {
   inline_add_to(array.ptr()(), delta, array.size());
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-static void operator+=(AlignedData<T, ALIGNMENT, C> &array, T delta) {
+static void operator+=(util::AlignedData<T, ALIGNMENT, C> &array, T delta) {
   inline_add_to(array.ptr()(), delta, array.size());
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void add_to(AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
+static void add_to(util::AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
   inline_add_to(array.ptr()(), delta, SIZE);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void operator+=(AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
+static void operator+=(util::AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
   inline_add_to(array.ptr()(), delta, SIZE);
 }
 
@@ -500,27 +500,27 @@ static void subtract_from(T *destination, const T *source, size_t size) {
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void subtract_from(AlignedArray<T, SIZE, ALIGNMENT> &destination,
-                          const AlignedArray<T, SIZE, ALIGNMENT> &source) {
+static void subtract_from(util::AlignedArray<T, SIZE, ALIGNMENT> &destination,
+                          const util::AlignedArray<T, SIZE, ALIGNMENT> &source) {
   inline_subtract_from(destination.ptr()(), source.ptr()(), SIZE);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void operator-=(AlignedArray<T, SIZE, ALIGNMENT> &destination,
-                       const AlignedArray<T, SIZE, ALIGNMENT> &source) {
+static void operator-=(util::AlignedArray<T, SIZE, ALIGNMENT> &destination,
+                       const util::AlignedArray<T, SIZE, ALIGNMENT> &source) {
   inline_subtract_from(destination.ptr()(), source.ptr()(), SIZE);
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
-static void subtract_from(AlignedData<T, ALIGNMENT, C> &destination,
-                          const AlignedData<T, ALIGNMENT, D> &source) {
+static void subtract_from(util::AlignedData<T, ALIGNMENT, C> &destination,
+                          const util::AlignedData<T, ALIGNMENT, D> &source) {
   inline_subtract_from(destination.ptr()(), source.ptr()(),
                        ::std::min(destination.size(), source.size()));
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
-static void subtract_from_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
-                                    const AlignedData<T, ALIGNMENT, D> &source,
+static void subtract_from_frames_up(util::AlignedData<T, ALIGNMENT, C> &destination,
+                                    const util::AlignedData<T, ALIGNMENT, D> &source,
                                     size_t framesUp) {
   inline_subtract_from(
       destination.frame(framesUp), source.ptr()(),
@@ -529,7 +529,7 @@ static void subtract_from_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
               0,
               static_cast<ssize_t>(destination.size()) -
                   framesUp *
-                      AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
+                      util::AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
           source.size()));
 }
 
@@ -547,8 +547,8 @@ static void subtract_from_with_factor(T *destination, const T *source, T factor,
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
 static void
-subtract_from_with_factor(AlignedArray<T, SIZE, ALIGNMENT> &destination,
-                          const AlignedArray<T, SIZE, ALIGNMENT> &source,
+subtract_from_with_factor(util::AlignedArray<T, SIZE, ALIGNMENT> &destination,
+                          const util::AlignedArray<T, SIZE, ALIGNMENT> &source,
                           T factor) {
   inline_subtract_from_with_factor(destination.ptr()(), source.ptr()(), factor,
                                    SIZE);
@@ -556,8 +556,8 @@ subtract_from_with_factor(AlignedArray<T, SIZE, ALIGNMENT> &destination,
 
 template <typename T, size_t ALIGNMENT, class C, class D>
 static void
-subtract_from_with_factor(AlignedData<T, ALIGNMENT, C> &destination,
-                          const AlignedData<T, ALIGNMENT, D> &source,
+subtract_from_with_factor(util::AlignedData<T, ALIGNMENT, C> &destination,
+                          const util::AlignedData<T, ALIGNMENT, D> &source,
                           T factor) {
   inline_subtract_from_with_factor(
       destination.ptr()(), source.ptr()(),
@@ -566,8 +566,8 @@ subtract_from_with_factor(AlignedData<T, ALIGNMENT, C> &destination,
 
 template <typename T, size_t ALIGNMENT, class C, class D>
 static void
-subtract_from_with_factor_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
-                                    const AlignedData<T, ALIGNMENT, D> &source,
+subtract_from_with_factor_frames_up(util::AlignedData<T, ALIGNMENT, C> &destination,
+                                    const util::AlignedData<T, ALIGNMENT, D> &source,
                                     T factor, size_t framesUp) {
   inline_subtract_from_with_factor(
       destination.frame(framesUp), source.ptr()(), factor,
@@ -576,7 +576,7 @@ subtract_from_with_factor_frames_up(AlignedData<T, ALIGNMENT, C> &destination,
               0,
               static_cast<ssize_t>(destination.size()) -
                   framesUp *
-                      AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
+                      util::AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
           source.size()));
 }
 
@@ -590,25 +590,25 @@ static void subtract_from(T *array, T delta, size_t size) {
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-static void subtract_from(AlignedData<T, ALIGNMENT, C> &array, T delta) {
+static void subtract_from(util::AlignedData<T, ALIGNMENT, C> &array, T delta) {
   inline_subtract_from(array.ptr()(), delta, array.size());
 }
 
 template <typename T, size_t ALIGNMENT, class C>
-static void operator-=(AlignedData<T, ALIGNMENT, C> &array, T delta) {
+static void operator-=(util::AlignedData<T, ALIGNMENT, C> &array, T delta) {
   inline_subtract_from(array.ptr()(), delta, array.size());
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void subtract_from(AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
+static void subtract_from(util::AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
   inline_subtract_from(array.ptr()(), delta, SIZE);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
-static void operator-=(AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
+static void operator-=(util::AlignedArray<T, SIZE, ALIGNMENT> &array, T delta) {
   inline_subtract_from(array.ptr()(), delta, SIZE);
 }
 
 } // namespace simpledsp::arrayops
 
-#endif // SIMPLE_DSP_CORE_ARRAYOPS_H
+#endif // SIMPLE_DSP_UTIL_ARRAYOPS_H
