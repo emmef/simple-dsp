@@ -35,7 +35,7 @@ template <typename SIZE_T> struct CircularArithmic {
                 !std::is_signed<SIZE_T>::value,
                 "SIZE_T must be an integral, unsigned type");
 
-  static constexpr SIZE_T maximumMask = addr::Elements<char,SIZE_T,0>::Index::max >> 1;
+  static constexpr SIZE_T maximumMask = addr::Size<char,SIZE_T,0>::max_index;
 
   sdsp_nodiscard static constexpr SIZE_T
   proper_circular_size(SIZE_T requestedSize) {

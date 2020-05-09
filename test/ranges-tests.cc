@@ -14,7 +14,8 @@ using namespace std;
 
 namespace {
 
-using FixedRange = simpledsp::addr::Elements<char, size_t, 1024>;
+static constexpr size_t SIZE_LIMIT = 1024;
+using FixedRange = simpledsp::addr::Size<char, size_t, SIZE_LIMIT>;
 using Functions = simpledsp::testhelper::FunctionTestCases;
 
 using TestCase = simpledsp::testhelper::AbstractValueTestCase;
@@ -85,28 +86,32 @@ generateTestCases() {
     testCases->push_back(
         WithinTests::createWithinExcl(isWithinExcl, i, 0, MAX_LIMIT));
 
-    testCases->push_back(Functions::create("FixedRange::Size::is_valid",
+    testCases->push_back(Functions::create("FixedRange::is_valid",
                                            FixedRange::Size::is_valid,
                                            isValidSize, i));
+
+    testCases->push_back(Functions::create("FixedRange::is_valid_index",
+                                           FixedRange::Size::is_valid_index,
+                                           isValidIndex, i));
     if (isValidIndex) {
-      testCases->push_back(Functions::create("FixedRange::Index::is_valid",
-                                             FixedRange::Index::get_value_if_valid,
-                                             i, i, ""));
+      testCases->push_back(Functions::create("FixedRange::get_valid_index",
+                                             FixedRange::get_valid_index,
+                                             i, i));
     }
     else {
-      testCases->push_back(Functions::create("FixedRange::Index::is_valid",
-                                             FixedRange::Index::get_value_if_valid,
-                                             i, ""));
+      testCases->push_back(Functions::create("FixedRange::get_valid_index",
+                                             FixedRange::get_valid_index,
+                                             i));
     }
     if (isValidSize) {
-      testCases->push_back(Functions::create("FixedRange::Size::is_valid",
-                                             FixedRange::Size::get_value_if_valid,
-                                             i, i, ""));
+      testCases->push_back(Functions::create("FixedRange::get_valid_size",
+                                             FixedRange::Size::get_valid_size,
+                                             i, i));
     }
     else {
-      testCases->push_back(Functions::create("FixedRange::Size::is_valid",
-                                             FixedRange::Size::get_value_if_valid,
-                                             i, ""));
+      testCases->push_back(Functions::create("FixedRange::get_valid_size",
+                                             FixedRange::Size::get_valid_size,
+                                             i));
 
     }
   }
@@ -115,72 +120,39 @@ generateTestCases() {
     size_t product = i.v1 * i.v2;
     bool isValidSizeProduct = product > 0 && product <= MAX_LIMIT;
 
-    testCases->push_back(Functions::create("FixedRange::Size::is_valid_product",
-                                           FixedRange::Size::is_valid_product,
+    testCases->push_back(Functions::create("FixedRange::is_valid_product",
+                                           FixedRange::is_valid_product,
                                            isValidSizeProduct, i.v1, i.v2));
     if (isValidSizeProduct) {
       testCases->push_back(Functions::create(
-          "FixedRange::Size::get_product_if_valid",
-          FixedRange::Size::get_product_if_valid, product, i.v1, i.v2, ""));
-      testCases->push_back(Functions::create(
-          "FixedRange::Size::get_value_if_valid_product",
-          FixedRange::Size::get_value_if_valid_product, i.v1, i.v1, i.v2, ""));
+          "FixedRange::get_valid_product",
+          FixedRange::Size::get_valid_product, product, i.v1, i.v2));
     }
     else {
       testCases->push_back(Functions::create(
-          "FixedRange::Size::get_product_if_valid",
-          FixedRange::Size::get_product_if_valid, i.v1, i.v2, ""));
-      testCases->push_back(Functions::create(
-          "FixedRange::Size::get_value_if_valid_product",
-          FixedRange::Size::get_value_if_valid_product, i.v1, i.v2, ""));
+          "FixedRange::get_valid_product",
+          FixedRange::Size::get_valid_product, i.v1, i.v2));
     }
   }
 
   for (Pair &i : sumValues) {
     size_t sum = i.v1 * i.v2;
     bool isValidSizeSum = sum > 0 && sum <= MAX_LIMIT;
-    bool isValidIndexSum = sum < MAX_LIMIT;
 
-    testCases->push_back(Functions::create("FixedRange::Size::is_valid_sum",
+    testCases->push_back(Functions::create("FixedRange::is_valid_sum",
                                            FixedRange::Size::is_valid_sum,
                                            isValidSizeSum, i.v1, i.v2));
-    testCases->push_back(Functions::create("FixedRange::Index::is_valid_sum",
-                                           FixedRange::Index::is_valid_sum,
-                                           isValidIndexSum, i.v1, i.v2));
     if (isValidSizeSum) {
-      testCases->push_back(Functions::create("FixedRange::Size::get_sum_if_valid",
-                                             FixedRange::Size::get_sum_if_valid,
-                                             sum, i.v1, i.v2, ""));
-      testCases->push_back(Functions::create(
-          "FixedRange::Size::get_value_if_valid_sum",
-          FixedRange::Size::get_value_if_valid_sum, i.v1, i.v1, i.v2, ""));
+      testCases->push_back(Functions::create("FixedRange::get_valid_sum",
+                                             FixedRange::get_valid_sum,
+                                             sum, i.v1, i.v2));
     }
     else {
-      testCases->push_back(Functions::create("FixedRange::Size::get_sum_if_valid",
-                                             FixedRange::Size::get_sum_if_valid,
-                                             i.v1, i.v2, ""));
-      testCases->push_back(Functions::create(
-          "FixedRange::Size::get_value_if_valid_sum",
-          FixedRange::Size::get_value_if_valid_sum, i.v1, i.v2, ""));
+      testCases->push_back(Functions::create("FixedRange::get_valid_sum",
+                                             FixedRange::get_valid_sum,
+                                             i.v1, i.v2));
     }
 
-    if (isValidIndexSum) {
-      testCases->push_back(Functions::create(
-          "FixedRange::Index::get_sum_if_valid",
-          FixedRange::Index::get_sum_if_valid, sum, i.v1, i.v2, ""));
-
-      testCases->push_back(Functions::create(
-          "FixedRange::Index::get_value_if_valid_sum",
-          FixedRange::Index::get_value_if_valid_sum, i.v1, i.v1, i.v2, ""));
-    }
-    else {
-      testCases->push_back(Functions::create("FixedRange::Index::get_sum_if_valid",
-                                             FixedRange::Index::get_sum_if_valid,
-                                             i.v1, i.v2, ""));
-      testCases->push_back(Functions::create(
-          "FixedRange::Index::get_value_if_valid_sum",
-          FixedRange::Index::get_value_if_valid_sum, i.v1, i.v2, ""));
-    }
   }
 
   return testCases;
@@ -213,8 +185,75 @@ public:
 
 BOOST_AUTO_TEST_SUITE(testRanges)
 
-    BOOST_DATA_TEST_CASE(sample, TEST_GENERATOR.getTestCases()) {
+BOOST_AUTO_TEST_CASE(testConstructorExactMaxSize) {
+  FixedRange size(SIZE_LIMIT);
+  BOOST_CHECK_EQUAL(size, SIZE_LIMIT);
+}
+
+BOOST_AUTO_TEST_CASE(testConstructorValidSize) {
+  BOOST_CHECK_EQUAL(FixedRange(3).value, 3);
+}
+
+BOOST_AUTO_TEST_CASE(testConstructorTooLargeSize) {
+  BOOST_CHECK_THROW(FixedRange(SIZE_LIMIT + 1), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE(testConstructorZeroSize) {
+  BOOST_CHECK_THROW(FixedRange(0), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE(testConstructorValidSum) {
+  size_t v1 = 13;
+  size_t v2 = 16;
+  size_t sum = v1 + v2;
+  FixedRange size = {FixedRange::ADD, v1, v2};
+  BOOST_CHECK_EQUAL(size, sum);
+}
+
+BOOST_AUTO_TEST_CASE(testConstructorLargeSum) {
+  size_t v1 = 900;
+  size_t v2 = 128;
+
+  BOOST_CHECK_THROW(FixedRange(FixedRange::ADD, v1, v2), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE(testAdditionValid) {
+  size_t v1 = 5;
+  size_t v2 = 128;
+  size_t sum = v1 + v2;
+  FixedRange size = v1;
+
+  BOOST_CHECK_EQUAL(size + v2, sum);
+}
+
+BOOST_AUTO_TEST_CASE(testAdditionTooLarge) {
+  size_t v1 = 900;
+  size_t v2 = 128;
+  FixedRange size = v1;
+
+  BOOST_CHECK_THROW(size + v2, std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE(testProductValid) {
+  size_t v1 = 5;
+  size_t v2 = 128;
+  size_t product = v1 * v2;
+  FixedRange size = v1;
+
+  BOOST_CHECK_EQUAL(size * v2, product);
+}
+
+BOOST_AUTO_TEST_CASE(testProductTooLarge) {
+  size_t v1 = 900;
+  size_t v2 = 128;
+  FixedRange size = v1;
+
+  BOOST_CHECK_THROW(size * v2, std::invalid_argument);
+}
+
+BOOST_DATA_TEST_CASE(sample, TEST_GENERATOR.getTestCases()) {
   sample->test();
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()

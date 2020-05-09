@@ -248,11 +248,11 @@ public:
   sdsp_nodiscard SizeType operator[](SizeType i) const { return container_[i]; }
 
   sdsp_nodiscard const SizeType *ref(SizeType i) const {
-    return container_.data() + addr::Index::safe(i, container_.size());
+    return container_.data() + addr::safe_index(i, container_.size());
   }
 
   sdsp_nodiscard const SizeType *operator+(SizeType i) const {
-    return container_.data() + addr::Index::unsafe(i, container_.size());
+    return container_.data() + addr::unsafe_index(i, container_.size());
   }
 
   sdsp_nodiscard SizeType setWriteForDelay(SizeType readIndex,

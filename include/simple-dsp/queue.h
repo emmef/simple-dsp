@@ -249,16 +249,16 @@ class DefaultData : public DataTraits<Value, DefaultData<Value>> {
 public:
   DefaultData(size_t capacity)
       : capacity_(validCapacity(capacity)), data_(new Value[capacity_ + 1]) {}
-  static constexpr size_t maxCapacity = addr::Elements<Value>::Index::max;
+  static constexpr size_t maxCapacity = addr::Size<Value>::max_index;
 
   sdsp_nodiscard size_t capacityTrait() const noexcept { return capacity_; }
 
   sdsp_nodiscard Value &refTrait(size_t index) noexcept {
-    return data_[addr::Offset::unsafe(index, capacity_)];
+    return data_[addr::unsafe_index(index, capacity_)];
   }
 
   sdsp_nodiscard const Value &refTrait(size_t index) const noexcept {
-    return data_[addr::Offset::unsafe(index, capacity_)];
+    return data_[addr::unsafe_index(index, capacity_)];
   }
 
   ~DefaultData() { delete[] data_; }

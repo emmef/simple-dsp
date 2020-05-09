@@ -1,5 +1,6 @@
 #ifndef SIMPLE_DSP_ALGORITHM_H
 #define SIMPLE_DSP_ALGORITHM_H
+
 /*
  * simple-dsp/algorithm.h
  *

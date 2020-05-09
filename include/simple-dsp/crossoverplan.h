@@ -143,17 +143,17 @@ public:
    * @param crossovers The number of crossovers, that must be one or larger
    */
   CrossoverPlan(size_t crossovers)
-      : steps_(new Step[addr::Elements<Step>::Size::get_value_if_valid(crossovers)]),
+      : steps_(new Step[addr::Size<Step>::get_valid_size(crossovers)]),
         crossovers_(crossovers) {
     create(steps_, crossovers);
   }
 
   const Step &operator[](size_t idx) const {
-    return steps_[addr::Index::unsafe(idx, crossovers_)];
+    return steps_[addr::unsafe_index(idx, crossovers_)];
   }
 
   const Step &at(size_t idx) const {
-    return steps_[addr::Index::safe(idx, crossovers_)];
+    return steps_[addr::safe_index(idx, crossovers_)];
   }
 
   const Step *begin() const noexcept { return steps_; }
