@@ -129,6 +129,6 @@ using TimeOutMicrosSliced = SlicedTimeout<std::chrono::microseconds>;
 using TimeOutMillisSliced = SlicedTimeout<std::chrono::milliseconds>;
 using TimeOutSecondsSliced = SlicedTimeout<std::chrono::seconds>;
 
-} // namespace simpledsp
+} // namespace simpledsp::util
 
 #endif // SIMPLE_DSP_UTIL_TIMEOUT_H

@@ -220,6 +220,6 @@ private:
   }
 };
 
-} // namespace simpledsp
+} // namespace simpledsp::util
 
 #endif // SIMPLE_DSP_UTIL_LOCK_FEE_OWNER_HPP

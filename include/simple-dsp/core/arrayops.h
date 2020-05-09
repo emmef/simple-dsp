@@ -356,8 +356,8 @@ static void multiply_with_range(AlignedData<T, ALIGNMENT, C> &array, T from,
 
 template <typename T, size_t ALIGNMENT = 0>
 static void multiply_with_range_accurate(T *array, T from, T to, size_t size) {
-  inline_multiply_with_range_accurate(assume_aligned<ALIGNMENT>(array), from, to,
-                                      size);
+  inline_multiply_with_range_accurate(assume_aligned<ALIGNMENT>(array), from,
+                                      to, size);
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>

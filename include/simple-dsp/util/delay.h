@@ -52,8 +52,7 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr bool
-  isValidDelay(const CircularMetric<SizeType> &metric,
-               SizeType delaySamples) {
+  isValidDelay(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
     return is_within(delaySamples, getMinimumDelay<SizeType>(),
                      getMaximumDelay<SizeType>(metric));
   }
@@ -67,8 +66,7 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
-  getValidDelay(const CircularMetric<SizeType> &metric,
-                SizeType delaySamples) {
+  getValidDelay(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
     if (isValidDelay<SizeType>(metric, delaySamples)) {
       return delaySamples;
     }
@@ -91,16 +89,16 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getReadPtrForDelay(const CircularMetric<SizeType> &metric,
-                     SizeType writePtr, SizeType delay) {
+  getReadPtrForDelay(const CircularMetric<SizeType> &metric, SizeType writePtr,
+                     SizeType delay) {
     SizeType validDelay = getValidDelay(metric, delay);
     return metric.subtract(writePtr, validDelay);
   }
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getWritePtrForDelay(const CircularMetric<SizeType> &metric,
-                      SizeType readPtr, SizeType delay) {
+  getWritePtrForDelay(const CircularMetric<SizeType> &metric, SizeType readPtr,
+                      SizeType delay) {
     SizeType validDelay = getValidDelay(metric, delay);
     return metric.add(readPtr, validDelay);
   }
@@ -144,14 +142,12 @@ template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
   getAllocationSize(SizeType delaySamples) {
-    return CircularArithmic<SizeType>::proper_circular_size(delaySamples +
-                                                                  1);
+    return CircularArithmic<SizeType>::proper_circular_size(delaySamples + 1);
   }
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr bool
-  isValidDelay(const CircularMetric<SizeType> &metric,
-               SizeType delaySamples) {
+  isValidDelay(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
     return is_within(delaySamples, getMinimumDelay<SizeType>(),
                      getMaximumDelay<SizeType>(metric));
   }
@@ -165,8 +161,7 @@ template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
 
   template <typename SizeType>
   sdsp_nodiscard static constexpr SizeType
-  getValidDelay(const CircularMetric<SizeType> &metric,
-                SizeType delaySamples) {
+  getValidDelay(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
     if (isValidDelay<SizeType>(metric, delaySamples)) {
       return delaySamples;
     }
@@ -176,16 +171,16 @@ template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getReadPtrForDelay(const CircularMetric<SizeType> &metric,
-                     SizeType writePtr, SizeType delay) {
+  getReadPtrForDelay(const CircularMetric<SizeType> &metric, SizeType writePtr,
+                     SizeType delay) {
     SizeType validDelay = getValidDelay(metric, delay);
     return metric.subtract(writePtr, validDelay);
   }
 
   template <typename SizeType>
   sdsp_nodiscard static SizeType
-  getWritePtrForDelay(const CircularMetric<SizeType> &metric,
-                      SizeType readPtr, SizeType delay) {
+  getWritePtrForDelay(const CircularMetric<SizeType> &metric, SizeType readPtr,
+                      SizeType delay) {
     SizeType validDelay = getValidDelay(metric, delay);
     return metric.add(readPtr, validDelay);
   }
@@ -296,6 +291,6 @@ private:
   }
 };
 
-} // namespace simpledsp
+} // namespace simpledsp::util
 
 #endif // SIMPLE_DSP_UTIL_DELAY_H

@@ -47,7 +47,6 @@ enum class DspState {
   STOP
 };
 
-
 } // namespace simpledsp
 
 #endif // SIMPLE_DSP_DSPNODE_H

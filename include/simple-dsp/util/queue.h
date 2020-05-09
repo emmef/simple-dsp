@@ -437,8 +437,8 @@ private:
     return ptr < data_.capacity() ? ptr + 1 : 0;
   }
 
-  sdsp_nodiscard bool isFull(size_t rd, size_t wr, size_t &next) const
-      noexcept {
+  sdsp_nodiscard bool isFull(size_t rd, size_t wr,
+                             size_t &next) const noexcept {
     next = nextValue(wr);
     return next == rd;
   }
@@ -471,6 +471,6 @@ template <typename Value>
 using Queue = BaseQueue<Value, queue_position::Consistent,
                         queue_data::DefaultData<Value>>;
 
-} // namespace simpledsp
+} // namespace simpledsp::util
 
 #endif // SIMPLE_DSP_UTIL_QUEUE_H

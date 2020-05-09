@@ -28,7 +28,6 @@
 
 namespace simpledsp {
 
-
 enum class IndexPolicyType { THROW, WRAP, UNCHECKED };
 
 namespace internal {
@@ -74,23 +73,23 @@ struct IndexPolicyBase<SizeType, IndexPolicyType::UNCHECKED> {
   }
 };
 
-}
+} // namespace internal
 
 struct Index {
   template <typename S = size_t>
   using Safe =
 #ifndef SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED
-  internal::IndexPolicyBase<S, IndexPolicyType::THROW>;
+      internal::IndexPolicyBase<S, IndexPolicyType::THROW>;
 #else
-  IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
+      IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
 #endif
 
   template <typename S = size_t>
   using Unsafe =
 #ifndef SDSP_INDEX_POLICY_FORCE_UNSAFE_CHECKED
-  internal::IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
+      internal::IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
 #else
-  IndexPolicyBase<S, IndexPolicyType::THROW>;
+      IndexPolicyBase<S, IndexPolicyType::THROW>;
 #endif
 
   template <typename S = size_t>
@@ -125,9 +124,8 @@ struct Index {
   template <typename S> sdsp_nodiscard static S unsafe_incl(S i, S size) {
     return Unsafe<S>::index_incl(i, size);
   }
-
 };
 
-} // namespace simpledsp::index
+} // namespace simpledsp
 
 #endif // SIMPLE_DSP_CORE_INDEX_H

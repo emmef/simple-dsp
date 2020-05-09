@@ -80,7 +80,6 @@ struct Power2 {
   }
 };
 
-
 } // namespace simpledsp
 
 #endif // SIMPLE_DSP_POWER2_H

@@ -23,7 +23,7 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
-find_package (Threads)
+find_package(Threads)
 
 set(SIMPLE_DSP_HEADERS include/simple-dsp/core/index.h include/simple-dsp/core/attributes.h include/simple-dsp/core/circular.h include/simple-dsp/util/delay.h include/simple-dsp/core/alignment.h include/simple-dsp/core/denormal.h include/simple-dsp/core/arrayops.h include/simple-dsp/core/bounds.h include/simple-dsp/util/aligneddata.h include/simple-dsp/integration.h include/simple-dsp/iir.h include/simple-dsp/samplerate.h include/simple-dsp/biquad.h include/simple-dsp/butterworth.h include/simple-dsp/crossoverplan.h include/simple-dsp/linkwitz-riley-plan.h include/simple-dsp/sample-frame.h include/simple-dsp/util/queue.h include/simple-dsp/processnode.h include/simple-dsp/util/lock-fee-owner.hpp include/simple-dsp/util/timeout.h include/simple-dsp/core/size.h include/simple-dsp/core/bits.h include/simple-dsp/core/power2.h)
 set(SIMPLE_DSP_SRC src/simple-dsp/placeholder.cc)
@@ -47,7 +47,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${${PROJE
 include(GNUInstallDirs)
 
 # Define target directories
-install(TARGETS  ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME}
         EXPORT ${PROJECT_NAME}_Targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -68,7 +68,7 @@ install(EXPORT ${PROJECT_NAME}_Targets
         NAMESPACE ${PROJECT_NAME}::
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-              "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 
 # Same for pkg-config
@@ -83,4 +83,4 @@ set(TEST_PROJECT "test")
 add_executable(${TEST_PROJECT} ${SIMPLE_DSP_TESTS})
 target_include_directories(${TEST_PROJECT} BEFORE PRIVATE ${SIMPLE_DSP_HEADERS})
 target_link_libraries(${TEST_PROJECT} ${PROJECT_NAME} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
-include_directories(${TEST_PROJECT}  ${CMAKE_SOURCE_DIR}/include)
+include_directories(${TEST_PROJECT} ${CMAKE_SOURCE_DIR}/include)

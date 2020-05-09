@@ -141,7 +141,7 @@ public:
  */
 class MemoryFence {
 
-  static std::atomic<bool> & variable() {
+  static std::atomic<bool> &variable() {
     static std::atomic<bool> variable_;
     return variable_;
   }
@@ -198,6 +198,6 @@ public:
   }
 };
 
-} // namespace simpledsp
+} // namespace simpledsp::util
 
 #endif // SIMPLE_DSP_UTIL_GUARDS_HPP

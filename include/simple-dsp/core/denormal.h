@@ -209,8 +209,7 @@ template <typename FPTYPE> struct Normalize<FPTYPE, 8> {
 } // anonymous namespace
 } // namespace internal
 
-template <typename FPTYPE>
-class Denormal {
+template <typename FPTYPE> class Denormal {
 public:
   using Base = internal::Normalize<
       FPTYPE, !std::numeric_limits<FPTYPE>::is_iec559 ? 0 : sizeof(FPTYPE)>;

@@ -64,7 +64,6 @@ sdsp_nodiscard sdsp_force_inline constexpr T *assume_aligned(T *ptr) {
 
 namespace simpledsp {
 
-
 /**
  * Returns the value if it is already a multiple of power_of_two or the
  * next multiple of power_of_two otherwise. If power_of_two is not a power
@@ -75,13 +74,14 @@ namespace simpledsp {
  * of two.
  * @return the aligned value
  */
-template<typename size_type>
-static constexpr size_type get_aligned_with(size_type value, size_type alignment) {
+template <typename size_type>
+static constexpr size_type get_aligned_with(size_type value,
+                                            size_type alignment) {
   size_type filled = Bits<size_type>::fill(alignment >> 1);
   return (value + filled) & ~filled;
 }
 
-template<typename size_type>
+template <typename size_type>
 static constexpr bool is_aligned_with(const size_type value,
                                       const size_type power_of_two) {
   return value == get_aligned_with(value, power_of_two);
@@ -100,7 +100,6 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
 
   static_assert((ALIGNMENT >= sizeof(T)) && (ALIGNMENT % sizeof(T) == 0),
                 "Alignment must be a multiple of the type's size.'");
-
 
   static constexpr size_t alignment = ALIGNMENT;
   static constexpr size_t alignment_mask = alignment - 1;

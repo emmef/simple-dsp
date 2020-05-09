@@ -204,8 +204,7 @@ template <typename T, typename SIZE, int max_size_bits> struct Size {
   using size_type = SIZE;
   using Type = SizeType<size_type, max_size_bits>;
 
-  static constexpr size_type max =
-      Type::max_count_for_element_size(sizeof(T));
+  static constexpr size_type max = Type::max_count_for_element_size(sizeof(T));
   static constexpr size_type max_index =
       Type::max_index_for_element_size(sizeof(T));
   static constexpr size_type max_bit_mask =

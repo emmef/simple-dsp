@@ -37,7 +37,8 @@ class Interface {
   size_t bufferSize_;
 #if defined(SIMPLE_DSP_INTERFACE_SIZELIMIT) &&                                 \
     SIMPLE_DSP_INTERFACE_SIZELIMIT > 0
-  using Size_ = BaseElementCount<size_t, double, SIMPLE_DSP_INTERFACE_SIZELIMIT>::Size;
+  using Size_ =
+      BaseElementCount<size_t, double, SIMPLE_DSP_INTERFACE_SIZELIMIT>::Size;
 #else
   using Size_ = Size<double>::Size;
 #endif
@@ -70,8 +71,8 @@ public:
 
   template <typename freq>
   static Interface of(size_t inputs, size_t outputs,
-      SampleRateBase<freq> sampleRate, bool lockFree,
-      bool interleaved, size_t bufferSize) {
+                      SampleRateBase<freq> sampleRate, bool lockFree,
+                      bool interleaved, size_t bufferSize) {
     if (isValidCombination(inputs, outputs, bufferSize)) {
       return {inputs, outputs, sampleRate, lockFree, interleaved, bufferSize};
     }
@@ -80,9 +81,8 @@ public:
                                 "their combination is invalid.");
   }
 
-  static Interface of(size_t inputs, size_t outputs,
-      SampleRate sampleRate, bool lockFree,
-      bool interleaved, size_t bufferSize) {
+  static Interface of(size_t inputs, size_t outputs, SampleRate sampleRate,
+                      bool lockFree, bool interleaved, size_t bufferSize) {
     if (isValidCombination(inputs, outputs, bufferSize)) {
       return {inputs, outputs, sampleRate, lockFree, interleaved, bufferSize};
     }
@@ -101,8 +101,8 @@ public:
 
   Interface withInputs(size_t inputs) const {
     if (isValidCombination(inputs, outputs_, bufferSize_)) {
-      return {inputs, outputs_, sampleRate_, lockFree_, interleaved_,
-              bufferSize_};
+      return {inputs,    outputs_,     sampleRate_,
+              lockFree_, interleaved_, bufferSize_};
     }
     throw std::invalid_argument(
         "Interface::withInputs(inputs): Invalid number of inputs or "
@@ -111,8 +111,8 @@ public:
 
   Interface withOutputs(size_t outputs) const {
     if (isValidCombination(inputs_, outputs, bufferSize_)) {
-      return {inputs_, outputs, sampleRate_, lockFree_,
-              interleaved_, bufferSize_};
+      return {inputs_,   outputs,      sampleRate_,
+              lockFree_, interleaved_, bufferSize_};
     }
     throw std::invalid_argument(
         "Interface::withOutputs(outputs): Invalid number of outputs or "
@@ -121,8 +121,8 @@ public:
 
   Interface withBufferSize(size_t bufferSize) const {
     if (isValidCombination(inputs_, outputs_, bufferSize)) {
-      return {inputs_, outputs_, sampleRate_, lockFree_,
-              interleaved_, bufferSize};
+      return {inputs_,   outputs_,     sampleRate_,
+              lockFree_, interleaved_, bufferSize};
     }
     throw std::invalid_argument(
         "Interface::withBufferSize(bufferSize): Invalid buffer size or "
@@ -131,18 +131,18 @@ public:
 
   template <typename freq>
   Interface withSampleRate(SampleRateBase<freq> sampleRate) const noexcept {
-    return {inputs_, outputs_, sampleRate, lockFree_, interleaved_,
-            bufferSize_};
+    return {inputs_,   outputs_,     sampleRate,
+            lockFree_, interleaved_, bufferSize_};
   }
 
   Interface withLockFree(bool lockFree) const noexcept {
-    return {inputs_, outputs_, sampleRate_, lockFree, interleaved_,
-            bufferSize_};
+    return {inputs_,  outputs_,     sampleRate_,
+            lockFree, interleaved_, bufferSize_};
   }
 
   Interface withInterleaved(bool interleaved) const noexcept {
-    return {inputs_, outputs_, sampleRate_, lockFree_, interleaved,
-            bufferSize_};
+    return {inputs_,   outputs_,    sampleRate_,
+            lockFree_, interleaved, bufferSize_};
   }
 };
 

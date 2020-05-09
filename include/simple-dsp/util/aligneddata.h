@@ -198,6 +198,6 @@ private:
   T *data_ = nullptr;
 };
 
-} // namespace simpledsp
+} // namespace simpledsp::util
 
 #endif // SIMPLE_DSP_UTIL_ALIGNEDDATA_H

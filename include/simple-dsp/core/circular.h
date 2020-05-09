@@ -32,14 +32,14 @@ template <typename SIZE = size_t> struct CircularArithmic {
   using size_type = SIZE;
   using Type = SizeType<size_type>;
 
-  static constexpr size_type maximumMask = SizeType<size_type >::max_bit_mask;
+  static constexpr size_type maximumMask = SizeType<size_type>::max_bit_mask;
 
   sdsp_nodiscard static constexpr size_type
   proper_circular_size(size_type requestedSize) {
 
     return requestedSize > static_cast<size_type>(2)
-           ? Power2::same_or_bigger(requestedSize)
-           : static_cast<size_type>(2);
+               ? Power2::same_or_bigger(requestedSize)
+               : static_cast<size_type>(2);
   }
 
   sdsp_nodiscard static constexpr size_type
@@ -49,13 +49,13 @@ template <typename SIZE = size_t> struct CircularArithmic {
   }
 
   sdsp_nodiscard static constexpr size_type next(size_type circularPointer,
-                                              size_type uncheckedMask) {
+                                                 size_type uncheckedMask) {
 
     return (circularPointer + 1) & uncheckedMask;
   }
 
   sdsp_nodiscard static constexpr size_type previous(size_type circularPointer,
-                                                  size_type uncheckedMask) {
+                                                     size_type uncheckedMask) {
 
     return (circularPointer - 1) & uncheckedMask;
   }
@@ -71,28 +71,31 @@ template <typename SIZE = size_t> struct CircularArithmic {
     return (circularPointer + delta) & uncheckedMask;
   }
 
-  sdsp_nodiscard static constexpr size_type
-  subtract(size_type circularPointer, size_type delta, size_type uncheckedMask) {
+  sdsp_nodiscard static constexpr size_type subtract(size_type circularPointer,
+                                                     size_type delta,
+                                                     size_type uncheckedMask) {
 
     return (circularPointer + uncheckedMask + 1 - delta & uncheckedMask) &
            uncheckedMask;
   }
 
   sdsp_nodiscard static constexpr size_type
-  subtract_unsafe(size_type circularPointer, size_type delta, size_type uncheckedMask) {
+  subtract_unsafe(size_type circularPointer, size_type delta,
+                  size_type uncheckedMask) {
 
     return (delta & circularPointer + uncheckedMask + 1 - delta &
             uncheckedMask) &
            uncheckedMask;
   }
 
-  static constexpr void set_next(size_type &circularPointer, size_type uncheckedMask) {
+  static constexpr void set_next(size_type &circularPointer,
+                                 size_type uncheckedMask) {
 
     ++circularPointer &= uncheckedMask;
   }
 
   static constexpr void set_previous(size_type &circularPointer,
-                                    size_type uncheckedMask) {
+                                     size_type uncheckedMask) {
 
     --circularPointer &= uncheckedMask;
   }
@@ -110,7 +113,9 @@ public:
 
   sdsp_nodiscard size_type getMask() const { return mask; }
 
-  sdsp_nodiscard size_type wrap(size_type toWrap) const { return toWrap & mask; }
+  sdsp_nodiscard size_type wrap(size_type toWrap) const {
+    return toWrap & mask;
+  }
 
   sdsp_nodiscard size_type next(size_type pointer) const {
     return Arithmic::next(pointer, mask);
@@ -144,8 +149,8 @@ public:
   }
 };
 
-//using CircularArithmic = base::CircularArithmic<size_t>;
-//using CircularMetric = base::CircularMetric<size_t>;
+// using CircularArithmic = base::CircularArithmic<size_t>;
+// using CircularMetric = base::CircularMetric<size_t>;
 //
 } // namespace simpledsp
 
