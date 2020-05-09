@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_CORE_QUEUE_H
-#define SIMPLE_DSP_CORE_QUEUE_H
+#ifndef SIMPLE_DSP_UTIL_QUEUE_H
+#define SIMPLE_DSP_UTIL_QUEUE_H
 /*
- * simple-dsp/core/queue.h
+ * simple-dsp/util/queue.h
  *
  * Added by michel on 2019-11-21
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -473,4 +473,4 @@ using Queue = BaseQueue<Value, queue_position::Consistent,
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_CORE_QUEUE_H
+#endif // SIMPLE_DSP_UTIL_QUEUE_H

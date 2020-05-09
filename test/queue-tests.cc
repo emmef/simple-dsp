@@ -3,7 +3,7 @@
 //
 
 #include <boost/test/unit_test.hpp>
-#include <simple-dsp/core/queue.h>
+#include <simple-dsp/util/queue.h>
 #include <typeinfo>
 
 using Q = simpledsp::Queue<int>;

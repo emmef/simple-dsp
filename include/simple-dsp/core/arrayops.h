@@ -21,8 +21,8 @@
  * limitations under the License.
  */
 #include <cstddef>
-#include <simple-dsp/core/aligneddata.h>
 #include <simple-dsp/core/denormal.h>
+#include <simple-dsp/util/aligneddata.h>
 
 namespace simpledsp::arrayops {
 

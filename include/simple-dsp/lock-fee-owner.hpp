@@ -24,9 +24,9 @@
 #include <chrono>
 #include <cstddef>
 #include <random>
-#include <simple-dsp/core/queue.h>
 #include <simple-dsp/guards.h>
 #include <simple-dsp/timeout.h>
+#include <simple-dsp/util/queue.h>
 #include <thread>
 
 namespace simpledsp {

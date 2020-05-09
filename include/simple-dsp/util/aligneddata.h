@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_CORE_ALIGNEDDATA_H
-#define SIMPLE_DSP_CORE_ALIGNEDDATA_H
+#ifndef SIMPLE_DSP_UTIL_ALIGNEDDATA_H
+#define SIMPLE_DSP_UTIL_ALIGNEDDATA_H
 /*
- * simple-dsp/core/aligneddata.h
+ * simple-dsp/util/aligneddata.h
  *
  * Added by michel on 2019-09-12
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -27,8 +27,8 @@ namespace simpledsp {
 
 template <typename T, size_t ALIGNMENT, class Data> struct AlignedData {
   using Metric = Aligned<T, ALIGNMENT>;
-  using UnsafeIndex = index::Unsafe<size_t>;
-  using MethodIndex = index::Safe<size_t>;
+  using UnsafeIndex = Index::Unsafe<size_t>;
+  using MethodIndex = Index::Safe<size_t>;
 
   using value_type = T;
   using pointer = T *;
@@ -200,4 +200,4 @@ private:
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_CORE_ALIGNEDDATA_H
+#endif // SIMPLE_DSP_UTIL_ALIGNEDDATA_H
