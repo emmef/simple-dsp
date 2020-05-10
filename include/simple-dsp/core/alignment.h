@@ -105,7 +105,7 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
   static constexpr size_t alignment_mask = alignment - 1;
   static constexpr size_t elementSize = sizeof(T);
   static constexpr size_t alignmentElements = ALIGNMENT / sizeof(T);
-  static constexpr size_t maximumElements = Size<T>::max;
+  static constexpr size_t maximumElements = SizeFor<T>::max;
   static constexpr size_t maximumFrames = maximumElements / alignmentElements;
 
   using type = T;
@@ -156,7 +156,7 @@ template <typename T> struct BaseAlignedMetric<T, 0> {
   static constexpr size_t alignment = 0;
   static constexpr size_t elementSize = sizeof(T);
   static constexpr size_t alignmentElements = 1;
-  static constexpr size_t maximumElements = Size<T>::max;
+  static constexpr size_t maximumElements = SizeFor<T>::max;
   static constexpr size_t maximumFrames = maximumElements;
   using type = T;
 

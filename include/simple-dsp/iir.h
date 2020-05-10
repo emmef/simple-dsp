@@ -47,7 +47,7 @@ static size_t iir_get_valid_order(size_t order) {
  * @tparam T type of coefficent values
  */
 struct IIRCoefficientsSetter {
-  using Check = Index::Throw<size_t>;
+  using Check = Index::Checked<size_t>;
 
   sdsp_nodiscard virtual unsigned getOrder() const = 0;
   sdsp_nodiscard virtual unsigned getMaxOrder() const = 0;

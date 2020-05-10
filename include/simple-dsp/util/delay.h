@@ -29,84 +29,98 @@
 
 namespace simpledsp::util {
 
+/*
+ *   sdsp_nodiscard static bool is_valid_delay
+
+  sdsp_nodiscard static WrappedIndex get_index_for(size_type delay) {
+    size_type effectiveDelay = std::max(delay, min_delay());
+    WrappedIndex::is_valid_element_count(effectiveDelay)
+  }
+
+ */
+
 /**
  * Define how a delay is used, which also affects the possible delays, given a
  * buffer size.
  */
 enum class DelayAccessType { READ_THEN_WRITE, WRITE_THEN_READ };
 
-template <DelayAccessType accessType> struct DelayBasics;
+template <typename size_type, DelayAccessType access_type> struct DelayStatics;
 
-template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
+template <typename size_type>
+struct DelayStatics<size_type, DelayAccessType::READ_THEN_WRITE> {
+  static constexpr size_type minimum = 1;
 
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType getMinimumDelay() {
-    return 1;
+  static constexpr size_type elements_for_delay(size_type delay) noexcept {
+    return delay;
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType
-  getMaximumDelay(const CircularMetric<SizeType> &metric) {
-    return metric.getSize();
+  static constexpr size_type elements_for_delay(size_type delay) noexcept {
+    return delay;
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr bool
-  isValidDelay(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
-    return is_within(delaySamples, getMinimumDelay<SizeType>(),
-                     getMaximumDelay<SizeType>(metric));
+
+};
+
+  template <DelayAccessType accessType, WrappingType wrappingType,
+            size_t element_size, typename size_type, int max_size_bits>
+  struct DelayBasics;
+
+  template <WrappingType wrappingType, size_t element_size, typename size_type,
+            int max_size_bits>
+  struct DelayBasics<DelayAccessType::READ_THEN_WRITE, wrappingType,
+                     element_size, size_type, max_size_bits> {
+
+    using WrappedIndex =
+        WrappedIndex<wrappingType, element_size, size_type, max_size_bits>;
+
+    WrappedIndex index;
+
+    static constexpr size_type min_delay_value = 1;
+    static constexpr size_type max_delay_value =
+        WrappedIndex::max_element_count;
+    sdsp_nodiscard static bool is_valid_delay_value(size_type delay) {
+      return is_within(delay, min_delay_value, max_delay_value);
+    }
+
+    sdsp_nodiscard static constexpr size_type
+    get_allocation_size(size_type delaySamples) {
+      return WrappedIndex::get_allocation_size_for(delaySamples);
+    }
+  };
+
+  DelayBasics(const WrappedIndex &wrappedIndex) : index(wrappedIndex) {}
+
+  sdsp_nodiscard constexpr size_type getMaximumDelay() { return index.size(); }
+
+  sdsp_nodiscard constexpr bool isValidDelay(size_type delaySamples) {
+    return WrappedIndex::is_valid_element_count(delaySamples);
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType
-  getUncheckedDelta(const CircularMetric<SizeType> &metric,
-                    SizeType delaySamples) {
-    return metric.wrap(delaySamples);
-  }
-
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType
-  getValidDelay(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
-    if (isValidDelay<SizeType>(metric, delaySamples)) {
+  sdsp_nodiscard constexpr size_type getValidDelay(size_type delaySamples) {
+    if (isValidDelay(delaySamples)) {
       return delaySamples;
     }
     throw std::invalid_argument("Basics::getDelta: delaySamples must lie "
                                 "between 1 and the buffer size");
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static SizeType
-  getDelta(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
-    return getUncheckedDelta<SizeType>(
-        metric, getValidDelay<SizeType>(metric, delaySamples));
+  sdsp_nodiscard constexpr size_type getUncheckedDelta(size_type delaySamples) {
+    return index.wrap(delaySamples);
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType
-  getAllocationSize(SizeType delaySamples) {
-    return CircularArithmic<SizeType>::proper_circular_size(delaySamples);
+  sdsp_nodiscard size_type getDelta(size_type delaySamples) {
+    return getUncheckedDelta(getValidDelay(delaySamples));
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static SizeType
-  getReadPtrForDelay(const CircularMetric<SizeType> &metric, SizeType writePtr,
-                     SizeType delay) {
-    SizeType validDelay = getValidDelay(metric, delay);
-    return metric.subtract(writePtr, validDelay);
+  sdsp_nodiscard size_type getReadPtrForDelay(size_type writePtr,
+                                              size_type delay) {
+    return index.sub(writePtr, getValidDelay(delay));
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static SizeType
-  getWritePtrForDelay(const CircularMetric<SizeType> &metric, SizeType readPtr,
-                      SizeType delay) {
-    SizeType validDelay = getValidDelay(metric, delay);
-    return metric.add(readPtr, validDelay);
-  }
-
-  template <typename SizeType>
-  sdsp_nodiscard static CircularMetric<SizeType>
-  createMetricFor(SizeType delaySamples) {
-    return CircularArithmic<SizeType>(delaySamples);
+  sdsp_nodiscard size_type getWritePtrForDelay(size_type readPtr,
+                                               size_type delay) {
+    return index.add(readPtr, getValidDelay(delay));
   }
 
   template <typename Sample>
@@ -124,71 +138,61 @@ template <> struct DelayBasics<DelayAccessType::READ_THEN_WRITE> {
     write = value;
     return result;
   }
-};
+}; // namespace simpledsp::util
 
-template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
+template <WrappingType wrappingType, size_t element_size, typename size_type,
+          int max_size_bits>
+struct DelayBasics<DelayAccessType::WRITE_THEN_READ, wrappingType, element_size,
+                   size_type, max_size_bits> {
 
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType getMinimumDelay() {
-    return 0;
+  using WrappedIndex =
+      WrappedIndex<wrappingType, element_size, size_type, max_size_bits>;
+  WrappedIndex index;
+
+  struct Static {
+    sdsp_nodiscard static constexpr size_type min_delay() { return 0; }
+    sdsp_nodiscard static constexpr size_type max_delay() {
+      return WrappedIndex::max_element_count - 1;
+    }
+    sdsp_nodiscard static constexpr size_type
+    getAllocationSize(size_type delaySamples) {
+      return WrappedIndex::get_allocation_size_for(delaySamples + 1);
+    }
+  };
+
+  DelayBasics(const WrappedIndex &wrappedIndex) : index(wrappedIndex) {}
+
+  sdsp_nodiscard constexpr size_type getMaximumDelay() {
+    return index.size() - 1;
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType
-  getMaximumDelay(const CircularMetric<SizeType> &metric) {
-    return metric.getSize() - 1;
+  sdsp_nodiscard constexpr bool isValidDelay(size_type delaySamples) {
+    return is_within(delaySamples, getMinimumDelay(), getMaximumDelay());
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType
-  getAllocationSize(SizeType delaySamples) {
-    return CircularArithmic<SizeType>::proper_circular_size(delaySamples + 1);
-  }
-
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr bool
-  isValidDelay(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
-    return is_within(delaySamples, getMinimumDelay<SizeType>(),
-                     getMaximumDelay<SizeType>(metric));
-  }
-
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType
-  getUncheckedDelta(const CircularMetric<SizeType> &metric,
-                    SizeType delaySamples) {
-    return metric.wrap(delaySamples);
-  }
-
-  template <typename SizeType>
-  sdsp_nodiscard static constexpr SizeType
-  getValidDelay(const CircularMetric<SizeType> &metric, SizeType delaySamples) {
-    if (isValidDelay<SizeType>(metric, delaySamples)) {
+  sdsp_nodiscard constexpr size_type getValidDelay(size_type delaySamples) {
+    if (isValidDelay(delaySamples)) {
       return delaySamples;
     }
     throw std::invalid_argument("Basics::getDelta: delaySamples must lie "
                                 "between 0 and the buffer size - 1");
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static SizeType
-  getReadPtrForDelay(const CircularMetric<SizeType> &metric, SizeType writePtr,
-                     SizeType delay) {
-    SizeType validDelay = getValidDelay(metric, delay);
+  sdsp_nodiscard static constexpr size_type
+  getUncheckedDelta(size_type delaySamples) {
+    return metric.wrap(delaySamples);
+  }
+
+  sdsp_nodiscard static size_type getReadPtrForDelay(size_type writePtr,
+                                                     size_type delay) {
+    size_type validDelay = getValidDelay(metric, delay);
     return metric.subtract(writePtr, validDelay);
   }
 
-  template <typename SizeType>
-  sdsp_nodiscard static SizeType
-  getWritePtrForDelay(const CircularMetric<SizeType> &metric, SizeType readPtr,
-                      SizeType delay) {
-    SizeType validDelay = getValidDelay(metric, delay);
+  sdsp_nodiscard static size_type getWritePtrForDelay(size_type readPtr,
+                                                      size_type delay) {
+    size_type validDelay = getValidDelay(metric, delay);
     return metric.add(readPtr, validDelay);
-  }
-
-  template <typename SizeType>
-  sdsp_nodiscard static CircularMetric<SizeType>
-  createMetricFor(SizeType delaySamples) {
-    return CircularArithmic<SizeType>(delaySamples + 1);
   }
 
   template <typename Sample>
@@ -206,15 +210,15 @@ template <> struct DelayBasics<DelayAccessType::WRITE_THEN_READ> {
   }
 };
 
-template <typename SizeType, DelayAccessType accessType, class Container>
+template <typename size_type, DelayAccessType accessType, class Container>
 class DelayOffsetsBase {
 
 public:
   using Basics = DelayBasics<accessType>;
-  using Metric = CircularMetric<SizeType>;
+  using Metric = WrappedIndex;
 
   template <typename... args>
-  explicit DelayOffsetsBase(SizeType initialMetricSize, args... arguments)
+  explicit DelayOffsetsBase(size_type initialMetricSize, args... arguments)
       : metric_(initialMetricSize), container_(arguments...) {}
 
   explicit DelayOffsetsBase(const DelayOffsetsBase &source) = delete;
@@ -223,41 +227,44 @@ public:
   sdsp_nodiscard const Metric &getMetric() const { return metric_; }
 
   void next() {
-    for (SizeType &offset : container_) {
+    for (size_type &offset : container_) {
       metric_.setNext(offset);
     }
   }
 
   void reset() {
-    for (SizeType &offset : container_) {
+    for (size_type &offset : container_) {
       offset = 0;
     }
   }
 
-  sdsp_nodiscard SizeType size() const { return container_.size(); }
+  sdsp_nodiscard size_type size() const { return container_.size(); }
 
-  sdsp_nodiscard SizeType getOffset(SizeType i) const {
+  sdsp_nodiscard size_type getOffset(size_type i) const {
     return container_.at(i);
   }
 
-  sdsp_nodiscard SizeType operator[](SizeType i) const { return container_[i]; }
+  sdsp_nodiscard size_type operator[](size_type i) const {
+    return container_[i];
+  }
 
-  sdsp_nodiscard const SizeType *ref(SizeType i) const {
+  sdsp_nodiscard const size_type *ref(size_type i) const {
     return container_.data() + Index::safe(i, container_.size());
   }
 
-  sdsp_nodiscard const SizeType *operator+(SizeType i) const {
+  sdsp_nodiscard const size_type *operator+(size_type i) const {
     return container_.data() + Index::unsafe(i, container_.size());
   }
 
-  sdsp_nodiscard SizeType setWriteForDelay(SizeType readIndex,
-                                           SizeType writeIndex,
-                                           SizeType delay) {
+  sdsp_nodiscard size_type setWriteForDelay(size_type readIndex,
+                                            size_type writeIndex,
+                                            size_type delay) {
     return setAndGetWriteDelay(readIndex, writeIndex, delay);
   }
 
-  sdsp_nodiscard SizeType setReadForDelay(SizeType readIndex,
-                                          SizeType writeIndex, SizeType delay) {
+  sdsp_nodiscard size_type setReadForDelay(size_type readIndex,
+                                           size_type writeIndex,
+                                           size_type delay) {
     return setAndGetReadDelay(readIndex, writeIndex, delay);
   }
 
@@ -272,19 +279,19 @@ private:
   Metric metric_;
   Container container_;
 
-  SizeType setAndGetWriteDelay(SizeType readIndex, SizeType writeIndex,
-                               SizeType delay) {
-    SizeType result = metric_.add(container_.at(readIndex),
-                                  Basics::getValidDelay(metric_, delay));
+  size_type setAndGetWriteDelay(size_type readIndex, size_type writeIndex,
+                                size_type delay) {
+    size_type result = metric_.add(container_.at(readIndex),
+                                   Basics::getValidDelay(metric_, delay));
     container_.at(writeIndex) = metric_.add(
         container_.at(readIndex), Basics::getValidDelay(metric_, delay));
     return result;
   }
 
-  SizeType setAndGetReadDelay(SizeType readIndex, SizeType writeIndex,
-                              SizeType delay, bool check) {
-    SizeType result = check ? Basics::getValidDelay(metric_, delay)
-                            : Basics::getUncheckedDelta(metric_, delay);
+  size_type setAndGetReadDelay(size_type readIndex, size_type writeIndex,
+                               size_type delay, bool check) {
+    size_type result = check ? Basics::getValidDelay(metric_, delay)
+                             : Basics::getUncheckedDelta(metric_, delay);
     container_.at(readIndex) =
         metric_.subtract(container_.at(writeIndex), result);
     return result;

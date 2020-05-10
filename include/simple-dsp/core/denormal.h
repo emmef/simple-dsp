@@ -26,85 +26,10 @@
 #include <limits>
 #include <type_traits>
 
-#if defined(__SSE__) &&                                                        \
-    (defined(__amd64__) || defined(__x86_64__) || defined(__i386__))
-#include <xmmintrin.h>
-#define SDSP_SSE_INSTRUCTIONS_AVAILABLE 1
-#else
-#undef SSE_INSTRUCTIONS_AVAILABLE
-#endif
-
 namespace simpledsp {
-// RAII FPU state class, sets FTZ and DAZ and rounding, no exceptions
-// Adapted from code by mystran @ kvraudio
-// http://www.kvraudio.com/forum/viewtopic.php?t=312228&postdays=0&postorder=asc&start=0
-
-namespace sse {
-
-enum class Rounding {
-  kRoundNearest = 0,
-  kRoundNegative,
-  kRoundPositive,
-  kRoundToZero,
-};
-
-static bool supports_sse_state() noexcept {
-#ifdef SDSP_SSE_INSTRUCTIONS_AVAILABLE
-  return true;
-#else
-  return false;
-#endif
-}
-
-static unsigned int get_sse_state() {
-#ifdef SDSP_SSE_INSTRUCTIONS_AVAILABLE
-  return _mm_getcsr();
-#else
-  return 0;
-#endif
-}
-
-static void set_sse_rounding_mode(Rounding mode) {
-#ifdef SDSP_SSE_INSTRUCTIONS_AVAILABLE
-  // bits: 15 = flush to zero | 6 = denormals are zero
-  // bitwise-OR with exception masks 12:7 (exception flags 5:0)
-  // rounding 14:13, 00 = nearest, 01 = neg, 10 = pos, 11 = to zero
-  // The enum above is defined in the same order so just shift it up
-  _mm_setcsr(0x8040 | 0x1f80 | ((unsigned int)mode << 13));
-#endif
-}
-
-static void set_sse_state(unsigned int state) {
-#ifdef SDSP_SSE_INSTRUCTIONS_AVAILABLE
-  // clear exception flags, just in case (probably pointless)
-  _mm_setcsr(state & (~0x3f));
-#endif
-}
-
-class ZFPUState {
-private:
-#ifdef SDSP_SSE_INSTRUCTIONS_AVAILABLE
-  unsigned int sse_control_store;
-#endif
-public:
-  ZFPUState(Rounding mode = Rounding::kRoundToZero) {
-#ifdef SDSP_SSE_INSTRUCTIONS_AVAILABLE
-    sse_control_store = get_sse_state();
-    set_sse_rounding_mode(mode);
-#endif
-  }
-
-  ~ZFPUState() {
-#ifdef SDSP_SSE_INSTRUCTIONS_AVAILABLE
-    set_sse_state(sse_control_store);
-#endif
-  }
-};
-
-} // namespace sse
 
 namespace internal {
-namespace {
+
 template <typename FPTYPE, size_t selector> struct Normalize {
   static_assert(std::is_floating_point<FPTYPE>::value,
                 "FPTYPE must be a floating-point type");
@@ -129,11 +54,9 @@ template <typename FPTYPE, size_t selector> struct Normalize {
 template <typename FPTYPE> struct Normalize<FPTYPE, 0> {
   static inline FPTYPE get_flushed(FPTYPE value) { return value; }
 
-  static inline FPTYPE flush(FPTYPE &value) { return value; }
+  static inline void flush(FPTYPE &value) { return value; }
 
   static constexpr bool normalizes = false;
-
-  static constexpr size_t bits = 8 * sizeof(FPTYPE);
 
   static const char *method() { return "None: Not IEEE-559 compliant"; }
 };
@@ -168,8 +91,6 @@ template <typename FPTYPE> struct Normalize<FPTYPE, 4> {
 
   static constexpr bool normalizes = true;
 
-  static constexpr size_t bits = 8 * sizeof(FPTYPE);
-
   static const char *method() { return "IEEE-559 32-bit single precision"; }
 };
 
@@ -199,27 +120,62 @@ template <typename FPTYPE> struct Normalize<FPTYPE, 8> {
     value = 0.0;
   }
 
-  static constexpr bool normalizes = false;
-
   static constexpr size_t bits = 8 * sizeof(FPTYPE);
 
   static const char *method() { return "IEEE-559 64-bit double precision"; }
 };
 
-} // anonymous namespace
 } // namespace internal
 
-template <typename FPTYPE> class Denormal {
-public:
-  using Base = internal::Normalize<
-      FPTYPE, !std::numeric_limits<FPTYPE>::is_iec559 ? 0 : sizeof(FPTYPE)>;
+class Normalization {
+  template <typename T>
+  using Base =
+      internal::Normalize<T,
+                          !std::numeric_limits<T>::is_iec559 ? 0 : sizeof(T)>;
 
-  using Base::flush;
-  using Base::get_flushed;
-  using Base::method;
-  static inline FPTYPE flush_and_get(FPTYPE &value) {
+public:
+  /**
+   * Returns whether normalization for the floating point type is supported.
+   * Support is purely algorithmic and says nothing about performance impact of
+   * denormal numbers on the particular processor architecture.
+   */
+  template <typename FPTYPE> static constexpr bool supported() noexcept {
+    return Base<FPTYPE>::normalizes;
+  }
+
+  /**
+   * Flushes value to zero if it is denormal and the floating point type is
+   * iec559 compliant and does nothing otherwise.
+   */
+  template <typename FPTYPE> static inline void flush(FPTYPE &value) noexcept {
+    Base<FPTYPE>::flush(value);
+  }
+
+  /**
+   * Returns value or zero if it is denormal and the floating point type is
+   * iec559 compliant.
+   */
+  template <typename FPTYPE>
+  static inline FPTYPE get_flushed(FPTYPE value) noexcept {
+    return Base<FPTYPE>::get_flushed(value);
+  }
+
+  /**
+   * Returns value, where value if set to zero if it is denormal and the
+   * floating point type is iec559 compliant.
+   */
+  template <typename FPTYPE> static inline FPTYPE flush_and_get(FPTYPE &value) {
     flush(value);
     return value;
+  }
+
+  /**
+   * Returns a brief description of the type of floatingpoint type with regards
+   * to denormal representations.
+   */
+  template <typename FPTYPE>
+  static inline const char *denormalization_type() noexcept {
+    return Base<FPTYPE>::method();
   }
 };
 

@@ -29,53 +29,52 @@ namespace simpledsp {
 template <typename size_type = size_t> struct PowerTwo {
 
   /**
-   * Returns whether value is a power of two.
-   * @param value The value.
-   * @return true if value if a power of two, false oherwise.
+   * @return true if value is a power of two, false oherwise.
    */
-  static constexpr bool is(const size_type value) {
+  static constexpr bool is(const size_type value) noexcept {
     return value >= 2 && is_minus_one(value - 1);
   }
 
   /**
-   * Returns whether value is a power of two minus one.
-   * @param value The value.
-   * @return true if value if a power of two minus one, false oherwise.
+   * @return true if value is a power of two minus one, false oherwise.
    */
-  static constexpr bool is_minus_one(const size_type value) {
+  static constexpr bool is_minus_one(const size_type value) noexcept {
     return value != 0 && Bits<size_type>::fill(value) == value;
   }
 
   /**
-   * Returns value if it is a power of two or else the next greater power of
-   * two.
-   * @param The value
-   * @return value if it is a power of two or else the next greater power of
-   * two.
+   * @return value if it is a power of two, the next greater power of
+   * two if that fits inside size_type and zero otherwise.
    */
-  static constexpr size_type same_or_bigger(const size_type value) {
+  static constexpr size_type same_or_bigger(const size_type value) noexcept {
     return value <= 2 ? 2 : Bits<size_type>::fill(value - 1) + 1;
   }
 };
 
 struct Power2 {
-  template <typename size_type>
-  static constexpr size_type fill(const size_type n) {
-    return PowerTwo<size_type>::fill(n);
-  };
 
+  /**
+   * @return true if value is a power of two, false oherwise.
+   */
   template <typename size_type>
-  static constexpr bool is_minus_one(const size_type value) {
-    return PowerTwo<size_type>::is_minus_one(value);
-  }
-
-  template <typename size_type>
-  static constexpr bool is(const size_type value) {
+  static constexpr bool is(const size_type value) noexcept {
     return PowerTwo<size_type>::is(value);
   }
 
+  /**
+   * @return true if value is a power of two minus one, false oherwise.
+   */
   template <typename size_type>
-  static constexpr size_type same_or_bigger(const size_type value) {
+  static constexpr bool is_minus_one(const size_type value) noexcept {
+    return PowerTwo<size_type>::is_minus_one(value);
+  }
+
+  /**
+   * @return value if it is a power of two, the next greater power of
+   * two if that fits inside size_type and zero otherwise.
+   */
+  template <typename size_type>
+  static constexpr size_type same_or_bigger(const size_type value) noexcept {
     return PowerTwo<size_type>::same_or_bigger(value);
   }
 };

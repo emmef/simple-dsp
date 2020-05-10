@@ -10,7 +10,7 @@
 
 namespace {
 constexpr const size_t SIZE = 16;
-simpledsp::CircularMetric metric({SIZE});
+simpledsp::WrappedIndexFor<true, metric(SIZE);
 using ReadFirstDelay =
     simpledsp::util::DelayBasics<simpledsp::util::DelayAccessType::READ_THEN_WRITE>;
 using WriteFirstDelay =
@@ -34,7 +34,7 @@ struct Delay {
     int failures = 0;
     int expected = 0;
     int actual = 0;
-    for (size_t time = 0; time <= delay + metric.getSize(); time++) {
+    for (size_t time = 0; time <= delay + metric.size(); time++) {
       int delayed = access(time);
       if (time >= delay) {
         if (delayed != int(time - delay)) {
@@ -146,15 +146,15 @@ class TestCaseGenerator {
 
 public:
   TestCaseGenerator() {
-    for (size_t start = 0; start < metric.getSize(); start++) {
+    for (size_t start = 0; start < metric.size(); start++) {
       for (Configuration config : {Configuration::READ_THEN_DELTA_WRITE,
                                    Configuration::WRITE_THEN_DELTA_READ}) {
-        for (size_t delay = 1; delay <= metric.getSize(); delay++) {
+        for (size_t delay = 1; delay <= metric.size(); delay++) {
           parameters.push_back({start, delay,
                                 simpledsp::util::DelayAccessType::READ_THEN_WRITE,
                                 config});
         }
-        for (size_t delay = 0; delay < metric.getSize(); delay++) {
+        for (size_t delay = 0; delay < metric.size(); delay++) {
           parameters.push_back({start, delay,
                                 simpledsp::util::DelayAccessType::WRITE_THEN_READ,
                                 config});
@@ -192,14 +192,14 @@ BOOST_AUTO_TEST_CASE(testWriteFirstZeroDelayIsZero) {
 }
 
 BOOST_AUTO_TEST_CASE(testReadFirstMaxDelayIsMax) {
-  BOOST_CHECK_EQUAL(ReadFirstDelay::getValidDelay(metric, metric.getSize()),
-                    metric.getSize());
+  BOOST_CHECK_EQUAL(ReadFirstDelay::getValidDelay(metric, metric.size()),
+                    metric.size());
 }
 
 BOOST_AUTO_TEST_CASE(testWriteFirsMaxDelayIsInvalid) {
   size_t r;
   BOOST_CHECK_THROW(
-      r = WriteFirstDelay::getValidDelay(metric, metric.getSize()),
+      r = WriteFirstDelay::getValidDelay(metric, metric.size()),
       std::invalid_argument);
 }
 

@@ -7,7 +7,6 @@
 #include <chrono>
 #include <iostream>
 #include <simple-dsp/integration.h>
-#include <simple-dsp/util/delay.h>
 
 using FloatMultipliers = simpledsp::IntegrationMulipliers<float>;
 using DoubleMultipliers = simpledsp::IntegrationMulipliers<double>;

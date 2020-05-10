@@ -52,11 +52,11 @@ public:
 
   T &operator[](size_t i) { return x_[Index::unsafe(i, N)]; }
 
-  const T &operator[](size_t i) const { return x_[Index::Array::index(i, N)]; }
+  const T &operator[](size_t i) const { return x_[Index::unsafe(i, N)]; }
 
-  T &ref(size_t i) { return x_[Index::Method::index(i, N)]; }
+  T &ref(size_t i) { return x_[Index::safe(i, N)]; }
 
-  const T &ref(size_t i) const { return x_[Index::Method::index(i, N)]; }
+  const T &ref(size_t i) const { return x_[Index::safe(i, N)]; }
 
   SampleFrame &operator+=(const SampleFrame &value) {
     for (T *dst = &x_, *src = &value.x_; dst < &x_ + this->N; ++dst, ++src) {

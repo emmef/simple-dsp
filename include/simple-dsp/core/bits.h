@@ -25,12 +25,16 @@
 
 namespace simpledsp {
 
+/**
+ * Defines various bit-related operations for a size-like type.
+ * @tparam size_type An integral, unsigned type.
+ */
 template <typename size_type = size_t> class Bits {
   static_assert(std::is_integral<size_type>::value &&
                     !std::is_signed<size_type>::value,
                 "PowerOfTwo:: Type must be an integral, unsigned type");
 
-  template <int N> static constexpr size_type fillN(const size_type n) {
+  template <int N> static constexpr size_type fillN(size_type n) noexcept {
     return N < 2 ? n : fillN<N / 2>(n) | (fillN<N / 2>(n) >> (N / 2));
   };
 
@@ -41,16 +45,16 @@ public:
    * @return value with all bits set that are less siginificant than the most
    * significant bit.
    */
-  static constexpr size_type fill(const size_type value) {
+  static constexpr size_type fill(size_type value) noexcept {
     return fillN<8 * sizeof(size_type)>(value);
   };
 
   /**
-   * @param value The value to test.
-   * @return The most significant set bit number.
-   * Bit numbers range from zero to sizeof(size_type) - 1.
+   * Returns the number of the most significant bit in value or -1 when value is
+   * zero. The number of the least significant bit is zero.
+   * @return the number of the most significant bit set, or -1 if value is zero.
    */
-  static constexpr int most_significant(const size_type value) {
+  static constexpr int most_significant(size_type value) noexcept {
     int bit = sizeof(size_type) * 8 - 1;
     while (bit >= 0 && (value & (size_type(1) << bit)) == 0) {
       bit--;
@@ -59,12 +63,13 @@ public:
   }
 
   /**
-   * @param value The value to test.
-   * @return The  most significant set bit number if only a single bit is set or
-   * - 1 minus the next most singnificant bit set. Bit numbers range from zero
-   * to sizeof(size_type) - 1.
+   * Returns the number of the most significant bit in value when it is a power
+   * of two, or -1 when value is zero. The number of the least significant bit
+   * is zero. If value is not a power of two, this function returns minus one
+   * minus the number of the second most significant bit.
+   * @return the number of the most significant bit set, or -1 if value is zero.
    */
-  static constexpr int most_significant_single(const size_type value) {
+  static constexpr int most_significant_single(size_type value) noexcept {
     int bit = sizeof(size_type) * 8 - 1;
     while (bit >= 0 && (value & (size_type(1) << bit)) == 0) {
       bit--;
@@ -83,11 +88,21 @@ public:
   }
 
   /**
-   * Returns an offset mask to use for offsets inside a space of size
-   * same_or_bigger(value)..
+   * Returns a bit mask that can be used to wrap addresses that include the
+   * specified index. The minimum returned mask is 1.
+   * @return the bit mask that includes index.
    */
-  static constexpr size_type surrounding_mask(const size_type value) {
-    return value <= 2 ? 1 : fill(value - 1);
+  static constexpr size_type bit_mask_including(size_type index) noexcept {
+    return index < 2 ? 1 : fill(index);
+  }
+
+  /**
+   * Returns a bit mask that can be used to wrap addresses that must not exceed
+   * the specified index. The minimum returned mask is 1.
+   * @return the bit mask that includes index.
+   */
+  static constexpr size_type bit_mask_not_exceeding(size_type index) noexcept {
+    return index < 2 ? 1 : fill(index) == index ? index : fill(index) >> 1;
   }
 };
 

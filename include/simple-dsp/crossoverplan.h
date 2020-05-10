@@ -143,7 +143,7 @@ public:
    * @param crossovers The number of crossovers, that must be one or larger
    */
   CrossoverPlan(size_t crossovers)
-      : steps_(new Step[Size<Step>::get_valid_size(crossovers)]),
+      : steps_(new Step[SizeFor<Step>(crossovers)]),
         crossovers_(crossovers) {
     create(steps_, crossovers);
   }

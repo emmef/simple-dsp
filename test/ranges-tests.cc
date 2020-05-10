@@ -16,7 +16,7 @@ namespace {
 
 static constexpr int SIZE_BITS = 10;
 static constexpr size_t SIZE_LIMIT = size_t(1) << SIZE_BITS;
-using FixedRange = simpledsp::Size<char, size_t, SIZE_BITS>;
+using FixedRange = simpledsp::Size<1, size_t, SIZE_BITS>;
 
 using Functions = simpledsp::testhelper::FunctionTestCases;
 
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(testAdditionValid) {
   size_t v1 = 5;
   size_t v2 = 128;
   size_t sum = v1 + v2;
-  FixedRange size = v1;
+  FixedRange size(v1);
 
   BOOST_CHECK_EQUAL(size + v2, sum);
 }
@@ -216,8 +216,8 @@ BOOST_AUTO_TEST_CASE(testAdditionValid) {
 BOOST_AUTO_TEST_CASE(testAdditionTooLarge) {
   size_t v1 = 900;
   size_t v2 = 128;
-  FixedRange size = v1;
-  FixedRange result = 1;
+  FixedRange size(v1);
+  FixedRange result(1);
 
   BOOST_CHECK_THROW(result = size + v2, std::invalid_argument);
 }
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(testProductValid) {
   size_t v1 = 5;
   size_t v2 = 128;
   size_t product = v1 * v2;
-  FixedRange size = v1;
+  FixedRange size(v1);
 
   BOOST_CHECK_EQUAL(size * v2, product);
 }
@@ -234,8 +234,8 @@ BOOST_AUTO_TEST_CASE(testProductValid) {
 BOOST_AUTO_TEST_CASE(testProductTooLarge) {
   size_t v1 = 900;
   size_t v2 = 128;
-  FixedRange size = v1;
-  FixedRange result = 1;
+  FixedRange size(v1);
+  FixedRange result(1);
 
   BOOST_CHECK_THROW(result = size * v2, std::invalid_argument);
 }

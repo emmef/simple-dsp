@@ -243,13 +243,13 @@ class DefaultData : public DataTraits<Value, DefaultData<Value>> {
         "BaseQueue<V>: Given capacity zero or too large for value type.");
   }
 
-  Size<Value> capacity_;
+  SizeFor<Value> capacity_;
   Value *data_;
 
 public:
   DefaultData(size_t capacity)
       : capacity_(validCapacity(capacity)), data_(new Value[capacity_ + 1lu]) {}
-  static constexpr size_t maxCapacity = Size<Value>::max_index;
+  static constexpr size_t maxCapacity = SizeFor<Value>::max_index;
 
   sdsp_nodiscard size_t capacityTrait() const noexcept { return capacity_; }
 
