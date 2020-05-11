@@ -28,173 +28,87 @@
 
 namespace simpledsp {
 
-namespace internal {
-enum class IndexPolicyType { THROW, WRAP, UNCHECKED };
+struct Index {
 
-template <typename SizeType, IndexPolicyType type> struct IndexPolicyBase;
-
-template <typename SizeType>
-struct IndexPolicyBase<SizeType, IndexPolicyType::THROW> {
-  sdsp_nodiscard static SizeType index(SizeType i, SizeType size) {
-    if (i < size) {
-      return i;
+  template <typename S> sdsp_nodiscard static S checked(S index, S size) {
+    if (index < size) {
+      return index;
     }
     throw std::invalid_argument("IndexPolicy::index out of range");
   }
-  sdsp_nodiscard static SizeType index_incl(SizeType o,
-                                            SizeType inclusive_max) {
-    if (o <= inclusive_max) {
-      return o;
-    }
-    throw std::invalid_argument("IndexPolicy::offset out of range");
-  }
-};
 
-template <typename SizeType>
-struct IndexPolicyBase<SizeType, IndexPolicyType::WRAP> {
-  sdsp_nodiscard sdsp_force_inline static SizeType
-  index(SizeType i, SizeType size) noexcept {
-    return i % size;
-  }
-  sdsp_nodiscard sdsp_force_inline static SizeType
-  index_incl(SizeType o, SizeType inclusive_max) noexcept {
-    return index(o, inclusive_max);
-  }
-};
-
-template <typename SizeType>
-struct IndexPolicyBase<SizeType, IndexPolicyType::UNCHECKED> {
-  sdsp_nodiscard sdsp_force_inline static SizeType index(SizeType i,
-                                                         SizeType) noexcept {
-    return i;
-  }
-  sdsp_nodiscard sdsp_force_inline static SizeType
-  index_incl(SizeType o, SizeType) noexcept {
-    return o;
-  }
-};
-
-} // namespace internal
-
-struct Index {
-  /**
-   * Checked index policy that throws an exception on invalid indexes.
-   */
-  template <typename S = size_t>
-  using Checked =
-      internal::IndexPolicyBase<S, internal::IndexPolicyType::THROW>;
-
-  /**
-   * Index policy that wraps arguments within boundaries.
-   */
-  template <typename S = size_t>
-  using Wrapped = internal::IndexPolicyBase<S, internal::IndexPolicyType::WRAP>;
-
-  /**
-   * Index policy that does not check anything at all.
-   */
-  template <typename S = size_t>
-  using Unchecked =
-      internal::IndexPolicyBase<S, internal::IndexPolicyType::UNCHECKED>;
-
-  /**
-   * Checked Index policy that throws an exception on invalid indexes, but
-   * checking can be disabled by defining
-   * SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED.
-   */
-  template <typename S = size_t>
-  using Safe =
-#ifndef SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED
-      internal::IndexPolicyBase<S, internal::IndexPolicyType::THROW>;
-#else
-      IndexPolicyBase<S, IndexPolicyType::UNCHECKED>;
-#endif
-
-  /**
-   * Index policy that does not check anything at all, but behavior can be
-   * changed so that it throws on invalid indexes by defining
-   * SDSP_INDEX_POLICY_FORCE_UNSAFE_CHECKED.
-   */
-  template <typename S = size_t>
-  using Unsafe =
-#ifndef SDSP_INDEX_POLICY_FORCE_UNSAFE_CHECKED
-      internal::IndexPolicyBase<S, internal::IndexPolicyType::UNCHECKED>;
-#else
-      IndexPolicyBase<S, IndexPolicyType::THROW>;
-#endif
-
-  /**
-   * Returns index if it is smaller than size and throws std::invalid_argument
-   * otherwise.
-   * @return index
-   */
-  template <typename S> sdsp_nodiscard static S checked(S index, S size) {
-    return Checked<S>::index(index, size);
-  }
-
-  /**
-   * Returns index, wrapped inside size and thus smaller than size.
-   * @return wrapped index.
-   */
   template <typename S> sdsp_nodiscard static S wrapped(S index, S size) {
-    return Wrapped<S>::index(index, size);
+    return index % size;
+  }
+
+  template <typename S> sdsp_nodiscard static S unchecked(S index, S) {
+    return index;
   }
 
   /**
-   * Returns index if it is smaller than size and throws std::invalid_argument
-   * otherwise. Checkin can be disabled by defining
-   * SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED.
-   * @return index
+   * Returns checked index, or unchecked if
+   * SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED is defined.
    */
   template <typename S> sdsp_nodiscard static S safe(S index, S size) {
-    return Safe<S>::index(index, size);
+#ifndef SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED
+    return checked(index, size);
+#else
+    return unchecked(index, size);
+#endif
   }
 
   /**
-   * Returns index without checking, but checking can be enabled by defining
-   * SDSP_INDEX_POLICY_FORCE_UNSAFE_CHECKED.
-   * @return index;
+   * Returns unchecked index, or checked if
+   * SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED is defined.
    */
   template <typename S> sdsp_nodiscard static S unsafe(S index, S size) {
-    return Unsafe<S>::index(index, size);
+#ifndef SDSP_INDEX_POLICY_FORCE_UNSAFE_CHECKED
+    return unchecked(index, size);
+#else
+    return checked(index, size);
+#endif
   }
 
-  /**
-   * Returns index if it is equal to or smaller than size and throws
-   * std::invalid_argument otherwise.
-   * @return index
-   */
-  template <typename S> sdsp_nodiscard static S checked_incl(S index, S size) {
-    return Checked<S>::index_incl(index, size);
-  }
+  struct Inclusive {
+    template <typename S> sdsp_nodiscard static S checked(S index, S size) {
+      if (index <= size) {
+        return index;
+      }
+      throw std::invalid_argument("IndexPolicy::offset out of range");
+    }
 
-  /**
-   * Returns index, wrapped inside size. Because the nature of wrapping, return
-   * values are smaller than size by definition.
-   * @return wrapped index.
-   */
-  template <typename S> sdsp_nodiscard static S wrapped_incl(S index, S size) {
-    return Wrapped<S>::index_incl(index, size);
-  }
+    template <typename S> sdsp_nodiscard static S wrapped(S index, S size) {
+      return index % size;
+    }
 
-  /**
-   * Returns index if it is equal to or smaller than size and throws
-   * std::invalid_argument otherwise. Checkin can be disabled by defining
-   * SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED.
-   * @return index
-   */
-  template <typename S> sdsp_nodiscard static S safe_incl(S index, S size) {
-    return Safe<S>::index_incl(index, size);
-  }
+    template <typename S> sdsp_nodiscard static S unchecked(S index, S) {
+      return index;
+    }
 
-  /**
-   * Returns index without checking, but checking can be enabled by defining
-   * SDSP_INDEX_POLICY_FORCE_UNSAFE_CHECKED.
-   * @return index;
-   */
-  template <typename S> sdsp_nodiscard static S unsafe_incl(S index, S size) {
-    return Unsafe<S>::index_incl(index, size);
-  }
+    /**
+     * Returns checked index, or unchecked if
+     * SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED is defined.
+     */
+    template <typename S> sdsp_nodiscard static S safe(S index, S size) {
+#ifndef SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED
+      return checked(index, size);
+#else
+      return unchecked(index, size);
+#endif
+    }
+
+    /**
+     * Returns unchecked index, or checked if
+     * SDSP_INDEX_POLICY_FORCE_SAFE_UNCHECKED is defined.
+     */
+    template <typename S> sdsp_nodiscard static S unsafe(S index, S size) {
+#ifndef SDSP_INDEX_POLICY_FORCE_UNSAFE_CHECKED
+      return unchecked(index, size);
+#else
+      return checked(index, size);
+#endif
+    }
+  };
 };
 
 } // namespace simpledsp

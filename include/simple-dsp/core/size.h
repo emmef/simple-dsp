@@ -21,126 +21,53 @@
  * limitations under the License.
  */
 
-#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
 
-#include <simple-dsp/core/power2.h>
+#include <simple-dsp/core/bits.h>
+#include <simple-dsp/core/bounds.h>
 
 namespace simpledsp {
 
-/**
- * Processes almost never have access to the full address and size ranges
- * that "fits" in size_t. Most hardware and operating systems reserve bits for
- * special purposes, making them inaccessible for the lineair virtual address
- * range.The number of these bits is also such, that you at least have 7 bits of
- * addressing spacel left.
- *
- * The number can be overridden at compile time with a predefined constant
- * SDSP_OVERRIDE_MEMORY_MODEL_STOLEN_ADDRESS_BITS (naturally clamped between the
- * minimum and maximum.
- *
- * For systems with more than 32 bits, the value is estimated, based on 64 bit
- * intel systems that reserve 17 bits for privilege levels and paging that thus
- * cannot be used for the lineair virtual addressing space of the process.
- * Suggestions for a more accurate guess are most certainly welcome!
- */
-static constexpr int stolen_address_bits =
-#if SDSP_OVERRIDE_MEMORY_MODEL_STOLEN_ADDRESS_BITS > 0
-    std::clamp(SDSP_OVERRIDE_MEMORY_MODEL_STOLEN_ADDRESS_BITS,
-               sizeof(size_t) < 4 ? 0 : 1, sizeof(size_t) * 8 - 7);
+struct MemoryModel {
+  static constexpr int size_t_bits = 8 * sizeof(size_t);
+  static constexpr int address_bits =
+#if defined(SIMPLE_CORE_MEMORY_MODEL_ADDRESS_BITS)
+      std::clamp(int(SIMPLE_CORE_MEMORY_MODEL_ADDRESS_BITS), 1, size_t_bits);
 #else
-    sizeof(size_t) <= 4 ? 1 : 1 + 8 * (sizeof(size_t) / 4);
+      size_t_bits;
+  /*
+   * The actual (virtual) addressing space is limited by the hardware and the
+   * operating system memory model(s). These limites are ignored here. First,
+   * because they are generally so high that they are rathe theoretical. Second,
+   * because it is difficult to find out the correct limits for all combinations
+   * of operating systems and architectures. Third, limiting the size does not
+   * protect the programmer from the combination of a too-high offset and a
+   * size. Unless there is a water-tight way of solving this, we keep the
+   * theoretical limit and assume people in the know provide a proper
+   * value/expression for SIMPLE_CORE_MEMORY_MODEL_ADDRESS_BITS.
+   */
 #endif
 
-/**
- * The platform-dependent effective number of bits than can be used for
- * size-values.
- */
-static constexpr int effective_size_t_bits =
-    sizeof(size_t) * 8 - stolen_address_bits;
-
-/**
- * Return whether the size is valid: non-zero and not greater than size_max.
- * @return true if size is valid, false otherwise.
- */
-template <typename size_type>
-static constexpr bool size_is_valid(size_type size, size_t size_max) noexcept {
-  return size > 0 && size <= size_max;
-}
-
-/**
- * Return whether index is valid: not greater than index_max.
- * @return true if index is valid, false otherwise.
- */
-template <typename size_type>
-static constexpr bool size_is_valid_index(size_type index,
-                                          size_t index_max) noexcept {
-  return index <= index_max;
-}
-
-/**
- * Returns whether size, specific in the source size type, can be assigned as
- * valid size in the destination size type that has an applied limit of
- * size_max.
- *
- * @tparam destination_size_type
- * @tparam source_size_type
- * @param size The size in the source size type.
- * @param size_max The specified maximum for the destination size in the
- * destination size type.
- * @return true if the size can be assigned, false otherwise.
- */
-template <typename destination_size_type, typename source_size_type>
-static constexpr bool size_can_assign(source_size_type size,
-                                      destination_size_type size_max) noexcept {
-  static_assert(
-      sizeof(destination_size_type) <= sizeof(size_t),
-      "size_can_assing: dst_size_type cannot be larger than std::size_t.");
-  static_assert(
-      sizeof(source_size_type) <= sizeof(size_t),
-      "size_can_assign: src_size_type cannot be larger than std::size_t.");
-
-  return size > 0 && size_t(size) <= size_t(size_max);
-}
-
-/**
- * Returns whether the sum of two values v1 and v2, represents a valid size that
- * is non-zero and not greater than size_max.
- * @return true if the sum represents a valid size, false otherwise.
- */
-template <typename size_type>
-static constexpr bool size_is_valid_sum(size_type v1, size_type v2,
-                                        size_type size_max) noexcept {
-  return v1 > 0 ? v1 <= size_max && size_max - v1 >= v2
-                : v2 > 0 && v2 <= size_max;
-}
-
-/**
- * Returns whether the product of two values v1 and v2, represents a valid size
- * that is non-zero and not greater than size_max.
- * @return true if the product represents a valid size, false otherwise.
- */
-template <typename size_type>
-static constexpr bool size_is_valid_product(size_type v1, size_type v2,
-                                            size_t size_max) noexcept {
-  return v1 > 0 && v2 > 0 && size_max / v1 >= v2;
-}
+  static constexpr size_t address_max =
+      Bits<size_t>::max_value_for_bits(address_bits);
+};
 
 /**
  * Describes properties of sizes that are stored in the underlying SIZE data
  * type, that must be integral, unsigned and cannot be larger than std::size_t.
- * Sizes can be artificially limited to a reduced number of bits indicated by
- * size_bit_limit, with a minimum of 8.
+ *
+ * Sizes can be artificially limited to a reduced number of bits by setting
+ * size_bit_limit to a non-zero value. Positive value set the number of bits,
+ * negative values subtract from the number of bits in size_type.
  *
  * @tparam SIZE The integral, unsigned type that contains sizes.
  * @tparam size_bit_limit The artifically reduced number of bits to represent
  * sizes.
  */
-template <typename SIZE = size_t, int size_bit_limit = sizeof(SIZE) * 8>
-struct SizeType {
+template <typename SIZE = size_t, int size_bit_limit = 0> struct SizeType {
   static_assert(
       std::is_integral<SIZE>::value,
       "simpledsp::size::system::SizeType: size_type must be an integral type.");
@@ -153,10 +80,8 @@ struct SizeType {
                 "simpledsp::size::system::SizeType: size_type cannot be larger "
                 "than std::size_t.");
 
-  static_assert(size_bit_limit > 7,
-                "SizeType: explicit size_bit_limit must be at least 7.");
-
-  static_assert(size_bit_limit <= sizeof(SIZE) * 8,
+  static_assert(is_within(size_bit_limit, 1 - MemoryModel::size_t_bits,
+                          MemoryModel::size_t_bits),
                 "SizeType: explicit size_bit_limit cannot exceed number of "
                 "bits in size_type.");
 
@@ -173,18 +98,18 @@ struct SizeType {
   static constexpr int type_max = std::numeric_limits<size_type>::max();
 
   /**
-   * The number of bits that is usable due to system limits or an explicit limit
-   * set by size_bit_limit.
+   * The number of bits used to represent size values.
    */
   static constexpr int size_bits =
-      std::min(size_bit_limit, effective_size_t_bits);
+      std::clamp(size_bit_limit > 0 ? size_bit_limit
+                                    : size_bit_limit + MemoryModel::size_t_bits,
+                 1, MemoryModel::address_bits);
 
   /**
    * The maximum value of a size.
    */
-  static constexpr size_type max = type_bits == size_bits
-                                       ? std::numeric_limits<size_type>::max()
-                                       : size_type(1) << size_bits;
+  static constexpr size_type max =
+      Bits<size_type>::max_value_for_bits(size_bits);
 
   /**
    * The maximum index to address structures with a size. This is equal to max
@@ -201,6 +126,49 @@ struct SizeType {
    */
   static constexpr size_type max_bit_mask =
       Bits<size_type>::bit_mask_not_exceeding(max_index);
+
+  /**
+   * Returns whether size is valid: non-zero and not greater than max.
+   * @return true if size if valid, false otherwise.
+   */
+  static constexpr bool is_valid(size_type size) noexcept {
+    return Unsigned::is_nonzero_not_greater(size, max);
+  }
+
+  /**
+   * Returns whether index is valid: not greater than max_index.
+   * @return true if index if valid, false otherwise.
+   */
+  static constexpr bool is_valid_index(size_type index) noexcept {
+    return Unsigned::is_not_greater(index, max_index);
+  }
+
+  /**
+   * Returns whether size is valid, where size is of another size_type.
+   * @return true if size if valid, false otherwise.
+   */
+  template <typename src_size_type>
+  static constexpr bool is_valid(src_size_type size) noexcept {
+    return Unsigned::is_nonzero_not_greater(size, max);
+  }
+
+  /**
+   * Returns whether the sum of two values v1 and v2, represents a valid size
+   * that is non-zero and not greater than max.
+   * @return true if the sum represents a valid size, false otherwise.
+   */
+  static constexpr bool is_valid_sum(size_type v1, size_type v2) noexcept {
+    return Unsigned::is_sum_nonzero_not_greater(v1, v2, max);
+  }
+
+  /**
+   * Returns whether the product of two values v1 and v2, represents a valid
+   * size that is non-zero and not greater than max.
+   * @return true if the product represents a valid size, false otherwise.
+   */
+  static constexpr bool is_valid_product(size_type v1, size_type v2) noexcept {
+    return Unsigned::is_product_nonzero_not_greater(v1, v2, max);
+  }
 
   /**
    * Returns the maximum number of elements in an array with elements of the
@@ -232,53 +200,6 @@ struct SizeType {
     return Bits<size_type>::bit_mask_not_exceeding(
         max_index_for_element_size(element_size));
   }
-
-  /**
-   * Returns whether size is valid: non-zero and not greater than max.
-   * @return true if size if valid, false otherwise.
-   */
-  static constexpr bool is_valid(size_type size) noexcept {
-    return size_is_valid(size, max);
-  }
-
-  /**
-   * Returns whether index is valid: not greater than max_index.
-   * @return true if index if valid, false otherwise.
-   */
-  static constexpr bool is_valid_index(size_type index) noexcept {
-    return size_is_valid_index(index, max_index);
-  }
-
-  /**
-   * Returns whether size, specific in the source size type, represents a valid
-   * size in this SizeType<size_type>.
-   * @tparam src_size_type the size type of size
-   * @param size The size value in the source size type
-   * @return true if the size can be represented, false otherwise.
-   * @see is_valid(size_type)
-   */
-  template <typename src_size_type>
-  static constexpr bool can_assign(src_size_type size) noexcept {
-    return size_can_assign(size, max);
-  }
-
-  /**
-   * Returns whether the sum of two values v1 and v2, represents a valid size
-   * that is non-zero and not greater than max.
-   * @return true if the sum represents a valid size, false otherwise.
-   */
-  static constexpr bool is_valid_sum(size_type v1, size_type v2) noexcept {
-    return size_is_valid_sum(v1, v2, max);
-  }
-
-  /**
-   * Returns whether the product of two values v1 and v2, represents a valid
-   * size that is non-zero and not greater than max.
-   * @return true if the product represents a valid size, false otherwise.
-   */
-  static constexpr bool is_valid_product(size_type v1, size_type v2) noexcept {
-    return size_is_valid_product(v1, v2, max);
-  }
 };
 
 static constexpr size_t system_max_size_in_bytes = SizeType<size_t>::max;
@@ -286,22 +207,24 @@ static constexpr size_t system_max_size_in_bytes = SizeType<size_t>::max;
 static constexpr size_t system_max_byte_index = SizeType<size_t>::max_index;
 
 /**
- * Describes properties of sizes that are stored in the underlying SIZE data
- * type an that are used to address arrays with elements of type T. , that must
- * be integral, unsigned and cannot be larger than std::size_t. Sizes can be
- * artificially limited to a reduced number of bits indicated by size_bit_limit,
- * with a minimum of 8.
- * @tparam T
- * @tparam SIZE
- * @tparam max_size_bits
+ * Represents the size_type-represented, non-zero size of an array with elements
+ * of element_size. In addition, a number of static properties and utilities are
+ * provided.
+ *
+ * The size range can be artificially reduced by setting max_size_bits to a
+ * non-zero value: this mechanism is explained in SizeType<size_type,
+ * max_size_bits>.
+ *
+ * @tparam element_size The size of each element.
+ * @tparam SIZE The integral, unsigned type that contains sizes.
+ *  @tparam size_bit_limit The artifically reduced number of bits to represent
+ * sizes.
  */
 template <size_t element_size, typename SIZE = std::size_t,
-          int max_size_bits = sizeof(SIZE) * 8>
+          int max_size_bits = 0>
 struct Size {
   static_assert(element_size > 0, "Size: element_size cannot be zero.");
-  static_assert(
-      element_size <= SizeType<SIZE, max_size_bits>::max,
-      "Size: element_size cannot exceed maximum size than can be represented.");
+
   using size_type = SIZE;
   using Type = SizeType<size_type, max_size_bits>;
 
@@ -331,82 +254,89 @@ struct Size {
                          : Bits<size_type>::bit_mask_not_exceeding(max_index);
 
   /**
-   * Returns whether element_count is valid: non-zero and no greater than max.
-   * @return true if element_count is valud, false otherwise.
+   * Returns whether size is valid: non-zero and no greater than max.
+   * @return true if size is valud, false otherwise.
    */
+  template <typename T>
+  sdsp_nodiscard static constexpr bool is_valid(T size) noexcept {
+    return Unsigned::is_nonzero_not_greater(size, max);
+  }
+
+  /**
+   * Returns whether size is valid: non-zero and no greater than max.
+   * @return true if size is valud, false otherwise.
+   */
+  template <typename source_size_type, source_size_type tmax>
   sdsp_nodiscard static constexpr bool
-  is_valid(size_type element_count) noexcept {
-    return size_is_valid(element_count, max);
+  is_valid(const Size<element_size, source_size_type, tmax>
+               &size) noexcept {
+    return is_valid(size.get());
   }
 
   /**
    * Returns whether element_index is valid: non-zero and no greater than max.
-   * @return true if element_count is valud, false otherwise.
+   * @return true if element_index is valid, false otherwise.
    */
+  template <typename T>
   sdsp_nodiscard static constexpr bool
-  is_valid_index(size_type element_index) noexcept {
-    return size_is_valid_index(element_index, max_index);
+  is_valid_index(T element_index) noexcept {
+    return Unsigned::is_not_greater(element_index, max_index);
   }
 
   /**
-   * Returns whether the sum of v1 and v2 represents a valid element count:
-   * non-zero and no greater than max.
-   * @return true if the sum represents a valid element count.
-   */
-  sdsp_nodiscard static constexpr bool is_valid_sum(size_type v1,
-                                                    size_type v2) noexcept {
-    return size_is_valid_sum(v1, v2, max);
-  }
-
-  /**
-   * Returns whether the product of v1 and v2 represents a valid element count:
-   * non-zero and no greater than max.
-   * @return true if the product represents a valid element count.
-   */
-  sdsp_nodiscard static constexpr bool is_valid_product(size_type v1,
-                                                        size_type v2) noexcept {
-    return size_is_valid_product(v1, v2, max);
-  }
-
-  /**
-   * Returns whether size represents a valid element count.
-   * @tparam source_size_type the size type of size
-   * @param size The size value in the source size type
-   * @return true if the size can be represented, false otherwise.
-   * @see is_valid(size_type)
-   */
-  template <typename source_size_type>
-  sdsp_nodiscard static constexpr bool
-  can_assign(source_size_type size) noexcept {
-    return size_can_assign(size, max);
-  }
-
-  /**
-   * Returns whether size represents a valid element count. The size must have
-   * the same element_size.
-   * @tparam source_size_type The size type of size
-   * @param size The source size, that must have the same element_size.
-   * @return true if the size can be represented, false otherwise.
-   * @see is_valid(size_type)
+   * Returns whether element_index is valid: non-zero and no greater than max.
+   * @return true if element_index is valid, false otherwise.
    */
   template <typename source_size_type, source_size_type tmax>
   sdsp_nodiscard static constexpr bool
-  can_assign(const Size<element_size, source_size_type, tmax> &size) noexcept {
-    return can_assign(size.value);
+  is_valid_index(const Size<element_size, source_size_type, tmax>
+                     &element_index) noexcept {
+    return is_valid_index(element_index.get());
   }
 
   /**
-   * Returns element_count if it is valid and throws std::invalid_argument
+   * Returns whether the sum of v1 and v2 represents a valid size:
+   * non-zero and no greater than max.
+   * @return true if the sum represents a valid size.
+   */
+  sdsp_nodiscard static constexpr bool is_valid_sum(size_type v1,
+                                                    size_type v2) noexcept {
+    return Unsigned::is_sum_nonzero_not_greater(v1, v2, max);
+  }
+
+  /**
+   * Returns whether the product of v1 and v2 represents a valid size:
+   * non-zero and no greater than max.
+   * @return true if the product represents a valid size.
+   */
+  sdsp_nodiscard static constexpr bool is_valid_product(size_type v1,
+                                                        size_type v2) noexcept {
+    return Unsigned::is_product_nonzero_not_greater(v1, v2, max);
+  }
+
+  /**
+   * Returns size if it is valid and throws std::invalid_argument
    * otherwise.
    * @return element_size
    * @see is_valid(size_type)
    */
-  static constexpr size_type get_valid_size(size_type element_count) {
-    if (is_valid(element_count)) {
-      return element_count;
+  template <typename T> static constexpr size_type get_valid(T size) {
+    if (is_valid(size)) {
+      return size;
     }
     throw std::invalid_argument(
         "Size: size must be positive and not greater than Size::max.");
+  }
+
+  /**
+   * Returns the size if it represents a valid size and throws
+   * std::invalid_argument otherwise.
+   * @return the value of size cast to size_type.
+   */
+  template <typename ST, ST tmax>
+  static constexpr size_type
+  get_valid(const Size<element_size, ST, tmax> &elementCount) {
+    return get_valid(elementCount.get());
   }
 
   /**
@@ -415,12 +345,26 @@ struct Size {
    * @return element_index
    * @see is_valid(size_type)
    */
-  static constexpr size_type get_valid_index(size_type element_index) {
+  template <typename T>
+  static constexpr size_type get_valid_index(T element_index) {
     if (is_valid_index(element_index)) {
       return element_index;
     }
     throw std::invalid_argument(
         "Size: index must not be greater than Size::max_index");
+  }
+
+  /**
+   * Returns element_index if it is valid and throws std::invalid_argument
+   * otherwise.
+   * @return element_index
+   * @see is_valid(size_type)
+   */
+  template <typename ST, ST tmax>
+  static constexpr size_type
+  get_valid_index(const Size<element_size, ST, tmax> &element_index) {
+
+    return get_valid_index(element_index.get());
   }
 
   /**
@@ -452,40 +396,19 @@ struct Size {
   }
 
   /**
-   * Returns the size if it represents a valid element count and throws
+   * Construct a Size based on a valid size or throws
    * std::invalid_argument otherwise.
-   * @return the value of size cast to size_type.
    */
-  template <typename src_size_type>
-  static constexpr size_type get_assignable_size(src_size_type size) {
-    if (can_assign(size)) {
-      return size;
-    }
-    throw std::invalid_argument(
-        "Size: value is zero or too large to be assingned.");
-  }
+  template <typename T>
+  explicit Size(const T size) : value(get_valid(size)) {}
 
   /**
-   * Returns the size if it represents a valid element count and throws
+   * Construct a Size based on a valid size or throws
    * std::invalid_argument otherwise.
-   * @return the value of size cast to size_type.
    */
   template <typename ST, ST tmax>
-  static constexpr size_type
-  get_assignable_size(const Size<element_size, ST, tmax> &size) {
-    if (can_assign(size)) {
-      return size;
-    }
-    throw std::invalid_argument(
-        "Size: value is zero or too large to be assingned.");
-  }
-
-  /**
-   * Construct a Size based on a valid element count or throws
-   * std::invalid_argument otherwise.
-   */
-  explicit Size(const size_t element_count)
-      : value(get_valid_size(element_count)) {}
+  explicit Size(const Size<element_size, ST, tmax> &size)
+      : value(get_valid(size)) {}
 
   /**
    * @return value
@@ -497,10 +420,15 @@ struct Size {
    * @return value
    */
   sdsp_nodiscard size_t operator()() const noexcept { return value; }
+  /**
+   * Explicitly returns value.
+   * @return value
+   */
+  sdsp_nodiscard size_t get() const noexcept { return value; }
 
   /**
-   * Returns the maximum element count from an instance.
-   * @return the maximum element count, max.
+   * Returns the maximum size from an instance.
+   * @return the maximum size, max.
    */
   sdsp_nodiscard size_t maximum() const noexcept { return max; }
 
@@ -519,94 +447,94 @@ struct Size {
   }
 
   /**
-   * Adds element count if that results in a valid total element count and
+   * Adds other_size if that results in a valid total size and
    * throws std::invalid_argument otherwise.
    */
-  Size &operator+=(size_type element_count) {
-    value = get_valid_sum(value, element_count);
+  Size &operator+=(size_type other_size) {
+    value = get_valid_sum(value, other_size);
     return *this;
   }
 
   /**
-   * Adds element count if that results in a valid total element count and
+   * Adds other_size if that results in a valid total size and
    * throws std::invalid_argument otherwise.
    */
-  Size &operator+=(const Size &element_count) {
-    value = get_valid_sum(value, element_count.value);
+  Size &operator+=(const Size &other_size) {
+    value = get_valid_sum(value, other_size.value);
     return *this;
   }
 
   /**
-   * Multiplies with element count if that results in a valid total element
+   * Multiplies with other_size if that results in a valid total element
    * count and throws std::invalid_argument otherwise.
    */
-  Size &operator*=(size_type element_count) {
-    value = get_valid_product(value, element_count);
+  Size &operator*=(size_type other_size) {
+    value = get_valid_product(value, other_size);
     return *this;
   }
 
   /**
-   * Multiplies with element count if that results in a valid total element
+   * Multiplies with other_size if that results in a valid total element
    * count and throws std::invalid_argument otherwise.
    */
-  Size &operator*=(const Size &element_count) {
-    value = get_valid_product(value, element_count.value);
+  Size &operator*=(const Size &other_size) {
+    value = get_valid_product(value, other_size.value);
     return *this;
   }
 
   /**
-   * Returns a size with the sum of size and element_count if that results in a
-   * valid total element count and throws std::invalid_argument otherwise.
+   * Returns a size with the sum of size and other_size if that results in a
+   * valid total size and throws std::invalid_argument otherwise.
    */
-  friend Size operator+(Size size, size_type element_count) {
-    size += element_count;
+  friend Size operator+(Size size, size_type other_size) {
+    size += other_size;
     return size;
   }
 
   /**
-   * Returns a size with the sum of size and element_count if that results in a
-   * valid total element count and throws std::invalid_argument otherwise.
+   * Returns a size with the sum of size and other_size if that results in a
+   * valid total size and throws std::invalid_argument otherwise.
    */
-  friend Size operator+(Size size, const Size &element_count) {
-    size += element_count;
+  friend Size operator+(Size size, const Size &other_size) {
+    size += other_size;
     return size;
   }
 
   /**
-   * Returns a size with the product of size and element_count if that results
-   * in a valid total element count and throws std::invalid_argument otherwise.
+   * Returns a size with the product of size and other_size if that results
+   * in a valid total size and throws std::invalid_argument otherwise.
    */
-  friend Size operator*(Size size, size_type element_count) {
-    size *= element_count;
+  friend Size operator*(Size size, size_type other_size) {
+    size *= other_size;
     return size;
   }
 
   /**
-   * Returns a size with the product of size and element_count if that results
-   * in a valid total element count and throws std::invalid_argument otherwise.
+   * Returns a size with the product of size and other_size if that results
+   * in a valid total size and throws std::invalid_argument otherwise.
    */
-  friend Size operator*(Size size, const Size &element_count) {
-    size *= element_count;
+  friend Size operator*(Size size, const Size &other_size) {
+    size *= other_size;
     return size;
   }
 
   /**
-   * Assigns a new element count is that is valid and throws
+   * Assigns a new size is that is valid and throws
    * std::invalid_argument otherwise.
    */
-  Size &operator=(size_type element_count) {
-    value = get_valid_size(element_count);
+  template<typename T>
+  Size &operator=(T other_size) {
+    value = get_valid_size(other_size);
     return *this;
   }
 
   /**
-   * Explicitly assigns an element_count with different typing if that results
-   * in a valid element_count and throws std::invalid_argument otherwise.
+   * Explicitly assigns an size with different typing if that results
+   * in a valid size and throws std::invalid_argument otherwise.
    */
   template <typename ST, ST tmax>
-  void assign(const Size<element_size, ST, tmax> &size) {
-    value = get_assignable_size(size);
-    return *this;
+  void assign(const Size<element_size, ST, tmax> other_size) {
+    return operator = (other_size.get());
   }
 
 private:

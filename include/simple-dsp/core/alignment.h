@@ -23,7 +23,7 @@
 
 #include <cstddef>
 #include <simple-dsp/core/attributes.h>
-#include <simple-dsp/core/bounds.h>
+#include <simple-dsp/core/power2.h>
 #include <simple-dsp/core/size.h>
 
 /**

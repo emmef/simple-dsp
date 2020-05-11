@@ -40,6 +40,11 @@ template <typename size_type = size_t> class Bits {
 
 public:
   /**
+   * Returns the number of bits for the chosen size_type.
+   */
+  static constexpr int size_type_bits = 8 * sizeof(size_type);
+
+  /**
    * Fill all bits that are less siginificant than the most significant bit.
    * @param value The value to fill bits
    * @return value with all bits set that are less siginificant than the most
@@ -103,6 +108,16 @@ public:
    */
   static constexpr size_type bit_mask_not_exceeding(size_type index) noexcept {
     return index < 2 ? 1 : fill(index) == index ? index : fill(index) >> 1;
+  }
+
+  /**
+   * Returns the maximum size that corresponds with the number of bits or the
+   * maximum value of size_type if that is smaller.
+   * @return the maximum size
+   */
+  static constexpr size_type max_value_for_bits(int size_bits) noexcept {
+    return size_bits >= size_type_bits ? std::numeric_limits<size_type>::max()
+                                  : size_type(1) << size_bits;
   }
 };
 

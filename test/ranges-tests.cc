@@ -89,30 +89,30 @@ generateTestCases() {
         WithinTests::createWithinExcl(isWithinExcl, i, 0, MAX_LIMIT));
 
     testCases->push_back(Functions::create("FixedRange::is_valid",
-                                           FixedRange::Size::is_valid,
+                                           FixedRange::Size::is_valid<size_t>,
                                            isValidSize, i));
 
     testCases->push_back(Functions::create("FixedRange::is_valid_index",
-                                           FixedRange::Size::is_valid_index,
+                                           FixedRange::Size::is_valid_index<size_t>,
                                            isValidIndex, i));
     if (isValidIndex) {
       testCases->push_back(Functions::create("FixedRange::get_valid_index",
-                                             FixedRange::get_valid_index,
+                                             FixedRange::get_valid_index<size_t>,
                                              i, i));
     }
     else {
       testCases->push_back(Functions::create("FixedRange::get_valid_index",
-                                             FixedRange::get_valid_index,
+                                             FixedRange::get_valid_index<size_t>,
                                              i));
     }
     if (isValidSize) {
       testCases->push_back(Functions::create("FixedRange::get_valid_size",
-                                             FixedRange::Size::get_valid_size,
+                                             FixedRange::Size::get_valid<size_t>,
                                              i, i));
     }
     else {
       testCases->push_back(Functions::create("FixedRange::get_valid_size",
-                                             FixedRange::Size::get_valid_size,
+                                             FixedRange::Size::get_valid<size_t>,
                                              i));
 
     }
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(testConstructorExactMaxSize) {
 }
 
 BOOST_AUTO_TEST_CASE(testConstructorValidSize) {
-  BOOST_CHECK_EQUAL((size_t)FixedRange(3), 3);
+  BOOST_CHECK_EQUAL((size_t)FixedRange(3u), 3u);
 }
 
 BOOST_AUTO_TEST_CASE(testConstructorTooLargeSize) {
@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE(testConstructorTooLargeSize) {
 }
 
 BOOST_AUTO_TEST_CASE(testConstructorZeroSize) {
-  BOOST_CHECK_THROW(FixedRange(0), std::invalid_argument);
+  BOOST_CHECK_THROW(FixedRange(0u), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(testAdditionValid) {
@@ -217,7 +217,7 @@ BOOST_AUTO_TEST_CASE(testAdditionTooLarge) {
   size_t v1 = 900;
   size_t v2 = 128;
   FixedRange size(v1);
-  FixedRange result(1);
+  FixedRange result(1u);
 
   BOOST_CHECK_THROW(result = size + v2, std::invalid_argument);
 }
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(testProductTooLarge) {
   size_t v1 = 900;
   size_t v2 = 128;
   FixedRange size(v1);
-  FixedRange result(1);
+  FixedRange result(1u);
 
   BOOST_CHECK_THROW(result = size * v2, std::invalid_argument);
 }

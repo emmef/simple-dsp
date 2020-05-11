@@ -47,14 +47,13 @@ static size_t iir_get_valid_order(size_t order) {
  * @tparam T type of coefficent values
  */
 struct IIRCoefficientsSetter {
-  using Check = Index::Checked<size_t>;
 
   sdsp_nodiscard virtual unsigned getOrder() const = 0;
   sdsp_nodiscard virtual unsigned getMaxOrder() const = 0;
   sdsp_nodiscard virtual bool canSetOrder() const = 0;
   virtual ~IIRCoefficientsSetter() = default;
 
-  sdsp_nodiscard unsigned getCoefficients() const { return getOrder() + 1; }
+  sdsp_nodiscard size_t getCoefficients() const { return getOrder() + 1; }
 
   IIRCoefficientsSetter &setOrder(unsigned order) {
     if (order == 0) {
@@ -93,12 +92,12 @@ struct IIRCoefficientsSetter {
   }
 
   IIRCoefficientsSetter &setC(size_t i, double value) {
-    setValidC(Check::index(i, getCoefficients()), value);
+    setValidC(Index::checked(i, getCoefficients()), value);
     return *this;
   }
 
   IIRCoefficientsSetter &setD(size_t i, double value) {
-    setValidD(Check::index(i, getCoefficients()), value);
+    setValidD(Index::checked(i, getCoefficients()), value);
     return *this;
   }
 
