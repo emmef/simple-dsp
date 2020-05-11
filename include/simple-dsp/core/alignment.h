@@ -64,14 +64,87 @@ sdsp_nodiscard sdsp_force_inline constexpr T *assume_aligned(T *ptr) {
 
 namespace simpledsp {
 
+enum class SimdAlignType { BYTES, ELEMENTS };
+
+namespace internal {
+
+template <typename T> struct InternalVectorBaseTypeCheck {
+  static_assert(std::is_floating_point<T>::value || std::is_integral<T>::value,
+                "Alignment base should be a floating point or integral type.");
+
+  using type = T;
+  static constexpr size_t element_size = sizeof(T);
+};
+
+template <typename T, SimdAlignType type, size_t count>
+struct InternalVectorBase;
+
+template <typename T, size_t count>
+struct InternalVectorBase<T, SimdAlignType::BYTES, count>
+    : public InternalVectorBaseTypeCheck<T> {
+  static_assert(Power2::is(count));
+
+  using InternalVectorBaseTypeCheck<T>::element_size;
+  static constexpr size_t _count =
+      count == 1 ? count : std::max(count, sizeof(size_t));
+
+  static constexpr size_t elements = std::max(size_t(1), _count / element_size);
+  static constexpr size_t bytes = _count;
+  static constexpr size_t mask = bytes - 1;
+};
+
+template <typename T, size_t count>
+struct InternalVectorBase<T, SimdAlignType::ELEMENTS, count>
+    : public InternalVectorBaseTypeCheck<T> {
+  static_assert(Power2::is(count));
+
+  using InternalVectorBaseTypeCheck<T>::element_size;
+  static constexpr size_t elements = count;
+  static constexpr size_t bytes =
+      std::max(count * element_size, sizeof(size_t));
+  static constexpr size_t mask = bytes - 1;
+};
+
+template <typename T, SimdAlignType TYPE>
+struct InternalVectorBase<T, TYPE, size_t(0)>
+    : public InternalVectorBaseTypeCheck<T> {
+
+  using InternalVectorBaseTypeCheck<T>::element_size;
+  static constexpr size_t elements = 1;
+  static constexpr size_t bytes = alignof(T);
+  static constexpr size_t mask = bytes - 1;
+};
+
+template <typename T>
+using AlignmentBase =
+#if SIMPLE_CORE_SIMD_ALIGNMENT_COUNT > 0
+#if SIMPLE_CORE_SIMD_ALIGNMENT_TYPE == 1
+    internal::InternalVectorBase<SimdAlignType::BYTES,
+                                 (SIMPLE_CORE_SIMD_ALIGNMENT_COUNT)>;
+#elif SIMPLE_CORE_SIMD_ALIGNMENT_TYPE == 2
+    internal::InternalVectorBase<SimdAlignType::ELEMENTS,
+                                 (SIMPLE_CORE_SIMD_ALIGNMENT_COUNT)>;
+#else
+#error Invalid value for SIMPLE_CORE_SIMD_ALIGNMENT_TYPE specified: must be 1 (bytes) or 2 (elements).
+#endif
+#else
+    /**
+     * This is a safe cover-all guess on 64-bit x86-64 systems: any suggestions
+     * for improved guesses are welcome.
+     */
+    internal::InternalVectorBase<T, SimdAlignType::ELEMENTS, 4>;
+#endif
+
+}; // namespace internal
+
 /**
  * Returns the value if it is already a multiple of power_of_two or the
  * next multiple of power_of_two otherwise. If power_of_two is not a power
  * of two, the alignment is done with the next higher power of two.
  *
  * @param value Value to be aligned
- * @param power_of_two The power of two to align to, or the next bigger power
- * of two.
+ * @param power_of_two The power of two to align to, or the next bigger
+ * power of two.
  * @return the aligned value
  */
 template <typename size_type>
@@ -87,35 +160,22 @@ static constexpr bool is_aligned_with(const size_type value,
   return value == get_aligned_with(value, power_of_two);
 }
 
-namespace base {
-namespace {
-
 constexpr size_t MAX_ALIGNMENT = 16384;
 
-template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
-
-  static_assert(
-      PowerTwo<size_t>::is(ALIGNMENT) && ALIGNMENT <= MAX_ALIGNMENT,
-      "Alignment must be a power of 2 that is not larger than 16384.");
-
-  static_assert((ALIGNMENT >= sizeof(T)) && (ALIGNMENT % sizeof(T) == 0),
-                "Alignment must be a multiple of the type's size.'");
-
-  static constexpr size_t alignment = ALIGNMENT;
-  static constexpr size_t alignment_mask = alignment - 1;
-  static constexpr size_t elementSize = sizeof(T);
-  static constexpr size_t alignmentElements = ALIGNMENT / sizeof(T);
-  static constexpr size_t maximumElements = SizeFor<T>::max;
-  static constexpr size_t maximumFrames = maximumElements / alignmentElements;
-
-  using type = T;
+template <typename T> struct AlignedFor : internal::AlignmentBase<T> {
+  using Base = internal::AlignmentBase<T>;
+  using Base::bytes;
+  using Base::element_size;
+  using Base::elements;
+  using Base::mask;
+  using Base::type;
 
   sdsp_nodiscard sdsp_force_inline static T *aligned(T *p) {
-    return ::assume_aligned<ALIGNMENT, T>(p);
+    return ::assume_aligned<bytes, T>(p);
   }
 
   sdsp_nodiscard sdsp_force_inline static const T *aligned(const T *p) {
-    return ::assume_aligned<ALIGNMENT, T>(p);
+    return ::assume_aligned<bytes, T>(p);
   }
 
   /**
@@ -124,7 +184,7 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
    * @return {@code true} is the number is aligned
    */
   sdsp_nodiscard static bool is(size_t number) {
-    return (number & (alignment_mask)) == 0;
+    return (number & (mask)) == 0;
   }
 
   /**
@@ -149,49 +209,51 @@ template <typename T, size_t ALIGNMENT> struct BaseAlignedMetric {
     }
     throw std::invalid_argument("Aligned: Pointer is not properly aligned");
   }
-};
 
-template <typename T> struct BaseAlignedMetric<T, 0> {
-
-  static constexpr size_t alignment = 0;
-  static constexpr size_t elementSize = sizeof(T);
-  static constexpr size_t alignmentElements = 1;
-  static constexpr size_t maximumElements = SizeFor<T>::max;
-  static constexpr size_t maximumFrames = maximumElements;
-  using type = T;
-
-  sdsp_nodiscard sdsp_force_inline static T *aligned(T *p) { return p; }
-
-  sdsp_nodiscard sdsp_force_inline static const T *aligned(const T *p) {
-    return p;
+  sdsp_nodiscard sdsp_force_inline static T *verified_aligned(T *ptr) {
+    return aligned(verified(ptr));
   }
 
-  sdsp_nodiscard static bool is(size_t) { return true; }
-
-  sdsp_nodiscard static bool is(const T *) { return true; }
-
-  sdsp_nodiscard static T *verified(T *ptr) { return ptr; }
-
-  sdsp_nodiscard static const T *verified(const T *ptr) { return ptr; }
+  sdsp_nodiscard sdsp_force_inline static const T *
+  verified_aligned(const T *ptr) {
+    return aligned(verified(ptr));
+  }
 };
 
-} // anonymous namespace
-} // namespace base
+struct Aligned {
+  template <typename T>
+  sdsp_nodiscard sdsp_force_inline static T *aligned(T *p) {
+    return AlignedFor<T>::aligned(p);
+  }
 
-template <typename T, size_t ALIGNMENT>
-using Aligned = base::BaseAlignedMetric < T,
-      ALIGNMENT<2 ? 0 : ALIGNMENT>;
+  template <typename T>
+  sdsp_nodiscard sdsp_force_inline static const T *aligned(const T *p) {
+    return AlignedFor<T>::aligned(p);
+  }
 
-template <std::size_t N, typename T>
-sdsp_nodiscard sdsp_force_inline static constexpr T *assume_aligned(T *ptr) {
-  return Aligned<T, N>::aligned(ptr);
-}
+  template <typename T> sdsp_nodiscard static bool is(const T *ptr) {
+    return AlignedFor<T>::is(ptr);
+  }
 
-template <std::size_t N, typename T>
-sdsp_nodiscard sdsp_force_inline static constexpr const T *
-assume_aligned(const T *ptr) {
-  return Aligned<T, N>::aligned(ptr);
-}
+  template <typename T> sdsp_nodiscard static T *verified(T *ptr) {
+    return AlignedFor<T>::verified(ptr);
+  }
+
+  template <typename T> sdsp_nodiscard static const T *verified(const T *ptr) {
+    return AlignedFor<T>::verified(ptr);
+  }
+
+  template <typename T>
+  sdsp_nodiscard sdsp_force_inline static T *verified_aligned(T *ptr) {
+    return AlignedFor<T>::verified_aligned(ptr);
+  }
+
+  template <typename T>
+  sdsp_nodiscard sdsp_force_inline static const T *
+  verified_aligned(const T *ptr) {
+    return AlignedFor<T>::verified_aligned(ptr);
+  }
+};
 
 } // namespace simpledsp
 
