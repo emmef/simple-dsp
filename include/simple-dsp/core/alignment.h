@@ -24,7 +24,6 @@
 #include <cstddef>
 #include <simple-dsp/core/attributes.h>
 #include <simple-dsp/core/power2.h>
-#include <simple-dsp/core/size.h>
 
 /**
  * The C++20 standard is going to include a template that makes the compiler

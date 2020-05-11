@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <simple-dsp/core/bounds.h>
-#include <simple-dsp/core/index.h>
+#include <simple-dsp/core/size.h>
 
 #include "test-helper.h"
 

@@ -22,8 +22,6 @@
 #include "bounds.h"
 #include <algorithm>
 #include <simple-dsp/core/attributes.h>
-#include <simple-dsp/core/bounds.h>
-#include <simple-dsp/core/size.h>
 #include <stdexcept>
 
 namespace simpledsp {

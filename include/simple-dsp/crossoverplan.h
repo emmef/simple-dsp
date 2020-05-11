@@ -25,6 +25,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <simple-dsp/core/index.h>
+#include <simple-dsp/core/size.h>
 #include <stdexcept>
 #include <stdio.h>
 #include <vector>

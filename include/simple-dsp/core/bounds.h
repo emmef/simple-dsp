@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <simple-dsp/core/attributes.h>
-#include <simple-dsp/core/bits.h>
 #include <type_traits>
 
 namespace simpledsp {
