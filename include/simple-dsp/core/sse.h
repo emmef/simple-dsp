@@ -21,6 +21,8 @@
  * limitations under the License.
  */
 
+#ifdef SIMPLE_CORE_SSE_INTRINSICS_ENABLED
+
 #if defined(__SSE__) &&                                                        \
     (defined(__amd64__) || defined(__x86_64__) || defined(__i386__))
 #include <xmmintrin.h>
@@ -111,5 +113,7 @@ struct SseState {
 };
 
 } // namespace simpledsp
+
+#endif // SIMPLE_CORE_SSE_INTRINSICS_ENABLED
 
 #endif // SIMPLE_DSP_CORE_SSE_H
