@@ -34,7 +34,7 @@ namespace base {
 
 template <WrappingType wrappingType, size_t element_size = 1,
           typename size_type = size_t,
-          int max_size_bits = sizeof(size_type) * 8>
+          int max_size_bits = 0>
 struct WrappedBase;
 
 template <size_t element_size, typename size_type, int max_size_bits>

@@ -26,7 +26,7 @@
 
 namespace simpledsp {
 
-template <typename size_type = size_t> struct PowerTwo {
+template <typename size_type = size_t> struct Power2For {
 
   /**
    * @return true if value is a power of two, false oherwise.
@@ -58,7 +58,7 @@ struct Power2 {
    */
   template <typename size_type>
   static constexpr bool is(const size_type value) noexcept {
-    return PowerTwo<size_type>::is(value);
+    return Power2For<size_type>::is(value);
   }
 
   /**
@@ -66,7 +66,7 @@ struct Power2 {
    */
   template <typename size_type>
   static constexpr bool is_minus_one(const size_type value) noexcept {
-    return PowerTwo<size_type>::is_minus_one(value);
+    return Power2For<size_type>::is_minus_one(value);
   }
 
   /**
@@ -75,7 +75,7 @@ struct Power2 {
    */
   template <typename size_type>
   static constexpr size_type same_or_bigger(const size_type value) noexcept {
-    return PowerTwo<size_type>::same_or_bigger(value);
+    return Power2For<size_type>::same_or_bigger(value);
   }
 };
 

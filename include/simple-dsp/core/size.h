@@ -542,7 +542,7 @@ private:
 };
 
 template <typename T, typename size_type = std::size_t,
-          size_type max_size_bits = sizeof(size_type) * 8>
+          size_type max_size_bits = 0>
 using SizeFor = Size<sizeof(T), size_type, max_size_bits>;
 
 } // namespace simpledsp

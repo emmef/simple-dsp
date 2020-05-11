@@ -32,7 +32,7 @@ namespace simpledsp {
 template <typename size_type = size_t> class Bits {
   static_assert(std::is_integral<size_type>::value &&
                     !std::is_signed<size_type>::value,
-                "PowerOfTwo:: Type must be an integral, unsigned type");
+                "Power2:: Type must be an integral, unsigned type");
 
   template <int N> static constexpr size_type fillN(size_type n) noexcept {
     return N < 2 ? n : fillN<N / 2>(n) | (fillN<N / 2>(n) >> (N / 2));

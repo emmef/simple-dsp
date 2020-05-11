@@ -274,14 +274,14 @@ struct MsbTestScenario {
 
   static MsbTestScenario most_significant_bit(size_t value, int expected) {
     return {value, expected, simpledsp::Bits<size_t>::most_significant,
-            "PowerTwo::most_significant_bit"};
+            "Power2For::most_significant_bit"};
   }
 
   static MsbTestScenario most_significant_single_bit(size_t value,
                                                      int expected) {
     return {value, expected,
             simpledsp::Bits<size_t>::most_significant_single,
-            "PowerTwo::most_significant_single_bit"};
+            "Power2For::most_significant_single_bit"};
   }
 
   bool success() const { return expected == function(input); }
