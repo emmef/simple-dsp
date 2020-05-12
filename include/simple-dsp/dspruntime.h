@@ -39,7 +39,7 @@ public:
   static constexpr double min = 1e-30;
   static constexpr double max = 1e+30;
   static double validated(double rate) {
-    return rate == 0 ? 0 : std::clamp(rate, min, max);
+    return rate == 0 ? 0 : Val::clamp(rate, min, max);
   }
 
   SampleRate() {}

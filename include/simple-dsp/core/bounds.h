@@ -43,18 +43,18 @@ struct Val {
   static constexpr T clamp(const T v, const T min, const T max) noexcept {
     return v <= min ? min : v >= max ? max : v;
   }
-};
-template <typename T>
-sdsp_nodiscard static constexpr bool is_within(const T value, const T minimum,
-                                               const T maximum) {
-  return value == Val::clamp(value, minimum, maximum);
-}
+  template <typename T>
+  sdsp_nodiscard static constexpr bool is_within(const T value, const T minimum,
+                                                 const T maximum) {
+    return value == clamp(value, minimum, maximum);
+  }
 
-template <typename T>
-static constexpr bool is_within_excl(const T value, const T minimum,
-                                     const T maximum) {
-  return value > minimum && value < maximum;
-}
+  template <typename T>
+  static constexpr bool is_within_excl(const T value, const T minimum,
+                                       const T maximum) {
+    return value > minimum && value < maximum;
+  }
+};
 
 struct Unsigned {
 

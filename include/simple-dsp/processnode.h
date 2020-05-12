@@ -206,8 +206,8 @@ public:
   enum class Result { SUCCESS, BUSY, SAME, FAILURE };
 
   ProcessingNode(size_t runtimes = 1, size_t configs = 2)
-      : runtimeIn_(std::max(runtimes, 1LU)),
-        runtimeOut_(std::max(runtimes, 1LU)), configs_(std::max(configs, 1LU)) {
+      : runtimeIn_(Val::max(runtimes, 1LU)),
+        runtimeOut_(Val::max(runtimes, 1LU)), configs_(Val::max(configs, 1LU)) {
 
   }
 
@@ -338,7 +338,7 @@ public:
       return Result::FAILURE;
     }
     if (waitmillis > 0) {
-      int maxAttempts = std::clamp(attempts, 8, 100);
+      int maxAttempts = Val::clamp(attempts, 8, 100);
       for (int attempt = 0;
            state_ != RuntimeState::STOPPED && attempt < maxAttempts;
            attempt++) {

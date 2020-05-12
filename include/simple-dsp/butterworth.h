@@ -62,7 +62,7 @@ struct Butterworth {
   sdsp_nodiscard float getFrequency() const { return frequency; }
 
   Butterworth &setCenter(float newCenter) {
-    frequency = std::clamp(newCenter, FREQUENCY_RELATIVE_MINIMUM * rate,
+    frequency = Val::clamp(newCenter, FREQUENCY_RELATIVE_MINIMUM * rate,
                            FREQUENCY__RELATIVE_MAXIMUM * rate);
     return *this;
   }
@@ -70,7 +70,7 @@ struct Butterworth {
   sdsp_nodiscard unsigned getOrder() const { return order; }
 
   Butterworth &setOrder(unsigned newOrder) {
-    order = std::clamp(newOrder, ORDER_MINIMUM, ORDER_MAXIMUM);
+    order = Val::clamp(newOrder, ORDER_MINIMUM, ORDER_MAXIMUM);
     return *this;
   }
 
@@ -128,7 +128,7 @@ private:
   IIRCalculationMethod method;
 
   void getLowPassCoefficients(IIRCoefficientsSetter &setter) const {
-    float relativeFrequency = std::min(rate.relative(frequency), 0.5);
+    float relativeFrequency = Val::min(rate.relative(frequency), 0.5);
     if (order != setter.getOrder()) {
       setter.setOrder(order);
     }
@@ -143,7 +143,7 @@ private:
   }
 
   void getHighPassCoefficients(IIRCoefficientsSetter &setter) const {
-    float relativeFrequency = std::min(rate.relative(frequency), 0.5);
+    float relativeFrequency = Val::min(rate.relative(frequency), 0.5);
     if (order != setter.getOrder()) {
       setter.setOrder(order);
     }

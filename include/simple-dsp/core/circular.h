@@ -55,7 +55,7 @@ struct WrappedBase<WrappingType::BIT_MASK, element_size, size_type,
   get_allocation_size_for(size_type minimum_element_count) noexcept {
     return is_valid_element_count(minimum_element_count)
                ? Bits<size_type>::bit_mask_including(
-                     std::max(2, minimum_element_count) - 1) +
+                     Val::max(2, minimum_element_count) - 1) +
                      size_type(1)
                : 0;
   }

@@ -23,7 +23,7 @@ static void impulseResponseSumTest(const char *testName, const char *message,
   T sum = 0;
   T maxSamples = simpledsp::IntegrationMulipliers<T>::maxSamples() / factor;
   size_t iterationCount = std::sqrt(maxSamples) * 4;
-  size_t maxCount = std::min(static_cast<size_t>(maxSamples),
+  size_t maxCount = simpledsp::Val::min(static_cast<size_t>(maxSamples),
                              std::numeric_limits<size_t>::max() - 2);
 
   simpledsp::IntegrationCoefficients<T> integrator(maxSamples);
@@ -63,7 +63,7 @@ static void stepResponseSumTest(const char *testName, const char *message) {
   T output = 0;
   T maxSamples = simpledsp::IntegrationMulipliers<T>::maxSamples();
   size_t iterationCount = std::sqrt(maxSamples) * 4;
-  size_t maxCount = std::min(static_cast<size_t>(maxSamples),
+  size_t maxCount = simpledsp::Val::min(static_cast<size_t>(maxSamples),
                              std::numeric_limits<size_t>::max() - 2);
 
   simpledsp::IntegrationCoefficients<T> integrator(maxSamples);

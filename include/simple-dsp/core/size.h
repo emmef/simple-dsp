@@ -35,7 +35,7 @@ struct MemoryModel {
   static constexpr int size_t_bits = 8 * sizeof(size_t);
   static constexpr int address_bits =
 #if defined(SIMPLE_CORE_MEMORY_MODEL_ADDRESS_BITS)
-      std::clamp(int(SIMPLE_CORE_MEMORY_MODEL_ADDRESS_BITS), 1, size_t_bits);
+      Val::clamp(int(SIMPLE_CORE_MEMORY_MODEL_ADDRESS_BITS), 1, size_t_bits);
 #else
       size_t_bits;
   /*
@@ -80,7 +80,7 @@ template <typename SIZE = size_t, int size_bit_limit = 0> struct SizeType {
                 "simpledsp::size::system::SizeType: size_type cannot be larger "
                 "than std::size_t.");
 
-  static_assert(is_within(size_bit_limit, 1 - MemoryModel::size_t_bits,
+  static_assert(Val::is_within(size_bit_limit, 1 - MemoryModel::size_t_bits,
                           MemoryModel::size_t_bits),
                 "SizeType: explicit size_bit_limit cannot exceed number of "
                 "bits in size_type.");
@@ -101,7 +101,7 @@ template <typename SIZE = size_t, int size_bit_limit = 0> struct SizeType {
    * The number of bits used to represent size values.
    */
   static constexpr int size_bits =
-      std::clamp(size_bit_limit > 0 ? size_bit_limit
+      Val::clamp(size_bit_limit > 0 ? size_bit_limit
                                     : size_bit_limit + MemoryModel::size_t_bits,
                  1, MemoryModel::address_bits);
 
@@ -177,7 +177,7 @@ template <typename SIZE = size_t, int size_bit_limit = 0> struct SizeType {
    * @return the maximum number of elements, that can be zero.
    */
   static constexpr size_type max_count_for_element_size(size_t element_size) {
-    return max / std::max(size_t(1), element_size);
+    return max / Val::max(size_t(1), element_size);
   }
 
   /**

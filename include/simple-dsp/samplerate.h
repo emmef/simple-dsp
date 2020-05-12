@@ -39,9 +39,9 @@ template <typename freq> struct HelperForSampleRateBase<freq, true> {
 
   template <typename f> static constexpr freq getClamped(f value) noexcept {
     if (std::is_same<freq, f>::value) {
-      return std::clamp(value, f(min), f(max));
+      return Val::clamp(value, f(min), f(max));
     } else if (std::is_floating_point<f>::value) {
-      return freq(std::clamp((long double)(value), (long double)(min),
+      return freq(Val::clamp((long double)(value), (long double)(min),
                              (long double)(max)));
     } else if (value > 0) {
       return freq(value);
@@ -56,7 +56,7 @@ template <typename freq> struct HelperForSampleRateBase<freq, false> {
 
   template <typename f> static constexpr freq getClamped(f value) noexcept {
     if (std::is_same<freq, f>::value) {
-      return std::clamp(value, f(min), f(max));
+      return Val::clamp(value, f(min), f(max));
     }
     if (std::is_floating_point<f>::value) {
       /* As the value of some integers, including max, cannot be represented
@@ -71,7 +71,7 @@ template <typename freq> struct HelperForSampleRateBase<freq, false> {
       }
       return value;
     } else if (value > 2) {
-      return freq(std::clamp(uint64_t(value), uint64_t(min), uint64_t(max)));
+      return freq(Val::clamp(uint64_t(value), uint64_t(min), uint64_t(max)));
     }
     return 2;
   }

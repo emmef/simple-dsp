@@ -83,7 +83,7 @@ struct Biquad {
   sdsp_nodiscard float getCenter() const { return center; }
 
   Biquad &setCenter(float newCenter) {
-    center = std::clamp(newCenter, CENTER_RELATIVE_MINIMUM * rate,
+    center = Val::clamp(newCenter, CENTER_RELATIVE_MINIMUM * rate,
                         CENTER_RELATIVE_MAXIMUM * rate);
     return *this;
   }
@@ -95,7 +95,7 @@ struct Biquad {
 
   Biquad &setGain(float newGain) {
     checkAccess("gain factor", type, TYPES_WITH_GAIN);
-    gain = std::clamp(newGain, GAIN_MINIMUM, GAIN_MAXIMUM);
+    gain = Val::clamp(newGain, GAIN_MINIMUM, GAIN_MAXIMUM);
     return *this;
   }
 
@@ -106,7 +106,7 @@ struct Biquad {
 
   Biquad &setSlope(float newSlope) {
     checkAccess("slope", type, TYPES_WITH_SLOPE);
-    widthOrSlope = std::clamp(newSlope, SLOPE_MINIMUM, SLOPE_MAXIMUM);
+    widthOrSlope = Val::clamp(newSlope, SLOPE_MINIMUM, SLOPE_MAXIMUM);
     return *this;
   }
 
@@ -117,7 +117,7 @@ struct Biquad {
 
   Biquad &setBandwidth(float newBandwidth) {
     checkAccess("bandwidth", type, TYPES_WITH_BANDWIDTH);
-    widthOrSlope = std::clamp(newBandwidth, BANDWITH_MINIMUM, BANDWITH_MAXIMUM);
+    widthOrSlope = Val::clamp(newBandwidth, BANDWITH_MINIMUM, BANDWITH_MAXIMUM);
     return *this;
   }
 

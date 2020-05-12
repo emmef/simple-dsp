@@ -25,6 +25,7 @@
 #include <cmath>
 #include <limits>
 #include <type_traits>
+#include <simple-dsp/core/bounds.h>
 
 namespace simpledsp {
 
@@ -77,7 +78,7 @@ template <typename T> struct IntegrationMulipliers {
   static inline T historyMultiplier(T samples) noexcept {
     return samples < minSamples()
                ? 0
-               : std::exp(-1.0 / (std::min(samples, maxSamples())));
+               : std::exp(-1.0 / (Val::min(samples, maxSamples())));
   }
 
   static inline T inputMultiplier(T samples) noexcept {

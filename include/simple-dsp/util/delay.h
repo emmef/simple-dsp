@@ -33,7 +33,7 @@ namespace simpledsp::util {
  *   sdsp_nodiscard static bool is_valid_delay
 
   sdsp_nodiscard static WrappedIndex get_index_for(size_type delay) {
-    size_type effectiveDelay = std::max(delay, min_delay());
+    size_type effectiveDelay = Val::max(delay, min_delay());
     WrappedIndex::is_valid_element_count(effectiveDelay)
   }
 
@@ -80,7 +80,7 @@ struct DelayStatics<size_type, DelayAccessType::READ_THEN_WRITE> {
     static constexpr size_type max_delay_value =
         WrappedIndex::max_element_count;
     sdsp_nodiscard static bool is_valid_delay_value(size_type delay) {
-      return is_within(delay, min_delay_value, max_delay_value);
+      return Val::is_within(delay, min_delay_value, max_delay_value);
     }
 
     sdsp_nodiscard static constexpr size_type
@@ -167,7 +167,7 @@ struct DelayBasics<DelayAccessType::WRITE_THEN_READ, wrappingType, element_size,
   }
 
   sdsp_nodiscard constexpr bool isValidDelay(size_type delaySamples) {
-    return is_within(delaySamples, getMinimumDelay(), getMaximumDelay());
+    return Val::is_within(delaySamples, getMinimumDelay(), getMaximumDelay());
   }
 
   sdsp_nodiscard constexpr size_type getValidDelay(size_type delaySamples) {
