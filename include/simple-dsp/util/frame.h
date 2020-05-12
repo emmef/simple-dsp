@@ -46,12 +46,17 @@ public:
   sdsp_nodiscard T operator()(size_t i) const { return d[Index::safe(i, N)]; }
   sdsp_nodiscard T &operator()(size_t i) { return d[Index::safe(i, N)]; }
 
+  void set(T v) noexcept {
+    for (size_t i = 0; i < N; i++) {
+      d[i] = v;
+    }
+  }
   /**
    * Adds a constant value to all elements.
    * @param f The constant value
    * @return this Frame.
    */
-  void addToAll(T v) noexcept {
+  void add(T v) noexcept {
     for (size_t i = 0; i < N; i++) {
       d[i] += v;
     }
@@ -63,9 +68,9 @@ public:
    * @return The dot product.
    */
   sdsp_nodiscard T dot(const Frame &f) const noexcept {
-    T sum = d[0] *= f.d[0];
+    T sum = d[0] *= f[0];
     for (size_t i = 1; i < N; i++) {
-      sum += d[i] *= f.d[i];
+      sum += d[i] *= f[i];
     }
     return sum;
   }
@@ -83,7 +88,7 @@ public:
 
   Frame &operator+=(const Frame &f) noexcept {
     for (size_t i = 0; i < N; i++) {
-      d[i] += f.d[i];
+      d[i] += f[i];
     }
     return *this;
   }
@@ -99,7 +104,7 @@ public:
 
   Frame &operator-=(const Frame &f) noexcept {
     for (size_t i = 0; i < N; i++) {
-      d[i] -= f.d[i];
+      d[i] -= f[i];
     }
     return *this;
   }
@@ -142,14 +147,6 @@ public:
   }
 };
 
-template<typename T>
-static constexpr Frame<T, 3> cross_product(const Frame<T, 3> &frame) {
-  return {};
-}
-
-static void bla() {
-  Frame <double, 3> f1;
-}
 
 } // namespace simpledsp
 
