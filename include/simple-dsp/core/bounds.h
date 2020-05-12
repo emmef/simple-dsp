@@ -29,10 +29,25 @@
 
 namespace simpledsp {
 
+struct Val {
+  template <typename T>
+  static constexpr T max(const T v1, const T v2) noexcept {
+    return v1 < v2 ? v2 : v1;
+  }
+
+  template <typename T>
+  static constexpr T min(const T v1, const T v2) noexcept {
+    return v2 < v1 ? v2 : v1;
+  }
+  template <typename T>
+  static constexpr T clamp(const T v, const T min, const T max) noexcept {
+    return v <= min ? min : v >= max ? max : v;
+  }
+};
 template <typename T>
 sdsp_nodiscard static constexpr bool is_within(const T value, const T minimum,
                                                const T maximum) {
-  return value == ::std::clamp(value, minimum, maximum);
+  return value == Val::clamp(value, minimum, maximum);
 }
 
 template <typename T>

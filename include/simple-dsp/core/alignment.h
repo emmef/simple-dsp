@@ -24,7 +24,7 @@
 #include <cstddef>
 #include <simple-dsp/core/attributes.h>
 #include <simple-dsp/core/power2.h>
-
+#include <simple-dsp/core/bounds.h>
 /**
  * The C++20 standard is going to include a template that makes the compiler
  * assume that a certain pointer is aligned to a certain number of bytes. This
@@ -76,7 +76,14 @@ template <typename T> struct InternalVectorBaseTypeCheck {
 };
 
 template <typename T, SimdAlignType type, size_t count>
-struct InternalVectorBase;
+struct InternalVectorBase : public InternalVectorBaseTypeCheck<T> {
+  static_assert(Power2::is(count));
+
+  using InternalVectorBaseTypeCheck<T>::element_size;
+  static constexpr size_t elements = count;
+  static constexpr size_t bytes = Val::max(count * element_size, sizeof(size_t));
+  static constexpr size_t mask = bytes - 1;
+};
 
 template <typename T, size_t count>
 struct InternalVectorBase<T, SimdAlignType::BYTES, count>
@@ -85,22 +92,10 @@ struct InternalVectorBase<T, SimdAlignType::BYTES, count>
 
   using InternalVectorBaseTypeCheck<T>::element_size;
   static constexpr size_t _count =
-      count == 1 ? count : std::max(count, sizeof(size_t));
+      count == 1 ? count : Val::max(count, sizeof(size_t));
 
-  static constexpr size_t elements = std::max(size_t(1), _count / element_size);
+  static constexpr size_t elements = Val::max(size_t(1), _count / element_size);
   static constexpr size_t bytes = _count;
-  static constexpr size_t mask = bytes - 1;
-};
-
-template <typename T, size_t count>
-struct InternalVectorBase<T, SimdAlignType::ELEMENTS, count>
-    : public InternalVectorBaseTypeCheck<T> {
-  static_assert(Power2::is(count));
-
-  using InternalVectorBaseTypeCheck<T>::element_size;
-  static constexpr size_t elements = count;
-  static constexpr size_t bytes =
-      std::max(count * element_size, sizeof(size_t));
   static constexpr size_t mask = bytes - 1;
 };
 
@@ -184,13 +179,13 @@ static constexpr bool is_aligned_with(const size_type value,
   return value == get_aligned_with(value, power_of_two);
 }
 
-template <typename T> struct AlignedFor : internal::AlignmentBase<T> {
+template <typename T> struct AlignedFor {
   using Base = internal::AlignmentBase<T>;
-  using Base::bytes;
-  using Base::element_size;
-  using Base::elements;
-  using Base::mask;
-  using Base::type;
+  static constexpr size_t bytes = Base::bytes;
+  static constexpr size_t element_size = Base::element_size;
+  static constexpr size_t elements = Base::elements;
+  static constexpr size_t mask = Base::mask;
+  using type = T;
 
   /**
    * Tests whether the indicated number is aligned.
