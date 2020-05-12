@@ -281,7 +281,7 @@ enum class QueueResult { SUCCESS = 0, BUSY, FULL, EMPTY };
  * @see simpledsp::queue_data::DataTraits
  */
 template <typename Value, typename Position, typename Data> class BaseQueue {
-  static_assert(std::is_trivially_copy_assignable<Value>::value,
+  static_assert(std::is_trivially_copy_assignable_v<Value>,
                 "Value type must be trivially copy-assignable");
 
   static_assert(

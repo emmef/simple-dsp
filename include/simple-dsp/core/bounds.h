@@ -29,38 +29,66 @@
 
 namespace simpledsp {
 
-struct Val {
-  template <typename T>
-  static constexpr T max(const T v1, const T v2) noexcept {
+template <typename T> struct Val {
+  static_assert(std::is_arithmetic_v<T>, "Val: expecting an arithmetic type");
+
+  sdsp_nodiscard static constexpr T maximum(const T v1, const T v2) noexcept {
     return v1 < v2 ? v2 : v1;
   }
 
-  template <typename T>
-  static constexpr T min(const T v1, const T v2) noexcept {
+  sdsp_nodiscard static constexpr T minimum(const T v1, const T v2) noexcept {
     return v2 < v1 ? v2 : v1;
   }
-  template <typename T>
-  static constexpr T clamp(const T v, const T min, const T max) noexcept {
+
+  sdsp_nodiscard static constexpr T clamped(const T v, const T min,
+                                            const T max) noexcept {
     return v <= min ? min : v >= max ? max : v;
   }
-  template <typename T>
-  sdsp_nodiscard static constexpr bool is_within(const T value, const T minimum,
-                                                 const T maximum) {
-    return value == clamp(value, minimum, maximum);
+
+  sdsp_nodiscard static constexpr bool is_within(const T v, const T min,
+                                                 const T max) noexcept {
+    return v == clamped(v, min, max);
   }
 
-  template <typename T>
-  static constexpr bool is_within_excl(const T value, const T minimum,
-                                       const T maximum) {
-    return value > minimum && value < maximum;
+  sdsp_nodiscard static constexpr bool is_within_excl(const T v, const T min,
+                                                      const T max) noexcept {
+    return v > min && v < max;
   }
 };
+
+template <typename T>
+sdsp_nodiscard static constexpr T maximum(const T v1, const T v2) noexcept {
+  return Val<T>::maximum(v1, v2);
+}
+
+template <typename T>
+sdsp_nodiscard static constexpr T minimum(const T v1, const T v2) noexcept {
+  return Val<T>::minimum(v1, v2);
+}
+
+template <typename T>
+sdsp_nodiscard static constexpr T clamped(const T v, const T min,
+                                          const T max) noexcept {
+  return Val<T>::clamped(v, min, max);
+}
+
+template <typename T>
+sdsp_nodiscard static constexpr bool is_within(const T v, const T min,
+                                               const T max) noexcept {
+  return Val<T>::is_within(v, min, max);
+}
+
+template <typename T>
+sdsp_nodiscard static constexpr bool is_within_excl(const T v, const T min,
+                                                    const T max) noexcept {
+  return Val<T>::is_within_excl(v, min, max);
+}
 
 struct Unsigned {
 
   template <typename T> static constexpr T uint_check(T value) noexcept {
     static_assert(
-        std::is_integral<T>::value && !std::is_signed<T>::value &&
+        std::is_integral_v<T> && !std::is_signed_v<T> &&
             sizeof(T) <= sizeof(size_t),
         "Expected an unsigned, integral type not larger than size_t.");
     return value;

@@ -62,7 +62,7 @@ class SimpleTimeOut : public TimeOut {
 
 public:
   explicit SimpleTimeOut(long timeout) noexcept {
-    ticks = duration(Val::max(1L, timeout));
+    ticks = duration(maximum(1L, timeout));
   }
 
   void start() noexcept override {
@@ -89,8 +89,8 @@ class SlicedTimeout : public TimeOut {
 
 public:
   explicit SlicedTimeout(long timeout, int slices) noexcept {
-    ticks = Val::max(1L, timeout);
-    slice = duration(Val::max(1L, ticks / slices));
+    ticks = maximum(1L, timeout);
+    slice = duration(maximum(1L, ticks / slices));
   }
 
   void start() noexcept override {

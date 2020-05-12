@@ -23,8 +23,8 @@
 
 #include <cstddef>
 #include <simple-dsp/core/attributes.h>
-#include <simple-dsp/core/power2.h>
 #include <simple-dsp/core/bounds.h>
+#include <simple-dsp/core/power2.h>
 /**
  * The C++20 standard is going to include a template that makes the compiler
  * assume that a certain pointer is aligned to a certain number of bytes. This
@@ -68,7 +68,7 @@ enum class SimdAlignType { BYTES, ELEMENTS };
 namespace internal {
 
 template <typename T> struct InternalVectorBaseTypeCheck {
-  static_assert(std::is_floating_point<T>::value || std::is_integral<T>::value,
+  static_assert(std::is_arithmetic_v<T>,
                 "Alignment base should be a floating point or integral type.");
 
   using type = T;
@@ -81,7 +81,7 @@ struct InternalVectorBase : public InternalVectorBaseTypeCheck<T> {
 
   using InternalVectorBaseTypeCheck<T>::element_size;
   static constexpr size_t elements = count;
-  static constexpr size_t bytes = Val::max(count * element_size, sizeof(size_t));
+  static constexpr size_t bytes = maximum(count * element_size, sizeof(size_t));
   static constexpr size_t mask = bytes - 1;
 };
 
@@ -92,9 +92,9 @@ struct InternalVectorBase<T, SimdAlignType::BYTES, count>
 
   using InternalVectorBaseTypeCheck<T>::element_size;
   static constexpr size_t _count =
-      count == 1 ? count : Val::max(count, sizeof(size_t));
+      count == 1 ? count : maximum(count, sizeof(size_t));
 
-  static constexpr size_t elements = Val::max(size_t(1), _count / element_size);
+  static constexpr size_t elements = maximum(size_t(1), _count / element_size);
   static constexpr size_t bytes = _count;
   static constexpr size_t mask = bytes - 1;
 };

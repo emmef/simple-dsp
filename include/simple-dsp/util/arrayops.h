@@ -275,14 +275,14 @@ sdsp_nodiscard static T
 inner_product(const util::AlignedData<T, ALIGNMENT, C> &array1,
               const util::AlignedData<T, ALIGNMENT, D> &array2) {
   return inline_inner_product(array1.ptr(), array2.ptr(),
-                              ::Val::min(array1.size(), array2.size()));
+                              minimum(array1.size(), array2.size()));
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
 sdsp_nodiscard static T operator*(const util::AlignedData<T, ALIGNMENT, C> &array1,
                                   const util::AlignedData<T, ALIGNMENT, D> &array2) {
   return inline_inner_product(array1.ptr(), array2.ptr(),
-                              ::Val::min(array1.size(), array2.size()));
+                              minimum(array1.size(), array2.size()));
 }
 
 template <typename T, size_t SIZE, size_t ALIGNMENT>
@@ -399,7 +399,7 @@ template <typename T, size_t ALIGNMENT, class C, class D>
 static void add_to(util::AlignedData<T, ALIGNMENT, C> &destination,
                    const util::AlignedData<T, ALIGNMENT, D> &source) {
   inline_add_to(destination.ptr()(), source.ptr()(),
-                ::Val::min(destination.size(), source.size()));
+                minimum(destination.size(), source.size()));
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
@@ -408,12 +408,11 @@ static void add_to_frames_up(util::AlignedData<T, ALIGNMENT, C> &destination,
                              size_t framesUp) {
   inline_add_to(
       destination.frame(framesUp), source.ptr()(),
-      ::Val::min(
-          ::Val::max(
-              0,
-              static_cast<ssize_t>(destination.size()) -
-                  framesUp *
-                      util::AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
+      minimum(
+          maximum(0, static_cast<ssize_t>(destination.size()) -
+                         framesUp *
+                             util::AlignedData<T, ALIGNMENT,
+                                               C>::Metric::alignmentElements),
           source.size()));
 }
 
@@ -441,7 +440,7 @@ static void add_to_with_factor(util::AlignedData<T, ALIGNMENT, C> &destination,
                                T factor) {
   inline_add_to_with_factor(
       destination.ptr()(), source.ptr()(),
-      ::Val::min(destination.size(), factor, source.size()));
+                            minimum(destination.size(), factor, source.size()));
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
@@ -451,12 +450,11 @@ add_to_with_factor_frames_up(util::AlignedData<T, ALIGNMENT, C> &destination,
                              T factor, size_t framesUp) {
   inline_add_to_with_factor(
       destination.frame(framesUp), source.ptr()(), factor,
-      ::Val::min(
-          ::Val::max(
-              0,
-              static_cast<ssize_t>(destination.size()) -
-                  framesUp *
-                      util::AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
+      minimum(
+          maximum(0, static_cast<ssize_t>(destination.size()) -
+                         framesUp *
+                             util::AlignedData<T, ALIGNMENT,
+                                               C>::Metric::alignmentElements),
           source.size()));
 }
 
@@ -515,7 +513,7 @@ template <typename T, size_t ALIGNMENT, class C, class D>
 static void subtract_from(util::AlignedData<T, ALIGNMENT, C> &destination,
                           const util::AlignedData<T, ALIGNMENT, D> &source) {
   inline_subtract_from(destination.ptr()(), source.ptr()(),
-                       ::Val::min(destination.size(), source.size()));
+                       minimum(destination.size(), source.size()));
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
@@ -524,12 +522,11 @@ static void subtract_from_frames_up(util::AlignedData<T, ALIGNMENT, C> &destinat
                                     size_t framesUp) {
   inline_subtract_from(
       destination.frame(framesUp), source.ptr()(),
-      ::Val::min(
-          ::Val::max(
-              0,
-              static_cast<ssize_t>(destination.size()) -
-                  framesUp *
-                      util::AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
+      minimum(
+          maximum(0, static_cast<ssize_t>(destination.size()) -
+                         framesUp *
+                             util::AlignedData<T, ALIGNMENT,
+                                               C>::Metric::alignmentElements),
           source.size()));
 }
 
@@ -561,7 +558,7 @@ subtract_from_with_factor(util::AlignedData<T, ALIGNMENT, C> &destination,
                           T factor) {
   inline_subtract_from_with_factor(
       destination.ptr()(), source.ptr()(),
-      ::Val::min(destination.size(), factor, source.size()));
+      minimum(destination.size(), factor, source.size()));
 }
 
 template <typename T, size_t ALIGNMENT, class C, class D>
@@ -571,12 +568,11 @@ subtract_from_with_factor_frames_up(util::AlignedData<T, ALIGNMENT, C> &destinat
                                     T factor, size_t framesUp) {
   inline_subtract_from_with_factor(
       destination.frame(framesUp), source.ptr()(), factor,
-      ::Val::min(
-          ::Val::max(
-              0,
-              static_cast<ssize_t>(destination.size()) -
-                  framesUp *
-                      util::AlignedData<T, ALIGNMENT, C>::Metric::alignmentElements),
+      minimum(
+          maximum(0, static_cast<ssize_t>(destination.size()) -
+                         framesUp *
+                             util::AlignedData<T, ALIGNMENT,
+                                               C>::Metric::alignmentElements),
           source.size()));
 }
 

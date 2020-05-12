@@ -45,7 +45,7 @@ class Interface {
 
   static bool isValidCombination(size_t inputs, size_t outputs,
                                  size_t bufferSize) {
-    size_t y = Val::max(inputs, outputs);
+    size_t y = max(inputs, outputs);
     return Size_::is_valid_product(y, bufferSize);
   }
 

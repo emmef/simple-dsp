@@ -45,7 +45,7 @@ namespace simpledsp {
  * @tparam T type of sample.
  */
 template <typename T> struct IntegrationMulipliers {
-  static_assert(std::is_floating_point<T>::value,
+  static_assert(std::is_floating_point_v<T>,
                 "Value type must be floating-point");
 
   /**
@@ -78,7 +78,7 @@ template <typename T> struct IntegrationMulipliers {
   static inline T historyMultiplier(T samples) noexcept {
     return samples < minSamples()
                ? 0
-               : std::exp(-1.0 / (Val::min(samples, maxSamples())));
+               : std::exp(-1.0 / (minimum(samples, maxSamples())));
   }
 
   static inline T inputMultiplier(T samples) noexcept {

@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <simple-dsp/core/index.h>
 #include <simple-dsp/core/size.h>
+#include <simple-dsp/core/bounds.h>
 #include <stdexcept>
 #include <stdio.h>
 #include <vector>
@@ -58,8 +59,8 @@ class CrossoverPlan {
       return;
     }
     ssize_t input = (min + max) / 2;
-    ssize_t lo = Val::max(input - 1, (ssize_t)min);
-    ssize_t hi = Val::min(input + 1, (ssize_t)max);
+    ssize_t lo = simpledsp::maximum(input - 1, (ssize_t)min);
+    ssize_t hi = simpledsp::minimum(input + 1, (ssize_t)max);
     ssize_t loOut = (min + lo) / 2;
     ssize_t hiOut = (max + hi) / 2;
 

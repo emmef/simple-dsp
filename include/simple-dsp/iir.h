@@ -127,7 +127,7 @@ template <typename coeff, class CoefficientsClass> struct IIRCoefficientAccess {
   static_assert(std::is_base_of<IIRCoefficientsClass, CoefficientsClass>::value,
                 "IIRCoefficientAccess<coeff, CoefficientsClass>: "
                 "CoefficientsClass not derived from IIRCoefficientsClass");
-  static_assert(std::is_floating_point<coeff>::value,
+  static_assert(std::is_floating_point_v<coeff>,
                 "IIRCoefficientAccess<coeff, CoefficientsClass>: "
                 "coeff must be floating-point");
 

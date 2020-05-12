@@ -30,8 +30,8 @@ namespace simpledsp {
  * @tparam size_type An integral, unsigned type.
  */
 template <typename size_type = size_t> class Bits {
-  static_assert(std::is_integral<size_type>::value &&
-                    !std::is_signed<size_type>::value,
+  static_assert(std::is_integral_v<size_type> &&
+                    !std::is_signed_v<size_type>,
                 "Power2:: Type must be an integral, unsigned type");
 
   template <int N> static constexpr size_type fillN(size_type n) noexcept {

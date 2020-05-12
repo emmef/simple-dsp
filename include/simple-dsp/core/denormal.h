@@ -31,7 +31,7 @@ namespace simpledsp {
 namespace internal {
 
 template <typename FPTYPE, size_t selector> struct Normalize {
-  static_assert(std::is_floating_point<FPTYPE>::value,
+  static_assert(std::is_floating_point_v<FPTYPE>,
                 "FPTYPE must be a floating-point type");
 
   static inline FPTYPE get_flushed(FPTYPE value) { return value; }

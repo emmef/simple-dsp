@@ -39,10 +39,10 @@ template <typename freq> struct HelperForSampleRateBase<freq, true> {
 
   template <typename f> static constexpr freq getClamped(f value) noexcept {
     if (std::is_same<freq, f>::value) {
-      return Val::clamp(value, f(min), f(max));
-    } else if (std::is_floating_point<f>::value) {
-      return freq(Val::clamp((long double)(value), (long double)(min),
-                             (long double)(max)));
+      return clamped(value, f(min), f(max));
+    } else if (std::is_floating_point_v<f>) {
+      return freq(clamped((long double)(value), (long double)(min),
+                          (long double)(max)));
     } else if (value > 0) {
       return freq(value);
     }
@@ -56,9 +56,9 @@ template <typename freq> struct HelperForSampleRateBase<freq, false> {
 
   template <typename f> static constexpr freq getClamped(f value) noexcept {
     if (std::is_same<freq, f>::value) {
-      return Val::clamp(value, f(min), f(max));
+      return clamped(value, f(min), f(max));
     }
-    if (std::is_floating_point<f>::value) {
+    if (std::is_floating_point_v<f>) {
       /* As the value of some integers, including max, cannot be represented
        * accurately by a floating point number, we cannot use a clamp with the
        * floating point representations.
@@ -71,7 +71,7 @@ template <typename freq> struct HelperForSampleRateBase<freq, false> {
       }
       return value;
     } else if (value > 2) {
-      return freq(Val::clamp(uint64_t(value), uint64_t(min), uint64_t(max)));
+      return freq(clamped(uint64_t(value), uint64_t(min), uint64_t(max)));
     }
     return 2;
   }
@@ -81,12 +81,11 @@ template <typename freq> struct HelperForSampleRateBase<freq, false> {
 template <typename freq>
 struct HelperForSampleRate
     : public HelperForSampleRateBase<freq,
-                                     std::is_floating_point<freq>::value> {
-  static_assert(std::is_integral<freq>::value ||
-                    std::is_floating_point<freq>::value,
+                                     std::is_floating_point_v<freq>> {
+  static_assert(std::is_arithmetic_v<freq>,
                 "Frequency type must be floating point or integral");
   using Base =
-      HelperForSampleRateBase<freq, std::is_floating_point<freq>::value>;
+      HelperForSampleRateBase<freq, std::is_floating_point_v<freq>>;
   using Base::max;
   using Base::min;
   using frequency_type = freq;

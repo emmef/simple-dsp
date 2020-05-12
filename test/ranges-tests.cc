@@ -25,12 +25,12 @@ using TestCase = simpledsp::testhelper::AbstractValueTestCase;
 struct WithinTests {
   static TestCase *createWithin(bool expected, size_t value, size_t min,
                                 size_t max) {
-    return Functions::create("is_within", simpledsp::Val::is_within, expected, value,
+    return Functions::create("is_within", simpledsp::is_within, expected, value,
                              min, max);
   }
   static TestCase *createWithinExcl(bool expected, size_t value, size_t min,
                                     size_t max) {
-    return Functions::create("is_within_excl", simpledsp::Val::is_within_excl,
+    return Functions::create("is_within_excl", simpledsp::is_within_excl,
                              expected, value, min, max);
   }
 };
