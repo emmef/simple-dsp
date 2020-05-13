@@ -33,35 +33,21 @@ enum class WrappingType { BIT_MASK, MODULO };
 namespace base {
 
 template <WrappingType wrappingType, size_t element_size = 1,
-          typename size_type = size_t,
-          int max_size_bits = 0>
+          typename size_type = size_t, int max_size_bits = 0>
 struct WrappedBase;
 
 template <size_t element_size, typename size_type, int max_size_bits>
 struct WrappedBase<WrappingType::BIT_MASK, element_size, size_type,
                    max_size_bits> {
 
-  using Size = Size<element_size, size_type, max_size_bits>;
+  static constexpr size_type max_element_count =
+      Size<element_size, size_type, max_size_bits>::max_bit_mask + 1;
 
-  static constexpr size_type max_element_count = Size::max_bit_mask + 1;
-
-  sdsp_nodiscard static bool
-  is_valid_element_count(size_type minimum_element_count) {
-    return minimum_element_count > 0 &&
-           minimum_element_count <= max_element_count;
+  sdsp_nodiscard static bool is_valid_element_count(size_type elements) {
+    return elements > 0 && elements <= max_element_count;
   }
 
-  sdsp_nodiscard static size_type
-  get_allocation_size_for(size_type minimum_element_count) noexcept {
-    return is_valid_element_count(minimum_element_count)
-               ? Bits<size_type>::bit_mask_including(
-                     maximum(2, minimum_element_count) - 1) +
-                     size_type(1)
-               : 0;
-  }
-
-  WrappedBase(size_type minimum_element_count)
-      : mask_(valid_mask(minimum_element_count)) {}
+  WrappedBase(size_type elements) : mask_(valid_mask(elements)) {}
 
   size_type size() const noexcept { return mask_ + 1; }
 
@@ -79,34 +65,26 @@ struct WrappedBase<WrappingType::BIT_MASK, element_size, size_type,
 
   sdsp_nodiscard size_type unsafe_add(size_type index,
                                       size_type delta) const noexcept {
-    return (index + delta) & mask_;
+    return wrapped(index + delta);
   }
 
   sdsp_nodiscard size_type unsafe_sub(size_type index,
                                       size_type delta) const noexcept {
-    return (index + mask_ + 1 - delta & mask_) & mask_;
+    return wrapped(index + mask_ + 1 - delta & mask_);
   }
 
-  sdsp_nodiscard inline size_type inc(size_type index) const noexcept {
-    return unsafe_inc(index);
+  void set_element_count(size_type elements) { mask_ = valid_mask(elements); }
+
+protected:
+  sdsp_nodiscard inline size_type
+  safe_parameter(size_type parameter) const noexcept {
+    return parameter;
   }
 
-  sdsp_nodiscard inline size_type dec(size_type index) const noexcept {
-    return unsafe_dec(index);
-  }
-
-  sdsp_nodiscard size_type add(size_type index,
-                               size_type delta) const noexcept {
-    return unsafe_add(index, delta);
-  }
-
-  sdsp_nodiscard size_type sub(size_type index,
-                               size_type delta) const noexcept {
-    return unsafe_sub(index, delta);
-  }
-
-  void set_element_count(size_type minimum_element_count) {
-    mask_ = valid_mask(minimum_element_count);
+  sdsp_nodiscard static size_type
+  allocation_for_valid_elements(size_type elements) noexcept {
+    return Bits<size_type>::bit_mask_including(maximum(2, elements) - 1) +
+           size_type(1);
   }
 
 private:
@@ -124,24 +102,13 @@ template <size_t element_size, typename size_type, int max_size_bits>
 struct WrappedBase<WrappingType::MODULO, element_size, size_type,
                    max_size_bits> {
 
-  using Size = Size<element_size, size_type, max_size_bits>;
+  static constexpr size_type max_element_count = Size<element_size, size_type, max_size_bits>::max_index / 2;
 
-  static constexpr size_type max_element_count = Size::max_index / 2;
-
-  sdsp_nodiscard static bool
-  is_valid_element_count(size_type minimum_element_count) {
-    return minimum_element_count > 0 &&
-           minimum_element_count <= max_element_count;
+  sdsp_nodiscard static bool is_valid_element_count(size_type elements) {
+    return elements > 0 && elements <= max_element_count;
   }
 
-  sdsp_nodiscard static size_type
-  get_allocation_size_for(size_type minimum_element_count) noexcept {
-    return is_valid_element_count(minimum_element_count) ? minimum_element_count
-                                                         : 0;
-  }
-
-  WrappedBase(size_type minimum_element_count)
-      : size_(valid_element_count(minimum_element_count)) {}
+  WrappedBase(size_type elements) : size_(valid_element_count(elements)) {}
 
   size_type size() const noexcept { return size_; }
 
@@ -150,11 +117,11 @@ struct WrappedBase<WrappingType::MODULO, element_size, size_type,
   }
 
   sdsp_nodiscard size_type unsafe_inc(size_type index) const noexcept {
-    return (index + 1) % size_;
+    return wrapped(index + 1);
   }
 
   sdsp_nodiscard size_type unsafe_dec(size_type index) const noexcept {
-    return (index - 1) % size_;
+    return wrapped(size_ + index - 1);
   }
 
   sdsp_nodiscard size_type unsafe_add(size_type index,
@@ -167,37 +134,31 @@ struct WrappedBase<WrappingType::MODULO, element_size, size_type,
     return wrapped(index + size_ - delta);
   }
 
-  sdsp_nodiscard size_type inc(size_type index) const noexcept {
-    return unsafe_inc(wrapped(index));
+  void set_element_count(size_type elements) {
+    size_ = valid_element_count(elements);
   }
 
-  sdsp_nodiscard size_type dec(size_type index) const noexcept {
-    return unsafe_dec(wrapped(index));
+protected:
+  sdsp_nodiscard inline size_type
+  safe_parameter(size_type parameter) const noexcept {
+    return parameter % size_;
   }
 
-  sdsp_nodiscard size_type add(size_type index,
-                               size_type delta) const noexcept {
-    return unsafe_add(wrapped(index), wrapped(delta));
-  }
-
-  sdsp_nodiscard size_type sub(size_type index,
-                               size_type delta) const noexcept {
-    return unsafe_sub(wrapped(index), wrapped(delta));
-  }
-
-  void set_element_count(size_type minimum_element_count) {
-    size_ = valid_element_count(minimum_element_count);
+  sdsp_nodiscard static size_type
+  allocation_for_valid_elements(size_type elements) noexcept {
+    return elements;
   }
 
 private:
   size_type size_;
 
-  sdsp_nodiscard static size_t valid_mask(size_type minimum_element_count) {
-    if (is_valid_element_count(minimum_element_count)) {
-      return minimum_element_count;
+  sdsp_nodiscard static size_t valid_element_count(size_type elements) {
+    if (is_valid_element_count(elements)) {
+      return elements;
     }
     throw std::invalid_argument(
-        "WrappedIndex(MODULO): number of elements must be non-zero and not greater than WrappedIndex::max_element_count.");
+        "WrappedIndex(MODULO): number of elements must be non-zero and not "
+        "greater than WrappedIndex::max_element_count.");
   }
 };
 
@@ -219,6 +180,7 @@ struct WrappedIndex : public base::WrappedBase<wrappingType, element_size,
 
   using Super =
       base::WrappedBase<wrappingType, element_size, size_type, max_size_bits>;
+
   using Size = Size<element_size, size_type, max_size_bits>;
 
   static constexpr size_type max_element_count = Super::max_element_count;
@@ -228,17 +190,15 @@ struct WrappedIndex : public base::WrappedBase<wrappingType, element_size,
    * wrapped index model type and false otherwise.
    */
   sdsp_nodiscard static bool
-  is_valid_element_count(size_type minimum_element_count) noexcept {
-    return Super::is_valid_element_count(minimum_element_count);
+  is_valid_element_count(size_type elements) noexcept {
+    return Super::is_valid_element_count(elements);
   }
 
-  /**
-   * @returns the amount of memory to allocate for a model that supports the
-   * number of elements or zero if that is not possible.
-   */
   sdsp_nodiscard static size_type
-  get_allocation_size_for(size_type minimum_element_count) noexcept {
-    return Super::get_allocation_size_for(minimum_element_count);
+  get_allocation_size_for(size_type elements) noexcept {
+    return is_valid_element_count(elements)
+               ? Super::allocation_for_valid_elements((elements))
+               : 0;
   }
 
   /**
@@ -251,101 +211,24 @@ struct WrappedIndex : public base::WrappedBase<wrappingType, element_size,
    */
   explicit WrappedIndex(size_t element_count) : Super(element_count) {}
 
-  /**
-   * @return the maximum size of an array that can be addressed with this index
-   * model.
-   */
-  sdsp_nodiscard size_type size() const noexcept { return Super::size(); }
-
-  /**
-   * @return the wrapped value of index.
-   */
-  sdsp_nodiscard inline size_type wrapped(size_type to_wrap) const noexcept {
-    return Super::wrapped(to_wrap);
-  }
-
-  /**
-   * @return the incremented, then wrapped value of index.
-   */
   sdsp_nodiscard inline size_type inc(size_type index) const noexcept {
-    return Super::inc(index);
+    return Super::unsafe_inc(Super::safe_parameter(index));
   }
 
-  /**
-   * @return the decremented, then wrapped value of index.
-   */
   sdsp_nodiscard inline size_type dec(size_type index) const noexcept {
-    return Super::dec(index);
+    return Super::unsafe_dec(Super::safe_parameter(index));
   }
 
-  /**
-   * @return index plus delta wrapped..
-   */
-  sdsp_nodiscard inline size_type add(size_type index,
-                                      size_type delta) const noexcept {
-    return Super::add(index, delta);
+  sdsp_nodiscard size_type add(size_type index,
+                               size_type delta) const noexcept {
+    return Super::unsafe_add(Super::safe_parameter(index),
+                             Super::safe_parameter(delta));
   }
 
-  /**
-   * @return index minus delta wrapped
-   */
-  sdsp_nodiscard inline size_type sub(size_type index,
-                                      size_type delta) const noexcept {
-    return Super::sub(index, delta);
-  }
-
-  /**
-   * the decremented, then wrapped value of index.
-   * This variant assumes that all arguments are size() or smaller. If that
-   * assumption cannot be made, use the "safe" variant without the unsafe_
-   * prefix instead. Rest assured that performance of the "safe" variant is as
-   * good as the unsafe variant for implementations that do not need the
-   * argument assumption for correctness.
-   * @return the incremented, then wrapped value of index.
-   */
-  sdsp_nodiscard inline size_type unsafe_inc(size_type index) const noexcept {
-    return Super::unsafe_inc(index);
-  }
-
-  /**
-   * Returns the incremented, then wrapped value of index.
-   * This variant assumes that all arguments are size() or smaller. If that
-   * assumption cannot be made, use the "safe" variant without the unsafe_
-   * prefix instead. Rest assured that performance of the "safe" variant is as
-   * good as the unsafe variant for implementations that do not need the
-   * argument assumption for correctness.
-   * @return the decremented, then wrapped value of index.
-   */
-  sdsp_nodiscard inline size_type unsafe_dec(size_type index) const noexcept {
-    return Super::unsafe_dec(index);
-  }
-
-  /**
-   * Returns  index plus delta wrapped.
-   * This variant assumes that all arguments are size() or smaller. If that
-   * assumption cannot be made, use the "safe" variant without the unsafe_
-   * prefix instead. Rest assured that performance of the "safe" variant is as
-   * good as the unsafe variant for implementations that do not need the
-   * argument assumption for correctness.
-   * @return index plus delta wrapped..
-   */
-  sdsp_nodiscard inline size_type unsafe_add(size_type index,
-                                             size_type delta) const noexcept {
-    return Super::unsafe_add(index, delta);
-  }
-
-  /**
-   * Returns index minus delta wrapped.
-   * This variant assumes that all arguments are size() or smaller. If that
-   * assumption cannot be made, use the "safe" variant without the unsafe_
-   * prefix instead. Rest assured that performance of the "safe" variant is as
-   * good as the unsafe variant for implementations that do not need the
-   * argument assumption for correctness.
-   * @return index minus delta wrapped
-   */
-  sdsp_nodiscard inline size_type unsafe_sub(size_type index,
-                                             size_type delta) const noexcept {
-    return Super::unsafe_sub(index, delta);
+  sdsp_nodiscard size_type sub(size_type index,
+                               size_type delta) const noexcept {
+    return Super::unsafe_sub(Super::safe_parameter(index),
+                             Super::safe_parameter(delta));
   }
 
   /**
