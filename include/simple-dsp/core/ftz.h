@@ -1,7 +1,7 @@
-#ifndef SIMPLE_DSP_CORE_DENORMAL_H
-#define SIMPLE_DSP_CORE_DENORMAL_H
+#ifndef SIMPLE_DSP_CORE_FTZ_H
+#define SIMPLE_DSP_CORE_FTZ_H
 /*
- * simple-dsp/core/denormal.h
+ * simple-dsp/core/ftz.h
  *
  * Added by michel on 2019-09-10
  * Copyright (C) 2015-2020 Michel Fleur.
@@ -121,4 +121,4 @@ public:
 
 } // namespace simpledsp
 
-#endif // SIMPLE_DSP_CORE_DENORMAL_H
+#endif // SIMPLE_DSP_CORE_FTZ_H
