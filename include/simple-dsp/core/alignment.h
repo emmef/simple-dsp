@@ -72,7 +72,7 @@ template <typename T> struct InternalVectorBaseTypeCheck {
                 "Alignment base should be a floating point or integral type.");
 
   using type = T;
-  static constexpr size_t element_size = sizeof(T);
+  const size_t element_size = sizeof(T);
 };
 
 template <typename T, SimdAlignType type, size_t count>
@@ -80,9 +80,9 @@ struct InternalVectorBase : public InternalVectorBaseTypeCheck<T> {
   static_assert(Power2::is(count));
 
   using InternalVectorBaseTypeCheck<T>::element_size;
-  static constexpr size_t elements = count;
-  static constexpr size_t bytes = maximum(count * element_size, sizeof(size_t));
-  static constexpr size_t mask = bytes - 1;
+  const size_t elements = count;
+  const size_t bytes = maximum(count * element_size, sizeof(size_t));
+  const size_t mask = bytes - 1;
 };
 
 template <typename T, size_t count>
@@ -91,12 +91,12 @@ struct InternalVectorBase<T, SimdAlignType::BYTES, count>
   static_assert(Power2::is(count));
 
   using InternalVectorBaseTypeCheck<T>::element_size;
-  static constexpr size_t _count =
+  const size_t _count =
       count == 1 ? count : maximum(count, sizeof(size_t));
 
-  static constexpr size_t elements = maximum(size_t(1), _count / element_size);
-  static constexpr size_t bytes = _count;
-  static constexpr size_t mask = bytes - 1;
+  const size_t elements = maximum(size_t(1), _count / element_size);
+  const size_t bytes = _count;
+  const size_t mask = bytes - 1;
 };
 
 template <typename T, SimdAlignType TYPE>
@@ -104,9 +104,9 @@ struct InternalVectorBase<T, TYPE, size_t(0)>
     : public InternalVectorBaseTypeCheck<T> {
 
   using InternalVectorBaseTypeCheck<T>::element_size;
-  static constexpr size_t elements = 1;
-  static constexpr size_t bytes = alignof(T);
-  static constexpr size_t mask = bytes - 1;
+  const size_t elements = 1;
+  const size_t bytes = alignof(T);
+  const size_t mask = bytes - 1;
 };
 
 template <size_t bytes> struct AssumeAligned {
@@ -179,21 +179,16 @@ static constexpr bool is_aligned_with(const size_type value,
   return value == get_aligned_with(value, power_of_two);
 }
 
-template <typename T> struct AlignedFor {
+template <typename T> struct AlignedFor : public internal::AlignmentBase<T> {
   using Base = internal::AlignmentBase<T>;
-  static constexpr size_t bytes = Base::bytes;
-  static constexpr size_t element_size = Base::element_size;
-  static constexpr size_t elements = Base::elements;
-  static constexpr size_t mask = Base::mask;
-  using type = T;
 
   /**
    * Tests whether the indicated number is aligned.
    * @param number The number to be tested, e.g. a count or offset.
    * @return {@code true} is the number is aligned
    */
-  sdsp_nodiscard static bool is(size_t number) {
-    return (number & (mask)) == 0;
+  sdsp_nodiscard constexpr bool is(size_t number) {
+    return (number & (Base::mask)) == 0;
   }
 
   /**
@@ -206,11 +201,11 @@ template <typename T> struct AlignedFor {
   }
 
   sdsp_nodiscard sdsp_force_inline static T *aligned(T *p) {
-    return internal::AssumeAligned<bytes>::assume_aligned(p);
+    return internal::AssumeAligned<Base::bytes>::assume_aligned(p);
   }
 
   sdsp_nodiscard sdsp_force_inline static const T *aligned(const T *p) {
-    return internal::AssumeAligned<bytes>::assume_aligned(p);
+    return internal::AssumeAligned<Base::bytes>::assume_aligned(p);
   }
 
   sdsp_nodiscard static T *verified(T *ptr) {

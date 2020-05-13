@@ -26,12 +26,9 @@
 
 namespace simpledsp {
 
-template <typename T, size_t N> class Frame {
+template <typename T, size_t N> struct Frame {
   static_assert(N > 0, "Frame: must have at least one element.");
-
-  alignas(AlignedFor<T>::bytes) T d[N];
-
-public:
+  static constexpr AlignedFor<T> Align;
   static constexpr size_t size = N;
   using value_type = T;
 
@@ -145,6 +142,10 @@ public:
     f /= v;
     return f;
   }
+
+private:
+  alignas(Align.bytes) T d[N];
+
 };
 
 
