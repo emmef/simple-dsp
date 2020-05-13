@@ -97,7 +97,7 @@ template <typename T>
 sdsp_force_inline static void inline_multiply_with_range(T *v1, T from, T to,
                                                          size_t size) {
   T factor = from;
-  T delta = Normalization<T>::get_flushed((to - from) / (size - 1));
+  T delta = FTZ<T>::get_flushed((to - from) / (size - 1));
   if (delta != 0) {
     for (size_t i = 0; i < size; ++i, factor += delta) {
       v1[i] *= factor;
@@ -111,11 +111,11 @@ template <typename T>
 sdsp_force_inline static void
 inline_multiply_with_range_accurate(T *v1, T from, T to, size_t size) {
   T factor = from;
-  T delta = Normalization<T>::get_flushed((to - from));
+  T delta = FTZ<T>::get_flushed((to - from));
   if (delta != 0) {
     size_t denominator = (size - 1);
     for (size_t i = 0; i < size; ++i) {
-      v1[i] *= factor + Normalization<T>::get_flushed((i * delta) / denominator);
+      v1[i] *= factor + FTZ<T>::get_flushed((i * delta) / denominator);
     }
   } else {
     inline_multiply_with(v1, from, size);

@@ -28,110 +28,60 @@
 
 namespace simpledsp {
 
-namespace internal {
+template <typename T> struct FTZFor {
+  static_assert(std::is_floating_point_v<T>);
 
-template <typename FPTYPE, size_t selector> struct Normalize {
-  static_assert(std::is_floating_point_v<FPTYPE>,
-                "FPTYPE must be a floating-point type");
+  static constexpr bool is_iec559 = std::numeric_limits<T>::is_iec559;
+  static constexpr size_t bits = 8 * sizeof(T);
+  static constexpr bool normalizes = is_iec559 && (bits == 32 || bits == 64);
 
-  static inline FPTYPE get_flushed(FPTYPE value) { return value; }
+  static inline T get_flushed(T value) {
+    if constexpr(normalizes) {
+      if constexpr(bits == 32) {
+        union {
+          T f;
+          int32_t i;
+        } v;
 
-  static inline void flush(FPTYPE &) {}
+        v.f = value;
 
-  static constexpr bool normalizes = false;
+        return v.i & 0x7f800000 ? value : 0.0f;
+      }
+      else if constexpr (bits == 64) {
+        union {
+          T f;
+          int64_t i;
+        } v;
 
-  static constexpr size_t bits = 8 * sizeof(FPTYPE);
+        v.f = value;
 
-  static const char *method() {
-    return "None: IEEE-559 compliant, but denormal definition for this size "
-           "not known";
-  }
-};
-
-/**
- * Specialization for non ieee-559/754 floating point formats.
- */
-template <typename FPTYPE> struct Normalize<FPTYPE, 0> {
-  static inline FPTYPE get_flushed(FPTYPE value) { return value; }
-
-  static inline void flush(FPTYPE &value) { return value; }
-
-  static constexpr bool normalizes = false;
-
-  static const char *method() { return "None: Not IEEE-559 compliant"; }
-};
-
-/**
- * Specialization for 32-bit single-precision floating
- */
-template <typename FPTYPE> struct Normalize<FPTYPE, 4> {
-  static inline FPTYPE get_flushed(FPTYPE value) {
-    union {
-      FPTYPE f;
-      int32_t i;
-    } v;
-
-    v.f = value;
-
-    return v.i & 0x7f800000 ? value : 0.0f;
-  }
-
-  static inline void flush(FPTYPE &value) {
-    union {
-      FPTYPE f;
-      int32_t i;
-    } v;
-
-    v.f = value;
-    if (v.i & 0x7f800000) {
-      return;
+        return v.i & 0x7ff0000000000000L ? value : 0;
+      }
     }
-    value = 0.0;
+    return value;
   }
 
-  static constexpr bool normalizes = true;
-
-  static const char *method() { return "IEEE-559 32-bit single precision"; }
-};
-
-template <typename FPTYPE> struct Normalize<FPTYPE, 8> {
-  static inline FPTYPE get_flushed(FPTYPE value) {
-    union {
-      FPTYPE f;
-      int64_t i;
-    } v;
-
-    v.f = value;
-
-    return v.i & 0x7ff0000000000000L ? value : 0;
-  }
-
-  static inline void flush(FPTYPE &value) {
-    union {
-      FPTYPE f;
-      int64_t i;
-    } v;
-
-    v.f = value;
-
-    if (v.i & 0x7ff0000000000000L) {
-      return;
+  static inline void flush(T &value) {
+    if constexpr(normalizes) {
+      value = get_flushed(value);
     }
-    value = 0.0;
   }
 
-  static constexpr size_t bits = 8 * sizeof(FPTYPE);
 
-  static const char *method() { return "IEEE-559 64-bit double precision"; }
+  /**
+   * Returns value, where value if set to zero if it is denormal and the
+   * floating point type is iec559 compliant.
+   */
+  static inline T flush_and_get(T &value) {
+    if constexpr(normalizes) {
+      return (value = get_flushed(value));
+    }
+    return value;
+  }
+
 };
 
-} // namespace internal
-
-class Normalization {
-  template <typename T>
-  using Base =
-      internal::Normalize<T,
-                          !std::numeric_limits<T>::is_iec559 ? 0 : sizeof(T)>;
+class FTZ {
 
 public:
   /**
@@ -139,43 +89,33 @@ public:
    * Support is purely algorithmic and says nothing about performance impact of
    * denormal numbers on the particular processor architecture.
    */
-  template <typename FPTYPE> static constexpr bool supported() noexcept {
-    return Base<FPTYPE>::normalizes;
+  template <typename T> static constexpr bool supported() noexcept {
+    return FTZFor<T>::normalizes;
   }
 
   /**
    * Flushes value to zero if it is denormal and the floating point type is
    * iec559 compliant and does nothing otherwise.
    */
-  template <typename FPTYPE> static inline void flush(FPTYPE &value) noexcept {
-    Base<FPTYPE>::flush(value);
+  template <typename T> static inline void flush(T &value) noexcept {
+    FTZFor<T>::flush(value);
   }
 
   /**
    * Returns value or zero if it is denormal and the floating point type is
    * iec559 compliant.
    */
-  template <typename FPTYPE>
-  static inline FPTYPE get_flushed(FPTYPE value) noexcept {
-    return Base<FPTYPE>::get_flushed(value);
+  template <typename T>
+  static inline T get_flushed(T value) noexcept {
+    return FTZFor<T>::get_flushed(value);
   }
 
   /**
    * Returns value, where value if set to zero if it is denormal and the
    * floating point type is iec559 compliant.
    */
-  template <typename FPTYPE> static inline FPTYPE flush_and_get(FPTYPE &value) {
-    flush(value);
-    return value;
-  }
-
-  /**
-   * Returns a brief description of the type of floatingpoint type with regards
-   * to denormal representations.
-   */
-  template <typename FPTYPE>
-  static inline const char *denormalization_type() noexcept {
-    return Base<FPTYPE>::method();
+  template <typename T> static inline T flush_and_get(T &value) {
+    return FTZFor<T>::flush_and_get(value);
   }
 };
 
