@@ -26,9 +26,10 @@
 
 namespace simpledsp {
 
-template <typename T, size_t N> struct Frame {
+template <typename T, size_t N, bool aligned = true> struct Frame {
   static_assert(N > 0, "Frame: must have at least one element.");
-  static constexpr AlignedFor<T> Align;
+  friend Frame<T, N, !aligned>;
+
   static constexpr size_t size = N;
   using value_type = T;
 
@@ -64,7 +65,8 @@ template <typename T, size_t N> struct Frame {
    * @param f The other frame
    * @return The dot product.
    */
-  sdsp_nodiscard T dot(const Frame &f) const noexcept {
+  template<bool A>
+  sdsp_nodiscard T dot(const Frame<T,N,A> &f) const noexcept {
     T sum = d[0] *= f[0];
     for (size_t i = 1; i < N; i++) {
       sum += d[i] *= f[i];
@@ -83,14 +85,16 @@ template <typename T, size_t N> struct Frame {
    * Addition
    */
 
-  Frame &operator+=(const Frame &f) noexcept {
+  template<bool A>
+  Frame &operator+=(const Frame<T,N,A> &f) noexcept {
     for (size_t i = 0; i < N; i++) {
       d[i] += f[i];
     }
     return *this;
   }
 
-  friend Frame operator+(Frame f1, const Frame &f2) noexcept {
+  template<bool A>
+  friend Frame operator+(Frame f1, const Frame<T,N,A> &f2) noexcept {
     f1 += f2;
     return f1;
   }
@@ -99,16 +103,18 @@ template <typename T, size_t N> struct Frame {
    * Subtraction
    */
 
-  Frame &operator-=(const Frame &f) noexcept {
+  template <bool A>
+  Frame &operator-=(const Frame<T,N,A> &f) noexcept {
     for (size_t i = 0; i < N; i++) {
       d[i] -= f[i];
     }
     return *this;
   }
 
-  friend Frame operator-(Frame f1, const Frame &f2) noexcept {
+  template <bool A>
+  friend Frame operator-(Frame f1, const Frame<T,N,A> &f2) noexcept {
     f1 -= f2;
-    return size;
+    return f1;
   }
 
   /*
@@ -122,7 +128,12 @@ template <typename T, size_t N> struct Frame {
     return *this;
   }
 
-  friend Frame operator-(Frame f, T v) noexcept {
+  friend Frame operator*(Frame f, T v) noexcept {
+    f *= v;
+    return f;
+  }
+
+  friend Frame operator*(T v, Frame f) noexcept {
     f *= v;
     return f;
   }
@@ -143,10 +154,24 @@ template <typename T, size_t N> struct Frame {
     return f;
   }
 
-private:
-  alignas(Align.bytes) T d[N];
+  /**
+   * Assign from different align
+   */
+//  template<bool A>
+  Frame &operator=(const Frame<T,N,!aligned> &other) {
+    for (size_t i = 0; i < N; i++) {
+      d[i] = other.d[i];
+    }
+    return *this;
+  }
 
+private:
+  static constexpr AlignedFor<T> align;
+
+  alignas(aligned ? align.bytes : alignof(T)) T d[N];
 };
+
+
 
 
 } // namespace simpledsp

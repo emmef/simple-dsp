@@ -18,14 +18,17 @@ namespace {
 
 static constexpr size_t FRAME_SIZE = 2;
 typedef double vtype;
-typedef simpledsp::Frame<vtype, FRAME_SIZE> Frame;
+typedef simpledsp::Frame<vtype, FRAME_SIZE, true> Frame;
+typedef simpledsp::Frame<vtype, FRAME_SIZE, false> UFrame;
 
-void set(Frame &frame, vtype v1, vtype v2) {
+template<bool algn>
+void set(simpledsp::Frame<vtype, FRAME_SIZE, algn> &frame, vtype v1, vtype v2) {
   frame[0] = v1;
   frame[1] = v2;
 }
 
-bool same(Frame &frame1, Frame &frame2) {
+template<bool algn1, bool algn2>
+bool same(simpledsp::Frame<vtype, FRAME_SIZE, algn1> &frame1, simpledsp::Frame<vtype, FRAME_SIZE, algn2> &frame2) {
   for (size_t i = 0; i < Frame::size; i++) {
     if (frame1[i] != frame2[i]) {
       return false;
@@ -67,5 +70,184 @@ BOOST_AUTO_TEST_CASE(testAddToAll) {
   x.add(add);
   BOOST_CHECK(same(x, expected));
 }
+
+BOOST_AUTO_TEST_CASE(testAddFrameToFrame) {
+  Frame x;
+  Frame y;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x + y;
+  set(expected, 32, 46);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testAddUFrameToFrame) {
+  Frame x;
+  UFrame y;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x + y;
+  set(expected, 32, 46);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testAddUFrameToFrameResultU) {
+  Frame x;
+  UFrame y;
+  UFrame z;
+  UFrame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x + y;
+  set(expected, 32, 46);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testAddFrameToUFrame) {
+  UFrame x;
+  Frame y;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x + y;
+  set(expected, 32, 46);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testAddFrameToUFrameResultU) {
+  UFrame x;
+  Frame y;
+  UFrame z;
+  UFrame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x + y;
+  set(expected, 32, 46);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testSubFrameToFrame) {
+  Frame x;
+  Frame y;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x - y;
+  set(expected, -6, -12);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testSubUFrameToFrame) {
+  Frame x;
+  UFrame y;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x - y;
+  set(expected, -6, -12);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testSubUFrameToFrameResultU) {
+  Frame x;
+  UFrame y;
+  UFrame z;
+  UFrame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x - y;
+  set(expected, -6, -12);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testSubFrameToUFrame) {
+  UFrame x;
+  Frame y;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x - y;
+  set(expected, -6, -12);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testSubFrameToUFrameResultU) {
+  UFrame x;
+  Frame y;
+  UFrame z;
+  UFrame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x - y;
+  set(expected, -6, -12);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testMulFrameWithValue) {
+  Frame x;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  z = x * 4;
+  set(expected, 52, 68);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testMulFrameWithValueAndAdd) {
+  Frame x;
+  Frame y;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = x * 4 + y;
+  set(expected, 71, 97);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testAddToFrameWithAndMul) {
+  Frame x;
+  Frame y;
+  Frame z;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  z = 4 * x + y;
+  set(expected, 71, 97);
+  BOOST_CHECK(same(z, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testAssignSame) {
+  Frame x;
+  Frame y;
+  Frame expected;
+  printf("\n");
+  set(x, 13, 17);
+  set(y, 19, 29);
+  y = x;
+  set(expected, 13, 17);
+  BOOST_CHECK(same(y, expected));
+}
+
+BOOST_AUTO_TEST_CASE(testAssignDifferent) {
+  UFrame x;
+  Frame y;
+  Frame expected;
+  set(x, 13, 17);
+  set(y, 19, 29);
+  y = x;
+  set(expected, 13, 17);
+  BOOST_CHECK(same(y, expected));
+}
+
+
 
 BOOST_AUTO_TEST_SUITE_END()
