@@ -24,149 +24,23 @@
 #include <cstddef>
 #include <simple-dsp/core/attributes.h>
 #include <simple-dsp/core/index.h>
+#include <simple-dsp/iir/coefficients.h>
 
 namespace simpledsp {
 
-static constexpr size_t IIR_MAX_ORDER = 31;
-
-static bool iir_is_valid_order(size_t order) {
-  return order > 0 && order <= IIR_MAX_ORDER;
-}
-
-static size_t iir_get_valid_order(size_t order) {
-  if (iir_is_valid_order(order)) {
-    return order;
-  }
-  throw std::invalid_argument("iir_get_valid_order: invalid order");
-}
-/**
- * Allows algorithms that calculate filter coefficients to set them in a
- * coefficient implementation. The implementation can remain highly optimised
- * but setting the calculated coefficients can be done in a standard way.
- *
- * @tparam T type of coefficent values
- */
-struct IIRCoefficientsSetter {
-
-  sdsp_nodiscard virtual unsigned getOrder() const = 0;
-  sdsp_nodiscard virtual unsigned getMaxOrder() const = 0;
-  sdsp_nodiscard virtual bool canSetOrder() const = 0;
-  virtual ~IIRCoefficientsSetter() = default;
-
-  sdsp_nodiscard size_t getCoefficients() const { return getOrder() + 1; }
-
-  IIRCoefficientsSetter &setOrder(unsigned order) {
-    if (order == 0) {
-      throw std::invalid_argument("IIRCoefficientsSetter::setOrder(order): "
-                                  "order must be 1 or higher.");
-    }
-    if (!canSetOrder()) {
-      if (order == getOrder()) {
-        return *this;
-      }
-      throw std::runtime_error(
-          "IIRCoefficientsSetter::setOrder(order): "
-          "implementation does not allow change of filter order.");
-    }
-    if (order > getMaxOrder()) {
-      throw std::invalid_argument(
-          "IIRCoefficientsSetter::setOrder(order): "
-          "order cannot exceed maximum of implementation.");
-    }
-    setValidOrder(order);
-    return *this;
-  }
-
-  bool setOrderGetSuccess(unsigned order) {
-    if (order == 0) {
-      return false;
-    }
-    if (!canSetOrder() && (order != getOrder())) {
-      return false;
-    }
-    if (order > getMaxOrder()) {
-      return false;
-    }
-    setValidOrder(order);
-    return true;
-  }
-
-  IIRCoefficientsSetter &setC(size_t i, double value) {
-    setValidC(Index::checked(i, getCoefficients()), value);
-    return *this;
-  }
-
-  IIRCoefficientsSetter &setD(size_t i, double value) {
-    setValidD(Index::checked(i, getCoefficients()), value);
-    return *this;
-  }
-
-  IIRCoefficientsSetter &unity(double scale = 1.0) noexcept {
-    setValidC(0, scale);
-    setValidD(0, 0.0);
-    for (size_t i = 0; i <= getOrder(); i++) {
-      setValidC(i, 0.0);
-      setValidD(i, 0.0);
-    }
-    return *this;
-  }
-
-protected:
-  virtual void setValidOrder(unsigned order) = 0;
-  virtual void setValidC(size_t i, double value) = 0;
-  virtual void setValidD(size_t i, double value) = 0;
-};
-
 /**
  * A tagging interface that contains no methods but is necessary to use a class
- * in an IIRCoefficientAccess wrapper.
+ * in an iir::CoefficientsGetter wrapper.
  */
 struct IIRCoefficientsClass {};
 
-template <typename coeff, class CoefficientsClass> struct IIRCoefficientAccess {
-  static_assert(std::is_base_of<IIRCoefficientsClass, CoefficientsClass>::value,
-                "IIRCoefficientAccess<coeff, CoefficientsClass>: "
-                "CoefficientsClass not derived from IIRCoefficientsClass");
-  static_assert(std::is_floating_point_v<coeff>,
-                "IIRCoefficientAccess<coeff, CoefficientsClass>: "
-                "coeff must be floating-point");
-
-  sdsp_nodiscard sdsp_force_inline static const coeff &
-  getC(size_t i, const CoefficientsClass &coeffs) {
-    return coeffs.getC(i);
-  }
-  sdsp_nodiscard sdsp_force_inline static const coeff &
-  getD(size_t i, const CoefficientsClass &coeffs) {
-    return coeffs.getD(i);
-  }
-  sdsp_nodiscard sdsp_force_inline static constexpr unsigned
-  getOrder(const CoefficientsClass &coeffs) {
-    return coeffs.getOrder();
-  }
-  sdsp_nodiscard sdsp_force_inline static constexpr unsigned
-  getMaxOrder(const CoefficientsClass &coeffs) {
-    return coeffs.getMaxOrder();
-  }
-};
-
-/**
- * Defines how an iteration of an IIR claculation is done. Some algorithms
- * specify coefficients where output history values (y) are added to the result
- * and others expect them to be subtracted.
- */
-enum class IIRCalculationMethod { POSITIVE_Y, NEGATIVE_Y };
-static constexpr IIRCalculationMethod IIR_CALCULATION_METHOD_DEFAULT =
-    IIRCalculationMethod::POSITIVE_Y;
+typedef iir::CoefficientConvention IIRCalculationMethod;
 
 template <typename coeff, class sample, IIRCalculationMethod method>
 struct IIRSingleCalculation;
 
 template <typename coeff, class sample>
 struct IIRSingleCalculation<coeff, sample, IIRCalculationMethod::NEGATIVE_Y> {
-  sdsp_force_inline static coeff iterate(const coeff &coeffX, const sample &x,
-                                         const coeff &coeffY, const sample &y) {
-    return x * coeffX - y * coeffY;
-  }
 
   sdsp_force_inline static void iterate(coeff *out, const coeff &coeffX,
                                         const sample *x, const coeff &coeffY,
@@ -179,10 +53,6 @@ struct IIRSingleCalculation<coeff, sample, IIRCalculationMethod::NEGATIVE_Y> {
 
 template <typename coeff, class sample>
 struct IIRSingleCalculation<coeff, sample, IIRCalculationMethod::POSITIVE_Y> {
-  sdsp_force_inline static coeff iterate(const coeff &coeffX, const sample &x,
-                                         const coeff &coeffY, const sample &y) {
-    return x * coeffX + y * coeffY;
-  }
   sdsp_force_inline static void iterate(coeff *out, const coeff &coeffX,
                                         const sample *x, const coeff &coeffY,
                                         const sample *y, size_t count) {
@@ -198,8 +68,7 @@ struct IIRSingleCalculation<coeff, sample, IIRCalculationMethod::POSITIVE_Y> {
  * @tparam coeff The coefficient value type
  * @tparam method The way to calculate the filter with given coefficients
  */
-template <typename coeff,
-          IIRCalculationMethod method = IIR_CALCULATION_METHOD_DEFAULT>
+template <typename coeff>
 struct IIRFilterBase {
 
   /**
@@ -220,8 +89,7 @@ struct IIRFilterBase {
   withHistory(const Filter &filter, sample *__restrict xHistory,
               sample *__restrict yHistory, const sample &x) {
 
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<coeff, Filter>;
+    using Coefficients = iir::CoefficientsGetter<coeff, Filter>;
 
     sample Y = 0;
     sample X = x; // input is xN0
@@ -235,10 +103,11 @@ struct IIRFilterBase {
       X = xN1;
       yHistory[i] = Y;
       Y = yN1;
-      yN0 += Calculation::iterate(Coefficients::getC(j, filter), xN1,
-                                  Coefficients::getD(j, filter), yN1);
+      const coeff &coeffX = Coefficients::getX(j, filter);
+      const coeff &coeffY = Coefficients::getY(j, filter);
+      yN0 += xN1 * coeffX + yN1 * coeffY;
     }
-    yN0 += Coefficients::getC(0) * x;
+    yN0 += Coefficients::getX(0) * x;
 
     yHistory[0] = yN0;
 
@@ -266,8 +135,7 @@ struct IIRFilterBase {
   withHistoryFixedOrder(const Filter &filter, sample *__restrict xHistory,
                         sample *__restrict yHistory, const sample &x) {
 
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<coeff, Filter>;
+    using Coefficients = iir::CoefficientsGetter<coeff, Filter>;
     static_assert(ORDER == Coefficients::getOrder(filter),
                   "IIRFilterBase::withHistoryFixedOrder: specified order must "
                   "be same as coefficients' "
@@ -275,7 +143,7 @@ struct IIRFilterBase {
 
     sample Y = 0;
     sample X = x; // input is xN0
-    sample yN0 = Coefficients::getC(0) * x;
+    sample yN0 = Coefficients::getX(0) * x;
     size_t i, j;
     for (i = 0, j = 1; i < ORDER; i++, j++) {
       const sample xN1 = xHistory[i];
@@ -284,8 +152,9 @@ struct IIRFilterBase {
       X = xN1;
       yHistory[i] = Y;
       Y = yN1;
-      yN0 += Calculation::iterate(Coefficients::getC(j, filter), xN1,
-                                  Coefficients::getD(j, filter), yN1);
+      const coeff &coeffX = Coefficients::getX(j, filter);
+      const coeff &coeffY = Coefficients::getY(j, filter);
+      yN0 += xN1 * coeffX + yN1 * coeffY;
     }
 
     yHistory[0] = yN0;
@@ -312,16 +181,16 @@ struct IIRFilterBase {
   withBuffersNoPast(const Filter &filter, const sample *__restrict x,
                     sample *__restrict y, size_t count) {
 
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<sample, Filter>;
+    using Coefficients = iir::CoefficientsGetter<sample, Filter>;
     const size_t order = Coefficients::getOrder(filter);
 
     for (size_t n = 0; n < count; n++) {
-      sample yN = Coefficients::getC(0, filter) * x[n];
+      sample yN = Coefficients::getX(0, filter) * x[n];
       ptrdiff_t h = n - 1;
       for (size_t j = 1; h >= 0 && j <= order; j++, h--) {
-        yN += Calculation::iterate(Coefficients::getC(j, filter), x[h],
-                                   Coefficients::getD(j, filter), y[h]);
+        const coeff &coeffX = Coefficients::getX(j, filter);
+        const coeff &coeffY = Coefficients::getY(j, filter);
+        yN += x[h] * coeffX + y[h] * coeffY;
       }
       y[n] = yN;
     }
@@ -351,18 +220,18 @@ struct IIRFilterBase {
   withBuffers(const Filter &filter, sample *__restrict x, sample *__restrict y,
               size_t offset, size_t count) {
 
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<sample, Filter>;
+    using Coefficients = iir::CoefficientsGetter<sample, Filter>;
     const size_t order = Coefficients::getOrder(filter);
     if (offset < order) {
       return false;
     }
 
     for (size_t n = offset; n < count; n++) {
-      sample yN = Coefficients::getC(0, filter) * x[n];
+      sample yN = Coefficients::getX(0, filter) * x[n];
       for (size_t j = 1; j <= order; j++) {
-        yN += Calculation::iterate(Coefficients::getC(j, filter), x[n - j],
-                                   Coefficients::getD(j, filter), y[n - j]);
+        const coeff &coeffX = Coefficients::getX(j, filter);
+        const coeff &coeffY = Coefficients::getY(j, filter);
+        yN += x[n - j] * coeffX + y[n - j] * coeffY;
       }
       y[n] = yN;
     }
@@ -397,18 +266,18 @@ struct IIRFilterBase {
     static_assert(OFFSET < ORDER,
                   "IIRFilterBase::withBuffersFixedOrderOffset: "
                   "OFFSET must be equal to or larger than ORDER.");
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<sample, Filter>;
+    using Coefficients = iir::CoefficientsGetter<sample, Filter>;
     static_assert(ORDER == Coefficients::getOrder(filter),
                   "IIRFilterBase::withHistoryFixedOrder: specified order must "
                   "be same as coefficients' "
                   "order.");
 
     for (size_t n = OFFSET; n < count; n++) {
-      sample yN = Coefficients::getC(0, filter) * x[n];
+      sample yN = Coefficients::getX(0, filter) * x[n];
       for (size_t j = 1; j <= ORDER; j++) {
-        yN += Calculation::iterate(Coefficients::getC(j, filter), x[n - j],
-                                   Coefficients::getD(j, filter), y[n - j]);
+        const coeff &coeffX = Coefficients::getX(j, filter);
+        const coeff &coeffY = Coefficients::getY(j, filter);
+        yN += x[n - j] * coeffX + y[n - j] * coeffY;
       }
       y[n] = yN;
     }
@@ -443,17 +312,17 @@ struct IIRFilterBase {
     static_assert(OFFSET < ORDER,
                   "IIRFilterBase::withBuffersFixedOrderOffsetCount: "
                   "OFFSET must be equal to or larger than ORDER.");
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<sample, Filter>;
+    using Coefficients = iir::CoefficientsGetter<sample, Filter>;
     static_assert(ORDER == Coefficients::getOrder(filter),
                   "IIRFilterBase::withHistoryFixedOrder: specified order must "
                   "be same as coefficients' order.");
 
     for (size_t n = OFFSET; n < COUNT; n++) {
-      sample yN = Coefficients::getC(0, filter) * x[n];
+      sample yN = Coefficients::getX(0, filter) * x[n];
       for (size_t j = 1; j <= ORDER; j++) {
-        yN += Calculation::iterate(Coefficients::getC(j, filter), x[n - j],
-                                   Coefficients::getD(j, filter), y[n - j]);
+        const coeff &coeffX = Coefficients::getX(j, filter);
+        const coeff &coeffY = Coefficients::getY(j, filter);
+        yN += x[n - j] * coeffX + y[n - j] * coeffY;
       }
       y[n] = yN;
     }
@@ -479,15 +348,15 @@ struct IIRFilterBase {
   withBuffersBackwardsNoPast(const Filter &filter, const sample *__restrict x,
                              sample *__restrict y, size_t count) {
 
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<sample, Filter>;
+    using Coefficients = iir::CoefficientsGetter<sample, Filter>;
     const size_t order = filter.order;
 
     for (ptrdiff_t n = count - 1; n >= 0; n--) {
-      sample yN0 = Coefficients::getC(0) * x[n];
+      sample yN0 = Coefficients::getX(0) * x[n];
       for (ptrdiff_t j = 0, h = n + 1; h < count && j < order; j++, h++) {
-        yN0 += Calculation::iterate(Coefficients::getC(j + 1), x[h],
-                                    Coefficients::getD(j), y[h]);
+        const coeff &coeffX = Coefficients::getX(j + 1);
+        const coeff &coeffY = Coefficients::getY(j);
+        yN0 += x[h] * coeffX + y[h] * coeffY;
       }
       y[n] = yN0;
     }
@@ -515,15 +384,15 @@ struct IIRFilterBase {
   withBuffersBackwards(const Filter &filter, sample *__restrict x,
                        sample *__restrict y, size_t count) {
 
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<sample, Filter>;
+    using Coefficients = iir::CoefficientsGetter<sample, Filter>;
     const size_t order = Coefficients::getOrder(filter);
 
     for (ptrdiff_t n = count - 1; n >= 0; n--) {
-      sample yN = Coefficients::getC(0, filter) * x[n];
+      sample yN = Coefficients::getX(0, filter) * x[n];
       for (size_t j = 1; j <= order; j++) {
-        yN += Calculation::iterate(Coefficients::getC(j, filter), x[n + j],
-                                   Coefficients::getD(j, filter), y[n + j]);
+        const coeff &coeffX = Coefficients::getX(j, filter);
+        const coeff &coeffY = Coefficients::getY(j, filter);
+        yN += x[n + j] * coeffX + y[n + j] * coeffY;
       }
       y[n] = yN;
     }
@@ -552,18 +421,18 @@ struct IIRFilterBase {
   withBuffersBackwardsFixedOrder(const Filter &filter, sample *__restrict x,
                                  sample *__restrict y, size_t count) {
 
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<sample, Filter>;
+    using Coefficients = iir::CoefficientsGetter<sample, Filter>;
     static_assert(ORDER == Coefficients::getOrder(filter),
                   "IIRFilterBase::withBuffersBackwardsFixedOrder: specified "
                   "order must be same as "
                   "coefficients' order.");
 
     for (ptrdiff_t n = count - 1; n >= 0; n--) {
-      sample yN = Coefficients::getC(0, filter) * x[n];
+      sample yN = Coefficients::getX(0, filter) * x[n];
       for (size_t j = 1; j <= ORDER; j++) {
-        yN += Calculation::iterate(Coefficients::getC(j, filter), x[n + j],
-                                   Coefficients::getD(j, filter), y[n + j]);
+        const coeff &coeffX = Coefficients::getX(j, filter);
+        const coeff &coeffY = Coefficients::getY(j, filter);
+        yN += x[n + j] * coeffX + y[n + j] * coeffY;
       }
       y[n] = yN;
     }
@@ -591,18 +460,18 @@ struct IIRFilterBase {
   sdsp_force_inline static void withBuffersBackwardsFixedOrderCount(
       const Filter &filter, sample *__restrict x, sample *__restrict y) {
 
-    using Calculation = IIRSingleCalculation<coeff, sample, method>;
-    using Coefficients = IIRCoefficientAccess<sample, Filter>;
+    using Coefficients = iir::CoefficientsGetter<sample, Filter>;
     static_assert(ORDER == Coefficients::getOrder(filter),
                   "IIRFilterBase::withBuffersBackwardsFixedOrderCount: "
                   "specified order must be same as "
                   "coefficients' order.");
 
     for (ptrdiff_t n = COUNT - 1; n >= 0; n--) {
-      sample yN = Coefficients::getC(0, filter) * x[n];
+      sample yN = Coefficients::getX(0, filter) * x[n];
       for (size_t j = 1; j <= ORDER; j++) {
-        yN += Calculation::iterate(Coefficients::getC(j, filter), x[n + j],
-                                   Coefficients::getD(j, filter), y[n + j]);
+        const coeff &coeffX = Coefficients::getX(j, filter);
+        const coeff &coeffY = Coefficients::getY(j, filter);
+        yN += x[n + j] * coeffX + y[n + j] * coeffY;
       }
       y[n] = yN;
     }
@@ -708,7 +577,7 @@ struct BufferHistoryWrap {
 template <typename coeff, size_t ORDER>
 struct IIRFixedOrderCoefficients : public IIRCoefficientsClass {
 
-  class Setter : public IIRCoefficientsSetter {
+  class Setter : public iir::CoefficientsSetter {
     explicit Setter(IIRFixedOrderCoefficients &o) : owner(o) {}
     Setter(Setter &&source) noexcept : owner(source.owner) {}
 
@@ -721,8 +590,8 @@ struct IIRFixedOrderCoefficients : public IIRCoefficientsClass {
       throw std::runtime_error(
           "IIRFixedOrderCoefficients::setValidOrder(): illegal call");
     }
-    void setValidC(size_t i, double value) override { owner.c[i] = value; }
-    void setValidD(size_t i, double value) override { owner.d[i] = value; }
+    void setValidX(size_t i, double value) override { owner.c[i] = value; }
+    void setValidY(size_t i, double value) override { owner.d[i] = value; }
 
   private:
     IIRFixedOrderCoefficients &owner;
@@ -756,15 +625,15 @@ struct IIRFixedOrderCoefficients : public IIRCoefficientsClass {
 
   template <class Coefficients>
   IIRFixedOrderCoefficients &operator=(const Coefficients &source) {
-    using Access = IIRCoefficientAccess<coeff, Coefficients>;
+    using Access = iir::CoefficientsGetter<coeff, Coefficients>;
     if (Access::getOrder(source) != ORDER) {
       throw std::invalid_argument(
           "IIRFixedOrderCoefficients::operator=(source): "
           "source must have same order.");
     }
     for (size_t i = 0; i <= ORDER; i++) {
-      c[i] = Access::getC(i, source);
-      d[i] = Access::getD(i, source);
+      c[i] = Access::getX(i, source);
+      d[i] = Access::getY(i, source);
     }
     return *this;
   }
@@ -786,7 +655,7 @@ private:
 
 template <typename coeff> struct IIRCoefficients : public IIRCoefficientsClass {
 
-  struct Setter : public IIRCoefficientsSetter {
+  struct Setter : public iir::CoefficientsSetter {
     explicit Setter(IIRCoefficients &o) : owner(o) {}
     Setter(Setter &&source) noexcept : owner(source.owner) {}
     sdsp_nodiscard unsigned getOrder() const override {
@@ -799,8 +668,8 @@ template <typename coeff> struct IIRCoefficients : public IIRCoefficientsClass {
 
   protected:
     void setValidOrder(unsigned newOrder) override { owner.setOrder(newOrder); }
-    void setValidC(size_t i, double value) override { owner.c[i] = value; }
-    void setValidD(size_t i, double value) override { owner.d[i] = value; }
+    void setValidX(size_t i, double value) override { owner.c[i] = value; }
+    void setValidY(size_t i, double value) override { owner.d[i] = value; }
 
   private:
     IIRCoefficients &owner;
@@ -848,7 +717,7 @@ public:
 
   template <class Coefficients>
   IIRCoefficients &operator=(const Coefficients &source) {
-    using Access = IIRCoefficientAccess<coeff, Coefficients>;
+    using Access = iir::CoefficientsGetter<coeff, Coefficients>;
     size_t sourceOrder = Access::getOrder(source);
     if (sourceOrder != order) {
       if (!isValidOrder(sourceOrder, maxOrder)) {
@@ -858,8 +727,8 @@ public:
     }
     order = sourceOrder;
     for (size_t i = 0; i <= order; i++) {
-      c[i] = Access::getC(i, source);
-      d[i] = Access::getD(i, source);
+      c[i] = Access::getX(i, source);
+      d[i] = Access::getY(i, source);
     }
     return *this;
   }
@@ -882,7 +751,7 @@ protected:
 
 private:
   static size_t allocationSize(size_t order) {
-    return (iir_get_valid_order(order) * 1) * 2;
+    return (iir::get_valid_order(order) * 1) * 2;
   }
 
   static size_t validOrder(size_t order, size_t maxOrder) {

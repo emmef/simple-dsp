@@ -110,6 +110,7 @@ struct InternalVectorBase<T, TYPE, size_t(0)>
 };
 
 template <size_t bytes> struct AssumeAligned {
+  static_assert(Power2::is(bytes), "Alignment must be power of 2");
 
   template <typename T>
   sdsp_nodiscard sdsp_force_inline static T *aligned(T *p) {
@@ -119,6 +120,11 @@ template <size_t bytes> struct AssumeAligned {
   template <typename T>
   sdsp_nodiscard sdsp_force_inline static const T *aligned(const T *p) {
     return ::assume_aligned<bytes, T>(p);
+  }
+
+  template<typename sample>
+  bool isAligned(const sample *x) const {
+    return (reinterpret_cast<size_t>(x) & (bytes-1)) == 0;
   }
 };
 
@@ -131,6 +137,11 @@ template <> struct AssumeAligned<0> {
   template <typename T>
   sdsp_nodiscard sdsp_force_inline static const T *aligned(const T *p) {
     return p;
+  }
+
+  template<typename sample>
+  bool isAligned(const sample *) const {
+    return true;
   }
 };
 

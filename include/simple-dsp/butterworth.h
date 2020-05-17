@@ -40,15 +40,13 @@ struct Butterworth {
   }
 
   sdsp_nodiscard static Butterworth
-  relative(Type type,
-           IIRCalculationMethod method = IIR_CALCULATION_METHOD_DEFAULT) {
-    return Butterworth(type, 1.0, method);
+  relative(Type type) {
+    return Butterworth(type, 1.0);
   }
 
   sdsp_nodiscard static Butterworth
-  forSampleRate(Type type, float sampleRate,
-                IIRCalculationMethod method = IIR_CALCULATION_METHOD_DEFAULT) {
-    return Butterworth(type, sampleRate, method);
+  forSampleRate(Type type, float sampleRate) {
+    return Butterworth(type, sampleRate);
   }
 
   explicit Butterworth(const Butterworth &source) = default;
@@ -74,7 +72,7 @@ struct Butterworth {
     return *this;
   }
 
-  void generate(IIRCoefficientsSetter &setter) const {
+  void generate(iir::CoefficientsSetter &setter) const {
     switch (type) {
     case Type::LOW_PASS:
       getLowPassCoefficients(setter);
@@ -87,7 +85,7 @@ struct Butterworth {
     }
   }
 
-  void generateOpposite(IIRCoefficientsSetter &setter) {
+  void generateOpposite(iir::CoefficientsSetter &setter) {
     switch (type) {
     case Type::HIGH_PASS:
       getLowPassCoefficients(setter);
@@ -117,43 +115,42 @@ private:
     return type;
   }
 
-  explicit Butterworth(Type tp, float sampleRate, IIRCalculationMethod m)
+  explicit Butterworth(Type tp, float sampleRate)
       : type(verifyType(tp)), rate(sampleRate), frequency(rate / 4.0f),
-        order(1), method(m) {}
+        order(1) {}
 
   Type type;
   SampleRate rate;
   float frequency;
   unsigned order;
-  IIRCalculationMethod method;
 
-  void getLowPassCoefficients(IIRCoefficientsSetter &setter) const {
+  void getLowPassCoefficients(iir::CoefficientsSetter &setter) const {
     float relativeFrequency = minimum(rate.relative(frequency), 0.5);
     if (order != setter.getOrder()) {
       setter.setOrder(order);
     }
     int unscaledCCoefficients[ORDER_MAXIMUM + 1];
     fill_with_zero(unscaledCCoefficients, sizeof(unscaledCCoefficients));
-    getDCoefficients(order, relativeFrequency, method, setter);
+    getDCoefficients(order, relativeFrequency, setter);
     getUnscaledLowPassCCoefficients(order, unscaledCCoefficients);
     double scaleOfC = getLowPassScalingFactor(order, relativeFrequency);
     for (unsigned i = 0; i <= order; i++) {
-      setter.setC(i, scaleOfC * unscaledCCoefficients[i]);
+      setter.setX(i, scaleOfC * unscaledCCoefficients[i]);
     }
   }
 
-  void getHighPassCoefficients(IIRCoefficientsSetter &setter) const {
+  void getHighPassCoefficients(iir::CoefficientsSetter &setter) const {
     float relativeFrequency = minimum(rate.relative(frequency), 0.5);
     if (order != setter.getOrder()) {
       setter.setOrder(order);
     }
     int unscaledCCoefficients[ORDER_MAXIMUM + 1];
     fill_with_zero(unscaledCCoefficients, sizeof(unscaledCCoefficients));
-    getDCoefficients(order, relativeFrequency, method, setter);
+    getDCoefficients(order, relativeFrequency, setter);
     getUnscaledHighPassCCoefficients(order, unscaledCCoefficients);
     double scaleOfC = getHighPassScalingFactor(order, relativeFrequency);
     for (unsigned i = 0; i <= order; i++) {
-      setter.setC(i, scaleOfC * unscaledCCoefficients[i]);
+      setter.setX(i, scaleOfC * unscaledCCoefficients[i]);
     }
   }
 
@@ -165,8 +162,7 @@ private:
   }
 
   static void getDCoefficients(unsigned order, double relativeFrequency,
-                               IIRCalculationMethod method,
-                               IIRCoefficientsSetter &d_coefficients) {
+                               iir::CoefficientsSetter &d_coefficients) {
     double theta; // M_PI * relativeFrequency / 2.0
     double st;    // sine of theta
     double ct;    // cosine of theta
@@ -213,9 +209,8 @@ private:
     /*
      * Calculus results in coefficients that use subtraction of Y coefficients.
      */
-    double sign = method == IIRCalculationMethod::POSITIVE_Y ? -1.0 : 1.0;
     for (unsigned i = 0; i <= order; i++) {
-      d_coefficients.setD(i, sign * dcof[i]);
+      d_coefficients.setY(i, dcof[i], iir::CoefficientConvention::NEGATIVE_Y);
     }
   }
 

@@ -105,41 +105,41 @@ vector<Scenario> &scenarios() {
   auto setter = coefficients.setter();
 
   setter.setOrder(1)
-      .setC(0, 0.57919)
-      .setC(1, 0.57919)
-      .setD(0, -1.00000)
-      .setD(1, -0.15838);
+      .setX(0, 0.57919)
+      .setX(1, 0.57919)
+      .setY(0, -1.00000, simpledsp::iir::CoefficientConvention::POSITIVE_Y)
+      .setY(1, -0.15838, simpledsp::iir::CoefficientConvention::POSITIVE_Y);
   result.push_back(
       {Filter::relative(Filter::Type::LOW_PASS).setOrder(1).setCenter(0.3),
        coefficients});
 
   setter.setOrder(1)
-      .setC(0, 0.42081)
-      .setC(1, -0.42081)
-      .setD(0, -1.00000)
-      .setD(1, -0.15838);
+      .setX(0, 0.42081)
+      .setX(1, -0.42081)
+      .setY(0, -1.00000, simpledsp::iir::CoefficientConvention::POSITIVE_Y)
+      .setY(1, -0.15838, simpledsp::iir::CoefficientConvention::POSITIVE_Y);
   result.push_back(
       {Filter::relative(Filter::Type::HIGH_PASS).setOrder(1).setCenter(0.3),
        coefficients});
 
   setter.setOrder(2)
-      .setC(0, 0.39134)
-      .setC(1, 0.78267)
-      .setC(2, 0.39134)
-      .setD(0, -1.00000)
-      .setD(1, -0.36953)
-      .setD(2, -0.19582);
+      .setX(0, 0.39134)
+      .setX(1, 0.78267)
+      .setX(2, 0.39134)
+      .setY(0, -1.00000, simpledsp::iir::CoefficientConvention::POSITIVE_Y)
+      .setY(1, -0.36953, simpledsp::iir::CoefficientConvention::POSITIVE_Y)
+      .setY(2, -0.19582, simpledsp::iir::CoefficientConvention::POSITIVE_Y);
   result.push_back(
       {Filter::relative(Filter::Type::LOW_PASS).setOrder(2).setCenter(0.3),
        coefficients});
 
   setter.setOrder(2)
-      .setC(0, 0.20657)
-      .setC(1, -0.41314)
-      .setC(2, 0.20657)
-      .setD(0, -1.00000)
-      .setD(1, -0.36953)
-      .setD(2, -0.19582);
+      .setX(0, 0.20657)
+      .setX(1, -0.41314)
+      .setX(2, 0.20657)
+      .setY(0, -1.00000, simpledsp::iir::CoefficientConvention::POSITIVE_Y)
+      .setY(1, -0.36953, simpledsp::iir::CoefficientConvention::POSITIVE_Y)
+      .setY(2, -0.19582, simpledsp::iir::CoefficientConvention::POSITIVE_Y);
   result.push_back(
       {Filter::relative(Filter::Type::HIGH_PASS).setOrder(2).setCenter(0.3),
        coefficients});

@@ -61,15 +61,13 @@ struct Biquad {
   }
 
   sdsp_nodiscard static Biquad
-  relative(Type type,
-           IIRCalculationMethod method = IIR_CALCULATION_METHOD_DEFAULT) {
-    return Biquad(type, 1.0, method);
+  relative(Type type) {
+    return Biquad(type, 1.0);
   }
 
   sdsp_nodiscard static Biquad
-  forSampleRate(Type type, float sampleRate,
-                IIRCalculationMethod method = IIR_CALCULATION_METHOD_DEFAULT) {
-    return Biquad(type, sampleRate, method);
+  forSampleRate(Type type, float sampleRate) {
+    return Biquad(type, sampleRate);
   }
 
   explicit Biquad(const Biquad &source) = default;
@@ -121,7 +119,7 @@ struct Biquad {
     return *this;
   }
 
-  void generate(IIRCoefficientsSetter &coefficients) {
+  void generate(iir::CoefficientsSetter &coefficients) {
     if (coefficients.getOrder() != 2) {
       coefficients.setOrder(2);
     }
@@ -180,9 +178,9 @@ private:
     }
   }
 
-  explicit Biquad(Type tp, float sampleRate, IIRCalculationMethod m)
+  explicit Biquad(Type tp, float sampleRate)
       : type(verifyType(tp)), rate(sampleRate), center(rate / 4.0f), gain(1.0),
-        widthOrSlope(1.0), method(m) {}
+        widthOrSlope(1.0) {}
 
   struct BiQuadCoefficients {
     double C0;
@@ -192,19 +190,17 @@ private:
     double D2;
   };
 
-  void setCoefficients(IIRCoefficientsSetter &setter,
+  void setCoefficients(iir::CoefficientsSetter &setter,
                        const BiQuadCoefficients bqc) {
-    setter.setC(0, bqc.C0);
-    setter.setC(1, bqc.C1);
-    setter.setC(2, bqc.C2);
-    setter.setD(0, 0);
-    setter.setD(1,
-                method == IIRCalculationMethod::POSITIVE_Y ? bqc.D1 : -bqc.D1);
-    setter.setD(2,
-                method == IIRCalculationMethod::POSITIVE_Y ? bqc.D2 : -bqc.D2);
+    setter.setX(0, bqc.C0);
+    setter.setX(1, bqc.C1);
+    setter.setX(2, bqc.C2);
+    setter.setY(0, 0, iir::CoefficientConvention::POSITIVE_Y);
+    setter.setY(1, bqc.D1, iir::CoefficientConvention::POSITIVE_Y);
+    setter.setY(2, bqc.D2, iir::CoefficientConvention::POSITIVE_Y);
   }
 
-  void generateParametric(IIRCoefficientsSetter &setter) {
+  void generateParametric(iir::CoefficientsSetter &setter) {
     static constexpr double LN_2_2 = (M_LN2 / 2);
     double omega = rate.relativeAngular(center);
     double cw = cosf(omega);
@@ -223,7 +219,7 @@ private:
     setCoefficients(setter, result);
   }
 
-  void generateHighShelve(IIRCoefficientsSetter &setter) {
+  void generateHighShelve(iir::CoefficientsSetter &setter) {
     double omega = rate.relativeAngular(center);
     double cw = cosf(omega);
     double sw = sinf(omega);
@@ -245,7 +241,7 @@ private:
     setCoefficients(setter, result);
   }
 
-  void generateLowShelve(IIRCoefficientsSetter &setter) {
+  void generateLowShelve(iir::CoefficientsSetter &setter) {
     double omega = rate.relativeAngular(center);
     double cw = cosf(omega);
     double sw = sinf(omega);
@@ -266,7 +262,7 @@ private:
     setCoefficients(setter, result);
   }
 
-  void generateBandPass(IIRCoefficientsSetter &setter) {
+  void generateBandPass(iir::CoefficientsSetter &setter) {
     double omega = rate.relativeAngular(center);
     double sn = sin(omega);
     double cs = cos(omega);
@@ -283,7 +279,7 @@ private:
     setCoefficients(setter, result);
   }
 
-  void generateHighPass(IIRCoefficientsSetter &setter) {
+  void generateHighPass(iir::CoefficientsSetter &setter) {
     double omega = rate.relativeAngular(center);
     double sn = sin(omega);
     double cs = cos(omega);
@@ -300,7 +296,7 @@ private:
     setCoefficients(setter, result);
   }
 
-  void generateLowPass(IIRCoefficientsSetter &setter) {
+  void generateLowPass(iir::CoefficientsSetter &setter) {
     double omega = rate.relativeAngular(center);
     double sn = sin(omega);
     double cs = cos(omega);
@@ -322,7 +318,6 @@ private:
   float center;
   float gain;
   float widthOrSlope;
-  IIRCalculationMethod method;
 };
 } // namespace simpledsp
 
